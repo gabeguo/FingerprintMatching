@@ -94,9 +94,6 @@ def split_files(data_folder, train_percent, val_percent, test_percent):
     split_by_ratios(data_folder, train_percent, val_percent, test_percent)
     return
 
-if __name__ == "__main__":
-    main()
-
 def main():
     # Variables we need
     data_folder = None
@@ -150,3 +147,7 @@ def main():
     split_files(data_folder, train_percent, val_percent, test_percent)
 
     return
+
+if __name__ == "__main__":
+    main()
+
