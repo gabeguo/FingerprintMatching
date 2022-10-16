@@ -41,6 +41,58 @@ End State:
 
 """
 
+import sys, getopt, os, shutil
+
 if __name__ == "__main__":
-    usage_msg = "Usage: split_people.py --train_percent <(0, 1)> --val_percent <(0, 1)>" + \
-            "\nNote: train_percent + val_percent < 1, test_percent = 1 - (train_percent + val_percent)"
+    # Variables we need
+    data_folder = None
+    train_percent = None
+    val_percent = None
+    test_percent = None
+    
+    # help message
+    usage_msg = "Usage: split_people.py --data_folder <directory address> --train_percent <(0, 100)> --val_percent <(0, 100)>" + \
+            "\nNote: 0 < train_percent + val_percent < 100, test_percent = 100 - (train_percent + val_percent)"
+    try:
+        opts, args = getopt.getopt(argv, "h", ['help', 'data_folder=', 'train_percent=', 'val_percent='])
+    except getopt.GetoptError:
+        print('incorrect usage:\n', usage_msg)
+        sys.exit(1)
+
+    # parse arguments
+    for opt, arg in opts:
+        if opt in ('-h', '-?'):
+            print(usage_msg)
+            sys.exit(0)
+        elif opt in ('--data_folder', '-d', '-df'):
+            data_folder = arg
+        elif opt in ('--train_percent', '-tp', '-tr', '-t'):
+            try:
+                train_percent = int(arg)
+            except ValueError:
+                print('please give valid value for train_percent')
+                sys.exit(1)
+        elif opt in ('--val_percent', '-vp', '-vr', '-v'):
+            try:
+                val_percent = int(arg)
+            except ValueError:
+                print('please give valid value for val_percent')
+                sys.exit(1)
+        
+    # validate arguments
+    if data_folder is None:
+        print('need valid data_folder')
+        sys.exit(1)
+    if train_percent is None or train_percent <= 0 or train_percent >= 100:
+        print('need valid train_percent')
+    if val_percent is None or val_percent <= 0 or val_percent >= 100:
+        print('need valid val_percent')
+    if train_percent + val_percent >= 100 or train_percent + val_percent <= 0:
+        print('train_percent + val_percent must be in (0, 100)')
+
+    # calculate test_percent
+    test_percent = 100 - (train_percent + val_percent)
+
+    split_files(data_folder, train_percent, val_percent, test_percent)
+
+    return
