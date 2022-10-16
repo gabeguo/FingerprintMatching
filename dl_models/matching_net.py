@@ -18,3 +18,5 @@ class MatchingNet(nn.Module):
         distance = self.distance(x1, x2, p=2)
         prob_same_class = self.final_activation(distance)
         return prob_same_class
+
+    # will use softplus loss
