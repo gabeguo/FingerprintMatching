@@ -80,7 +80,7 @@ def split_by_ratios(data_folder, train_percent, val_percent, test_percent):
 
         for pid in curr_pids:
             pid_full_old_path = os.path.join(train_dir_abs_path, pid)
-            pid_full_new_path = os.path.join(subdriectory_abs_path, pid)
+            pid_full_new_path = os.path.join(subdirectory_abs_path, pid)
             shutil.move(pid_full_old_path, pid_full_new_path)
     return
         
