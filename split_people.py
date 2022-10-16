@@ -100,7 +100,9 @@ def main():
     train_percent = None
     val_percent = None
     test_percent = None
-    
+
+    argv = sys.argv[1:] 
+
     # help message
     usage_msg = "Usage: split_people.py --data_folder <directory address> --train_percent <(0, 100)> --val_percent <(0, 100)>" + \
             "\nNote: 0 < train_percent + val_percent < 100, test_percent = 100 - (train_percent + val_percent)"
