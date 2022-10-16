@@ -1,0 +1,2 @@
+- make DataLoader that loads positive and negative pairs
+- write training loop
