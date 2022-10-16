@@ -27,7 +27,7 @@ Start State:
 End State:
     data_folder
         /train
-            /class 1
+            /class1
                 class1sample1.jpg
                 class1sample2.jpg
         /val
@@ -42,6 +42,57 @@ End State:
 """
 
 import sys, getopt, os, shutil
+
+TRAIN = 'train'
+VAL = 'val'
+TEST = 'test'
+
+def create_train_val_test_subfolders(data_folder):
+    for subfolder in [TRAIN, VAL, TEST]:
+        subdirectory_abs_path = os.path.join(data_folder, subfolder)
+        if not os.path.exists(subdirectory_abs_path):
+            os.mkdir(subdirectory_abs_path)
+    return
+
+def move_all_items_to_train(data_folder):
+    for subfolder in [VAL, TEST]:
+        subdirectory_abs_path = os.path.join(data_folder, subfolder)
+        for pid in os.listdir(subdirectory_abs_path):
+            # folder that contains all samples for a person
+            pid_full_old_path = os.path.join(subdirectory_abs_path, pid)
+            pid_full_new_path = os.path.join(data_folder, 'train', pid)
+            shutil.move(pid_full_old_path, pid_full_new_path)
+    return
+    
+def split_by_ratios(data_folder, train_percent, val_percent, test_percent):
+    pids = [x for x in os.listdir(os.path.join(data_folder, TRAIN))]
+    #random.shuffle(pids)
+    train_end_index = int(train_percent * len(pids) / 100)
+    val_end_index = train_end_index + int(val_percent * len(pids) / 100)
+    train_pids = pids[:train_end_index]
+    val_pids = pids[train_end_index:val_end_index]
+    test_pids = pids[val_end_index:]
+        
+    train_dir_abs_path = os.path.join(data_folder, TRAIN)
+    for subfolder in [VAL, TEST]:
+        subdirectory_abs_path = os.path.join(data_folder, subfolder)
+        curr_pids = val_pids if subfolder == VAL else test_pids
+
+        for pid in curr_pids:
+            pid_full_old_path = os.path.join(train_dir_abs_path, pid)
+            pid_full_new_path = os.path.join(subdriectory_abs_path, pid)
+            shutil.move(pid_full_old_path, pid_full_new_path)
+    return
+        
+
+"""
+Given data_folder, splits items by train_percent-val_percent-test_percent
+"""
+def split_files(data_folder, train_percent, val_percent, test_percent):
+    create_train_val_test_subfolders(data_folder)
+    move_all_items_to_train(data_folder)
+    split_by_ratios(data_folder, train_percent, val_percent, test_percent)
+    return
 
 if __name__ == "__main__":
     # Variables we need
