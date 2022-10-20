@@ -23,11 +23,11 @@ class SiameseFingerprintDataset(Dataset):
         self.class_to_images = dict()
 
         for pid in os.listdir(self.root_dir):
-            self.classes.append(pid)
+            self.classes.add(pid)
             self.class_to_images[pid] = list()
             curr_person_folder = os.path.join(self.root_dir, pid)
             for sample in os.listdir(curr_person_folder):
-                if not is_image_filename(sample):
+                if not self.is_image_filename(sample):
                     continue
                 curr_image = os.path.join(curr_person_folder, sample)
 
@@ -45,17 +45,19 @@ class SiameseFingerprintDataset(Dataset):
     2) Sanity check percent_match
     """
     def check_and_set_num_images(self, desired_num_samples, percent_match):
+        num_images = len([x for x in os.listdir(self.root_dir) if os.path.isfile(os.path.join(self.root_dir, x))])
+        max_len = num_images * (num_images - 1) // 2
+        min_len = 1
+        
+        if desired_num_samples is None:
+            desired_num_samples = num_images // 2
+
         desired_num_matching_samples = int(percent_match * desired_num_samples)
         max_possible_matching_samples = sum([len(self.class_to_images[pid]) \
             * (len(self.class_to_images[pid]) - 1) // 2 for pid in self.class_to_images])
 
-        num_images = len([x for x in os.listdir(root_dir) if os.path.isfile(os.path.join(root_dir, x))])
-        max_len = num_images * (num_images - 1) // 2
-        min_len = 1
 
-        if desired_num_samples is None:
-            self.len = num_images // 2
-        elif desired_num_samples < min_len or desired_num_samples > max_len:
+        if desired_num_samples < min_len or desired_num_samples > max_len:
             raise ValueError('{} desired samples is out of bounds, '.format(desired_num_samples) + \
                 'please choose a value between {} and {}'.format(min_len, max_len))
         elif desired_num_matching_samples > max_possible_matching_samples:
