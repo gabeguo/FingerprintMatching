@@ -13,4 +13,10 @@ from common_filepaths import DATA_FOLDER
 training_data = SiameseFingerprintDataset(os.path.join(DATA_FOLDER, 'train'))
 train_dataloader = DataLoader(training_data, batch_size=1, shuffle=True)
 
-train_features, train_labels = next(iter(train_dataloader))
+num_positive_examples = 0
+for i in range(30):#range(len(training_data)):
+    train_images, train_labels, train_filenames = next(iter(train_dataloader))
+    num_positive_examples += train_labels.item()
+    print(train_filenames, train_labels)
+
+print(num_positive_examples)
