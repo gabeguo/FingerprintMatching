@@ -190,10 +190,13 @@ class SiameseFingerprintDataset(Dataset):
         return self.len
 
     """
-    Returns a pair of images, and whether or not they're in the same class (0, 1)
+    Returns:
+    1) pair of actual images (tensors)
+    2) label of whether they are from same person (1 for yes, 0 for no)
+    3) names of source image files
     """
     def __getitem__(self, idx):
         assert idx < self.len
         actual_images = (read_image(self.pairs[idx][0]), read_image(self.pairs[idx][1]))
-        print(self.pairs[idx], self.pair_labels[idx])
-        return actual_images, self.pair_labels[idx]
+        #print(self.pairs[idx], self.pair_labels[idx])
+        return actual_images, self.pair_labels[idx], self.pairs[idx]
