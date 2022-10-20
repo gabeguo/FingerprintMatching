@@ -14,7 +14,7 @@ class SiameseFingerprintDataset(Dataset):
     Loads the unpaired images from the folder
     1) Stores indexed unpaired images with their corresponding labels in self.images, self.img_labels
     2) Stores all the possible classes in self.classes
-    3) Stores images separated by class in self.class_to_images
+    3) Stores images separated by class in self.class_to_images (has image filepath, not actual image)
     """
     def load_images(self):
         self.classes = set()
@@ -29,8 +29,7 @@ class SiameseFingerprintDataset(Dataset):
             for sample in os.listdir(curr_person_folder):
                 if not is_image_filename(sample):
                     continue
-                full_image_path = os.path.join(curr_person_folder, sample)
-                curr_image = read_image(full_image_path)
+                curr_image = os.path.join(curr_person_folder, sample)
 
                 self.img_labels.append(pid)
                 self.images.append(curr_image)
@@ -191,4 +190,6 @@ class SiameseFingerprintDataset(Dataset):
     """
     def __getitem__(self, idx):
         assert idx < self.len
-        return self.pairs[idx], self.pair_labels[idx]
+        actual_images = (read_image(self.pairs[idx][0]), read_image(self.pairs[idx][1]))
+        print(self.pairs[idx], self.pair_labels[idx])
+        return actual_images, self.pair_labels[idx]
