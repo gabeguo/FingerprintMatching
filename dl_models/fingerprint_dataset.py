@@ -45,12 +45,11 @@ class SiameseFingerprintDataset(Dataset):
     2) Sanity check percent_match
     """
     def check_and_set_num_images(self, desired_num_samples, percent_match):
-        num_images = len([x for x in os.listdir(self.root_dir) if os.path.isfile(os.path.join(self.root_dir, x))])
-        max_len = num_images * (num_images - 1) // 2
+        max_len = len(self.images) * (len(self.images) - 1) // 2
         min_len = 1
         
         if desired_num_samples is None:
-            desired_num_samples = num_images // 2
+            desired_num_samples = len(self.images) // 2
 
         desired_num_matching_samples = int(percent_match * desired_num_samples)
         max_possible_matching_samples = sum([len(self.class_to_images[pid]) \
@@ -65,7 +64,7 @@ class SiameseFingerprintDataset(Dataset):
         else: # we good
             self.len = desired_num_samples
             self.percent_match = percent_match
-            self.num_matching_samples = desired_num_matching_samples
+            self.desired_num_matching_samples = desired_num_matching_samples
         return
 
     """
@@ -118,7 +117,7 @@ class SiameseFingerprintDataset(Dataset):
         while curr_nonmatching_samples < num_nonmatching_samples:
             # cycle through pairs of classes
             for index1 in range(len(self.classes)):
-                for index2 in range(i + 1, len(self.classes)):
+                for index2 in range(index1 + 1, len(self.classes)):
                     class1 = self.classes[index1]
                     class2 = self.classes[index2]
                     # break if we have all the samples we need
