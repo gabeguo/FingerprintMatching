@@ -82,6 +82,9 @@ class SiameseFingerprintDataset(Dataset):
         # cycle through classes to have most even split
         curr_matching_samples = 0
         counters = [(0,1) for class_index in range(len(self.classes))]
+        
+        #print(self.desired_num_matching_samples)
+
         while curr_matching_samples < self.desired_num_matching_samples:
             # cycle through classes
             for class_index in range(len(self.classes)):
@@ -105,6 +108,8 @@ class SiameseFingerprintDataset(Dataset):
                 counters[class_index] = (i, j + 1)
                 # added one more sample
                 curr_matching_samples += 1
+                
+                #print(curr_matching_samples, (img1, img2), 1)
 
         # get all the nonmatching samples
         # cycle through the classes to have the most even split
@@ -139,7 +144,8 @@ class SiameseFingerprintDataset(Dataset):
                     # increment counters for next time
                     counters[index1][index2] = (i, j + 1)
                     # added one more sample
-                    curr_matching_samples += 1
+                    curr_nonmatching_samples += 1
+            curr_nonmatching_samples += 1
         return
     """
     1)
