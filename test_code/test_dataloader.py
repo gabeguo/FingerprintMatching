@@ -8,7 +8,7 @@ sys.path.append('../dl_models')
 sys.path.append('../')
 
 from fingerprint_dataset import SiameseFingerprintDataset
-import common_filepaths
+from common_filepaths import DATA_FOLDER
 
 training_data = SiameseFingerprintDataset(os.path.join(DATA_FOLDER, 'train'))
 train_dataloader = DataLoader(training_data, batch_size=1, shuffle=True)
