@@ -4,8 +4,8 @@ from torch.utils.data import DataLoader
 import sys
 import os
 
-sys.path.insert(1, '../dl_models')
-sys.path.insert(1, '../')
+sys.path.append('../dl_models')
+sys.path.append('../')
 
 from fingerprint_dataset import SiameseFingerprintDataset
 import common_filepaths
