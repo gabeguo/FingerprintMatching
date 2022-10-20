@@ -145,7 +145,7 @@ class SiameseFingerprintDataset(Dataset):
                     counters[index1][index2] = (i, j + 1)
                     # added one more sample
                     curr_nonmatching_samples += 1
-            curr_nonmatching_samples += 1
+
         return
     """
     1)
@@ -183,6 +183,8 @@ class SiameseFingerprintDataset(Dataset):
         self.check_and_set_num_images(desired_num_samples, percent_match)
 
         self.generate_pairs()
+
+        print(len(self.pairs))
 
         return
 
