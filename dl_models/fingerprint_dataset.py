@@ -52,7 +52,7 @@ class SiameseFingerprintDataset(Dataset):
 
         desired_num_matching_samples = int(percent_match * desired_num_samples)
         max_possible_matching_samples = sum([len(self.class_to_images[pid]) \
-            * (len(self.class_to_images[pid]) - 1) // 2 for pid in self.class_to_images])
+            * (len(self.class_to_images[pid]) - 1) // 2 for pid in range(len(self.class_to_images))])
 
 
         if desired_num_samples < min_len or desired_num_samples > max_len:
@@ -81,14 +81,14 @@ class SiameseFingerprintDataset(Dataset):
         # get all the matching samples
         # cycle through classes to have most even split
         curr_matching_samples = 0
-        counters = [(0,1) for class_index in in range(len(self.classes))]
+        counters = [(0,1) for class_index in range(len(self.classes))]
         while curr_matching_samples < self.desired_num_matching_samples:
             # cycle through classes
             for class_index in range(len(self.classes)):
                 if curr_matching_samples >= self.desired_num_matching_samples:
                     break
 
-                i, j = counters[pid]
+                i, j = counters[class_index]
                 curr_class_images = self.class_to_images[class_index]
                 # check bounds
                 if j >= len(curr_class_images): # second image in pair out of bounds
@@ -111,8 +111,8 @@ class SiameseFingerprintDataset(Dataset):
         num_nonmatching_samples = self.len - self.desired_num_matching_samples
         curr_nonmatching_samples = 0
         # a counter for every class pair
-        counters = [[(0,0) for j in range(i + 1, len(self.classes))]
-            \ for i in range(len(self.classes))]
+        counters = [[(0,0) for j in range(len(self.classes))] \
+            for i in range(len(self.classes))]
         while curr_nonmatching_samples < num_nonmatching_samples:
             # cycle through pairs of classes
             for index1 in range(len(self.classes)):
@@ -137,7 +137,7 @@ class SiameseFingerprintDataset(Dataset):
                     self.pairs.append([img1, img2])
                     self.pair_labels.append(0)
                     # increment counters for next time
-                    counters[class1][class2] = (i, j + 1)
+                    counters[index1][index2] = (i, j + 1)
                     # added one more sample
                     curr_matching_samples += 1
         return
