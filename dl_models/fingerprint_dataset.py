@@ -17,14 +17,14 @@ class SiameseFingerprintDataset(Dataset):
     3) Stores images separated by class in self.class_to_images (has image filepath, not actual image)
     """
     def load_images(self):
-        self.classes = set()
+        self.classes = list() # self.classes[i] = the name of class with index i
         self.img_labels = []
         self.images = []
-        self.class_to_images = dict()
+        self.class_to_images = list()
 
         for pid in os.listdir(self.root_dir):
-            self.classes.add(pid)
-            self.class_to_images[pid] = list()
+            self.classes.append(pid)
+            self.class_to_images.append(list())
             curr_person_folder = os.path.join(self.root_dir, pid)
             for sample in os.listdir(curr_person_folder):
                 if not self.is_image_filename(sample):
@@ -33,9 +33,8 @@ class SiameseFingerprintDataset(Dataset):
 
                 self.img_labels.append(pid)
                 self.images.append(curr_image)
-                self.class_to_images[pid].append(curr_image)
+                self.class_to_images[-1].append(curr_image)
 
-        self.classes = list(self.classes)
         return
     """
     Preconditions:
@@ -47,7 +46,7 @@ class SiameseFingerprintDataset(Dataset):
     def check_and_set_num_images(self, desired_num_samples, percent_match):
         max_len = len(self.images) * (len(self.images) - 1) // 2
         min_len = 1
-        
+
         if desired_num_samples is None:
             desired_num_samples = len(self.images) // 2
 
@@ -82,15 +81,15 @@ class SiameseFingerprintDataset(Dataset):
         # get all the matching samples
         # cycle through classes to have most even split
         curr_matching_samples = 0
-        counters = {the_class:(0,1) for the_class in self.classes}
+        counters = [(0,1) for class_index in in range(len(self.classes))]
         while curr_matching_samples < self.desired_num_matching_samples:
             # cycle through classes
-            for pid in self.classes:
+            for class_index in range(len(self.classes)):
                 if curr_matching_samples >= self.desired_num_matching_samples:
                     break
 
                 i, j = counters[pid]
-                curr_class_images = self.class_to_images[pid]
+                curr_class_images = self.class_to_images[class_index]
                 # check bounds
                 if j >= len(curr_class_images): # second image in pair out of bounds
                     i += 1 # new pair
@@ -103,7 +102,7 @@ class SiameseFingerprintDataset(Dataset):
                 self.pairs.append([img1, img2])
                 self.pair_labels.append(1)
                 # increment counters for next time
-                counters[pid] = (i, j + 1)
+                counters[class_index] = (i, j + 1)
                 # added one more sample
                 curr_matching_samples += 1
 
@@ -112,22 +111,20 @@ class SiameseFingerprintDataset(Dataset):
         num_nonmatching_samples = self.len - self.desired_num_matching_samples
         curr_nonmatching_samples = 0
         # a counter for every class pair
-        counters = {(self.classes[i], self.classes[j]):(0,0) \
-            for i in range(len(self.classes)) for j in range(i + 1, len(self.classes))}
+        counters = [[(0,0) for j in range(i + 1, len(self.classes))]
+            \ for i in range(len(self.classes))]
         while curr_nonmatching_samples < num_nonmatching_samples:
             # cycle through pairs of classes
             for index1 in range(len(self.classes)):
                 for index2 in range(index1 + 1, len(self.classes)):
-                    class1 = self.classes[index1]
-                    class2 = self.classes[index2]
                     # break if we have all the samples we need
                     if curr_nonmatching_samples >= num_nonmatching_samples:
                         break
 
-                    i, j = counters[(class1, class2)]
+                    i, j = counters[index1][index2]
 
-                    class1Images = self.class_to_images[class1]
-                    class2Images = self.class_to_images[class2]
+                    class1Images = self.class_to_images[index1]
+                    class2Images = self.class_to_images[index2]
                     # check bounds
                     if j >= len(class2Images): # second image in pair out of bounds
                         i += 1 # new pair
@@ -140,7 +137,7 @@ class SiameseFingerprintDataset(Dataset):
                     self.pairs.append([img1, img2])
                     self.pair_labels.append(0)
                     # increment counters for next time
-                    counters[(class1, class2)] = (i, j + 1)
+                    counters[class1][class2] = (i, j + 1)
                     # added one more sample
                     curr_matching_samples += 1
         return
