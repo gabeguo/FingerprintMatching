@@ -89,7 +89,7 @@ class TripletDataset(Dataset):
             self.train_labels = self.fingerprint_dataset.train_labels
             self.train_data = self.fingerprint_dataset.train_data
             self.labels_set = set(self.train_labels)
-            self.label_to_indices = {label: np.where(np.array(train_labels) == label)[0]
+            self.label_to_indices = {label: np.where(np.array(self.train_labels) == label)[0]
                                      for label in self.labels_set}
 
         else:
@@ -116,7 +116,7 @@ class TripletDataset(Dataset):
     # returns image triplet, class labels of images, filepaths of images
     def __getitem__(self, index):
         if self.train:
-            img1, label1 = self.train_data[index], self.train_labels[index].item()
+            img1, label1 = self.train_data[index], self.train_labels[index]
             positive_index = index
             while positive_index == index:
                 positive_index = np.random.choice(self.label_to_indices[label1])
