@@ -3,7 +3,7 @@ from PIL import Image
 
 from torch.utils.data import Dataset
 from torch.utils.data.sampler import BatchSampler
-
+from torchvision.io import read_image
 
 class SiameseMNIST(Dataset):
     """
@@ -11,22 +11,21 @@ class SiameseMNIST(Dataset):
     Test: Creates fixed pairs for testing
     """
 
-    def __init__(self, mnist_dataset):
-        self.mnist_dataset = mnist_dataset
+    def __init__(self, fingerprint_dataset):
+        self.fingerprint_dataset = fingerprint_dataset
 
-        self.train = self.mnist_dataset.train
-        self.transform = self.mnist_dataset.transform
+        self.train = self.fingerprint_dataset.train
 
         if self.train:
-            self.train_labels = self.mnist_dataset.train_labels
-            self.train_data = self.mnist_dataset.train_data
+            self.train_labels = self.fingerprint_dataset.train_labels
+            self.train_data = self.fingerprint_dataset.train_data
             self.labels_set = set(self.train_labels.numpy())
             self.label_to_indices = {label: np.where(self.train_labels.numpy() == label)[0]
                                      for label in self.labels_set}
         else:
             # generate fixed pairs for testing
-            self.test_labels = self.mnist_dataset.test_labels
-            self.test_data = self.mnist_dataset.test_data
+            self.test_labels = self.fingerprint_dataset.test_labels
+            self.test_data = self.fingerprint_dataset.test_data
             self.labels_set = set(self.test_labels.numpy())
             self.label_to_indices = {label: np.where(self.test_labels.numpy() == label)[0]
                                      for label in self.labels_set}
@@ -65,15 +64,13 @@ class SiameseMNIST(Dataset):
             img2 = self.test_data[self.test_pairs[index][1]]
             target = self.test_pairs[index][2]
 
-        img1 = Image.fromarray(img1.numpy(), mode='L')
-        img2 = Image.fromarray(img2.numpy(), mode='L')
-        if self.transform is not None:
-            img1 = self.transform(img1)
-            img2 = self.transform(img2)
+        img1 = read_image(img1)
+        img2 = read_image(img2)
+
         return (img1, img2), target
 
     def __len__(self):
-        return len(self.mnist_dataset)
+        return len(self.fingerprint_dataset)
 
 
 class TripletMNIST(Dataset):
@@ -82,21 +79,20 @@ class TripletMNIST(Dataset):
     Test: Creates fixed triplets for testing
     """
 
-    def __init__(self, mnist_dataset):
-        self.mnist_dataset = mnist_dataset
-        self.train = self.mnist_dataset.train
-        self.transform = self.mnist_dataset.transform
+    def __init__(self, fingerprint_dataset):
+        self.fingerprint_dataset = fingerprint_dataset
+        self.train = self.fingerprint_dataset.train
 
         if self.train:
-            self.train_labels = self.mnist_dataset.train_labels
-            self.train_data = self.mnist_dataset.train_data
+            self.train_labels = self.fingerprint_dataset.train_labels
+            self.train_data = self.fingerprint_dataset.train_data
             self.labels_set = set(self.train_labels.numpy())
             self.label_to_indices = {label: np.where(self.train_labels.numpy() == label)[0]
                                      for label in self.labels_set}
 
         else:
-            self.test_labels = self.mnist_dataset.test_labels
-            self.test_data = self.mnist_dataset.test_data
+            self.test_labels = self.fingerprint_dataset.test_labels
+            self.test_data = self.fingerprint_dataset.test_data
             # generate fixed triplets for testing
             self.labels_set = set(self.test_labels.numpy())
             self.label_to_indices = {label: np.where(self.test_labels.numpy() == label)[0]
@@ -130,17 +126,14 @@ class TripletMNIST(Dataset):
             img2 = self.test_data[self.test_triplets[index][1]]
             img3 = self.test_data[self.test_triplets[index][2]]
 
-        img1 = Image.fromarray(img1.numpy(), mode='L')
-        img2 = Image.fromarray(img2.numpy(), mode='L')
-        img3 = Image.fromarray(img3.numpy(), mode='L')
-        if self.transform is not None:
-            img1 = self.transform(img1)
-            img2 = self.transform(img2)
-            img3 = self.transform(img3)
+        img1 = read_image(img1)
+        img2 = read_image(img2)
+        img3 = read_image(img3)
+
         return (img1, img2, img3), []
 
     def __len__(self):
-        return len(self.mnist_dataset)
+        return len(self.fingerprint_dataset)
 
 
 class BalancedBatchSampler(BatchSampler):
