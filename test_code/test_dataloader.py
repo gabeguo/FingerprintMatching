@@ -12,6 +12,8 @@ from fingerprint_dataset import FingerprintDataset
 from datasets import SiameseDataset, TripletDataset
 from common_filepaths import DATA_FOLDER
 
+print('pair loading test\n')
+
 training_dataset = SiameseDataset(FingerprintDataset(os.path.join(DATA_FOLDER, 'train'), train=True))
 train_dataloader = DataLoader(training_dataset, batch_size=1, shuffle=True)
 
@@ -22,3 +24,14 @@ for i in range(30):#range(len(training_data)):
     print(train_filepaths, train_label)
 
 print(num_positive_examples)
+
+print('\ntriplet loading test\n')
+
+triplet_dataset = TripletDataset(FingerprintDataset(os.path.join(DATA_FOLDER, 'test'), train=False))
+triplet_dataloader = DataLoader(triplet_dataset, batch_size=1, shuffle=True)
+
+num_positive_examples = 0
+for i in range(30):#range(len(training_data)):
+    test_images, test_labels, test_filepaths = next(iter(triplet_dataloader))
+    print(test_filepaths, test_labels)
+
