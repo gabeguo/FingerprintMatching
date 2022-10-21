@@ -1,0 +1,1 @@
+Adopted from https://github.com/adambielski/siamese-triplet
