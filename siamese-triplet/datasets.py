@@ -33,14 +33,14 @@ class SiameseDataset(Dataset):
             random_state = np.random.RandomState(29)
 
             positive_pairs = [[i,
-                               random_state.choice(self.label_to_indices[self.test_labels[i].item()]),
+                               random_state.choice(self.label_to_indices[self.test_labels[i]]),
                                1]
                               for i in range(0, len(self.test_data), 2)]
 
             negative_pairs = [[i,
                                random_state.choice(self.label_to_indices[
                                                        np.random.choice(
-                                                           list(self.labels_set - set([self.test_labels[i].item()]))
+                                                           list(self.labels_set - set([self.test_labels[i]]))
                                                        )
                                                    ]),
                                0]
@@ -51,7 +51,7 @@ class SiameseDataset(Dataset):
     def __getitem__(self, index):
         if self.train:
             target = np.random.randint(0, 2)
-            img1, label1 = self.train_data[index], self.train_labels[index].item()
+            img1, label1 = self.train_data[index], self.train_labels[index]
             if target == 1:
                 siamese_index = index
                 while siamese_index == index:
@@ -103,10 +103,10 @@ class TripletDataset(Dataset):
             random_state = np.random.RandomState(29)
 
             triplets = [[i,
-                         random_state.choice(self.label_to_indices[self.test_labels[i].item()]),
+                         random_state.choice(self.label_to_indices[self.test_labels[i]]),
                          random_state.choice(self.label_to_indices[
                                                  np.random.choice(
-                                                     list(self.labels_set - set([self.test_labels[i].item()]))
+                                                     list(self.labels_set - set([self.test_labels[i]]))
                                                  )
                                              ])
                          ]
