@@ -41,7 +41,7 @@ class FingerprintDataset(Dataset):
 
     def __init__(self, root_dir, train=True):
         self.root_dir = root_dir
-        train = self.train
+        self.train = train
 
         self.load_images(root_dir)
 
