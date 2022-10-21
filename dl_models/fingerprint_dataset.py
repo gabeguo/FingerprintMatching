@@ -39,7 +39,7 @@ class FingerprintDataset(Dataset):
 
         return
 
-    def __init__(self, root_dir, train=True, augmentation=False):
+    def __init__(self, root_dir, train=True):
         self.root_dir = root_dir
 
         self.load_images(root_dir)
@@ -51,12 +51,11 @@ class FingerprintDataset(Dataset):
             self.test_labels = self.img_labels
             self.test_data = self.images
 
-        self.augmentation = augmentation
-
         return
 
     def __len__(self):
         return self.len
 
+    # returns filepath, label
     def __getitem__(self, idx):
         return self.images[idx], self.image_labels[idx]

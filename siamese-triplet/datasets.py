@@ -5,7 +5,7 @@ from torch.utils.data import Dataset
 from torch.utils.data.sampler import BatchSampler
 from torchvision.io import read_image
 
-class SiameseMNIST(Dataset):
+class SiameseDataset(Dataset):
     """
     Train: For each sample creates randomly a positive or a negative pair
     Test: Creates fixed pairs for testing
@@ -47,6 +47,7 @@ class SiameseMNIST(Dataset):
                               for i in range(1, len(self.test_data), 2)]
             self.test_pairs = positive_pairs + negative_pairs
 
+    # returns image pair, label (pos or neg), filepaths of images
     def __getitem__(self, index):
         if self.train:
             target = np.random.randint(0, 2)
@@ -64,16 +65,17 @@ class SiameseMNIST(Dataset):
             img2 = self.test_data[self.test_pairs[index][1]]
             target = self.test_pairs[index][2]
 
+        filepath1, filepath2 = img1, img2
         img1 = read_image(img1)
         img2 = read_image(img2)
 
-        return (img1, img2), target
+        return (img1, img2), target, (filepath1, filepath2)
 
     def __len__(self):
         return len(self.fingerprint_dataset)
 
 
-class TripletMNIST(Dataset):
+class TripletDataset(Dataset):
     """
     Train: For each sample (anchor) randomly chooses a positive and negative samples
     Test: Creates fixed triplets for testing
@@ -111,6 +113,7 @@ class TripletMNIST(Dataset):
                         for i in range(len(self.test_data))]
             self.test_triplets = triplets
 
+    # returns image triplet, class labels of images, filepaths of images
     def __getitem__(self, index):
         if self.train:
             img1, label1 = self.train_data[index], self.train_labels[index].item()
@@ -126,11 +129,13 @@ class TripletMNIST(Dataset):
             img2 = self.test_data[self.test_triplets[index][1]]
             img3 = self.test_data[self.test_triplets[index][2]]
 
+        filepath1, filepath2, filepath3 = img1, img2, img3
+
         img1 = read_image(img1)
         img2 = read_image(img2)
         img3 = read_image(img3)
 
-        return (img1, img2, img3), []
+        return (img1, img2, img3), [label1, label1, negative_label], (filepath1, filepath2, filepath3)
 
     def __len__(self):
         return len(self.fingerprint_dataset)
