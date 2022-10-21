@@ -19,15 +19,15 @@ class SiameseDataset(Dataset):
         if self.train:
             self.train_labels = self.fingerprint_dataset.train_labels
             self.train_data = self.fingerprint_dataset.train_data
-            self.labels_set = set(self.train_labels.numpy())
-            self.label_to_indices = {label: np.where(self.train_labels.numpy() == label)[0]
+            self.labels_set = set(self.train_labels)
+            self.label_to_indices = {label: np.where(np.array(self.train_labels) == label)[0]
                                      for label in self.labels_set}
         else:
             # generate fixed pairs for testing
             self.test_labels = self.fingerprint_dataset.test_labels
             self.test_data = self.fingerprint_dataset.test_data
-            self.labels_set = set(self.test_labels.numpy())
-            self.label_to_indices = {label: np.where(self.test_labels.numpy() == label)[0]
+            self.labels_set = set(self.test_labels)
+            self.label_to_indices = {label: np.where(np.array(self.test_labels) == label)[0]
                                      for label in self.labels_set}
 
             random_state = np.random.RandomState(29)
@@ -88,16 +88,16 @@ class TripletDataset(Dataset):
         if self.train:
             self.train_labels = self.fingerprint_dataset.train_labels
             self.train_data = self.fingerprint_dataset.train_data
-            self.labels_set = set(self.train_labels.numpy())
-            self.label_to_indices = {label: np.where(self.train_labels.numpy() == label)[0]
+            self.labels_set = set(self.train_labels)
+            self.label_to_indices = {label: np.where(np.array(train_labels) == label)[0]
                                      for label in self.labels_set}
 
         else:
             self.test_labels = self.fingerprint_dataset.test_labels
             self.test_data = self.fingerprint_dataset.test_data
             # generate fixed triplets for testing
-            self.labels_set = set(self.test_labels.numpy())
-            self.label_to_indices = {label: np.where(self.test_labels.numpy() == label)[0]
+            self.labels_set = set(self.test_labels)
+            self.label_to_indices = {label: np.where(np.array(self.test_labels) == label)[0]
                                      for label in self.labels_set}
 
             random_state = np.random.RandomState(29)
@@ -149,8 +149,8 @@ class BalancedBatchSampler(BatchSampler):
 
     def __init__(self, labels, n_classes, n_samples):
         self.labels = labels
-        self.labels_set = list(set(self.labels.numpy()))
-        self.label_to_indices = {label: np.where(self.labels.numpy() == label)[0]
+        self.labels_set = list(set(self.labels))
+        self.label_to_indices = {label: np.where(np.array(self.labels) == label)[0]
                                  for label in self.labels_set}
         for l in self.labels_set:
             np.random.shuffle(self.label_to_indices[l])

@@ -13,7 +13,7 @@ from datasets import SiameseDataset, TripletDataset
 from common_filepaths import DATA_FOLDER
 
 training_dataset = SiameseDataset(FingerprintDataset(os.path.join(DATA_FOLDER, 'train'), train=True))
-train_dataloader = DataLoader(training_data, batch_size=1, shuffle=True)
+train_dataloader = DataLoader(training_dataset, batch_size=1, shuffle=True)
 
 num_positive_examples = 0
 for i in range(30):#range(len(training_data)):
