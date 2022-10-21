@@ -124,10 +124,14 @@ class TripletDataset(Dataset):
             negative_index = np.random.choice(self.label_to_indices[negative_label])
             img2 = self.train_data[positive_index]
             img3 = self.train_data[negative_index]
+            
+            the_labels = [label1, label1, negative_label]
         else:
             img1 = self.test_data[self.test_triplets[index][0]]
             img2 = self.test_data[self.test_triplets[index][1]]
             img3 = self.test_data[self.test_triplets[index][2]]
+
+            the_labels = []
 
         filepath1, filepath2, filepath3 = img1, img2, img3
 
@@ -135,7 +139,7 @@ class TripletDataset(Dataset):
         img2 = read_image(img2)
         img3 = read_image(img3)
 
-        return (img1, img2, img3), [label1, label1, negative_label], (filepath1, filepath2, filepath3)
+        return (img1, img2, img3), the_labels, (filepath1, filepath2, filepath3)
 
     def __len__(self):
         return len(self.fingerprint_dataset)
