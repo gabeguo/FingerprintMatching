@@ -12,7 +12,7 @@ class EmbeddingNet(nn.Module):
         self.the_resnet = models.resnet18(pretrained=True)
         modules=list(self.the_resnet.children())[:-1]
         self.feature_extractor=nn.Sequential(*modules)
-        self.fc = the_resnet.fc
+        self.fc = self.the_resnet.fc
 
     def forward(self, x):
         output = self.feature_extractor(x)
