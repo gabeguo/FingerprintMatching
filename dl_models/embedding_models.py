@@ -10,7 +10,7 @@ class EmbeddingNet(nn.Module):
         super(EmbeddingNet, self).__init__()
         # Thanks # https://discuss.pytorch.org/t/how-can-l-use-the-pre-trained-resnet-to-extract-feautres-from-my-own-dataset/9008
         self.the_resnet = models.resnet18(pretrained=True)
-        modules=list(resnet18.children())[:-1]
+        modules=list(self.the_resnet.children())[:-1]
         self.feature_extractor=nn.Sequential(*modules)
         self.fc = the_resnet.fc
 
