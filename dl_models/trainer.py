@@ -43,12 +43,13 @@ def train_epoch(train_loader, model, loss_fn, optimizer, cuda, log_interval, met
     for metric in metrics:
         metric.reset()
 
+    if cuda:
+        model = model.to(cuda)
     model.train()
     losses = []
     total_loss = 0
 
     for batch_idx, (data, target, filepaths) in enumerate(train_loader):
-        print(target)
         target = target if len(target) > 0 else None
         if not type(data) in (tuple, list):
             data = (data,)

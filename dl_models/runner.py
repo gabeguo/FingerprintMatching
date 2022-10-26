@@ -36,7 +36,7 @@ tripletLoss_margin = 1
 
 fit(train_loader=train_dataloader, val_loader=val_dataloader, model=triplet_net, \
     loss_fn=TripletLoss(margin=tripletLoss_margin), optimizer=optimizer, scheduler=scheduler, \
-    n_epochs=10, cuda='cuda:1', log_interval=10, metrics=[], start_epoch=0)
+    n_epochs=10, cuda='cuda:0', log_interval=10, metrics=[], start_epoch=0)
 
 # distances between embedding of positive and negative pair
 _01_dist = []
