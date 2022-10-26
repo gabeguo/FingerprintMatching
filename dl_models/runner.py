@@ -1,11 +1,3 @@
-from trainer import *
-from losses import *
-from siamese_datasets import *
-from fingerprint_dataset import *
-from embedding_models import *
-
-from common_filepaths import DATA_FOLDER
-
 import torch
 from torch.utils.data import Dataset
 from torch.utils.data import DataLoader
@@ -14,6 +6,14 @@ import sys
 import os
 
 sys.path.append('../')
+
+from trainer import *
+from losses import *
+from siamese_datasets import *
+from fingerprint_dataset import *
+from embedding_models import *
+
+from common_filepaths import DATA_FOLDER
 
 print('pair loading test\n')
 
@@ -42,8 +42,10 @@ num_positive_examples = 0
 
 triplet_net = TripletNet(EmbeddingNet())
 
+optimizer=torch.optim.SGD()
+
 fit(train_loader=train_dataloader, val_loader=val_dataloader, model=triplet_net, \
-    loss_fn=TripletLoss(), optimizer=torch.optim.SGD(), scheduler=ExponentialLR(optimizer, gamma=0.9), \
+    loss_fn=TripletLoss(), optimizer=optimizer, scheduler=ExponentialLR(optimizer, gamma=0.9), \
     n_epochs=10, cuda='cuda:1', log_interval=10, metrics=[], start_epoch=0)
 
 # distances between embedding of positive and negative pair
