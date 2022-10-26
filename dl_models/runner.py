@@ -1,7 +1,7 @@
 import torch
 from torch.utils.data import Dataset
 from torch.utils.data import DataLoader
-from torch.optim.lr_scheduler import ExponentialLR
+import torch.optim as optim
 import sys
 import os
 
@@ -15,30 +15,13 @@ from embedding_models import *
 
 from common_filepaths import DATA_FOLDER
 
-print('pair loading test\n')
-
-training_dataset = SiameseDataset(FingerprintDataset(os.path.join(DATA_FOLDER, 'train'), train=True))
-train_dataloader = DataLoader(training_dataset, batch_size=4, shuffle=True)
-
-val_dataset = SiameseDataset(FingerprintDataset(os.path.join(DATA_FOLDER, 'val'), train=True))
-val_dataloader = DataLoader(val_dataset, batch_size=4, shuffle=True)
-
-num_positive_examples = 0
-for i in range(30):#range(len(training_data)):
-    train_images, train_label, train_filepaths = next(iter(train_dataloader))
-    num_positive_examples += train_label
-    print(train_filepaths, train_label)
-
-print(num_positive_examples)
-
-print('\ntriplet loading test\n')
-
 batch_size=4
 
-triplet_dataset = TripletDataset(FingerprintDataset(os.path.join(DATA_FOLDER, 'train'), train=True))
-triplet_dataloader = DataLoader(triplet_dataset, batch_size=batch_size, shuffle=True)
+training_dataset = TripletDataset(FingerprintDataset(os.path.join(DATA_FOLDER, 'train'), train=True))
+train_dataloader = DataLoader(training_dataset, batch_size=batch_size, shuffle=True)
 
-num_positive_examples = 0
+val_dataset = TripletDataset(FingerprintDataset(os.path.join(DATA_FOLDER, 'val'), train=True))
+val_dataloader = DataLoader(val_dataset, batch_size=batch_size, shuffle=True)
 
 triplet_net = TripletNet(EmbeddingNet())
 
@@ -48,10 +31,11 @@ weight_decay = 5e-5
 lr_decay_step=2
 lr_decay_factor=0.8
 optimizer = optim.SGD(triplet_net.parameters(), lr=learning_rate, momentum=momentum, weight_decay=weight_decay)
-scheduler = lr_scheduler.StepLR(optimizer, step_size=lr_decay_ste[], gamma=lr_decay_factor)
+scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=lr_decay_step, gamma=lr_decay_factor)
+tripletLoss_margin = 1
 
 fit(train_loader=train_dataloader, val_loader=val_dataloader, model=triplet_net, \
-    loss_fn=TripletLoss(), optimizer=optimizer, scheduler=scheduler, \
+    loss_fn=TripletLoss(margin=tripletLoss_margin), optimizer=optimizer, scheduler=scheduler, \
     n_epochs=10, cuda='cuda:1', log_interval=10, metrics=[], start_epoch=0)
 
 # distances between embedding of positive and negative pair
