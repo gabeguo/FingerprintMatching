@@ -5,11 +5,11 @@ import sys
 import os
 
 sys.path.append('../dl_models')
-sys.path.append('../siamese-triplet')
+#sys.path.append('../siamese-triplet')
 sys.path.append('../')
 
 from fingerprint_dataset import FingerprintDataset
-from datasets import SiameseDataset, TripletDataset
+from siamese_datasets import SiameseDataset, TripletDataset
 from embedding_models import EmbeddingNet
 from common_filepaths import DATA_FOLDER
 
