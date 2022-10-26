@@ -29,11 +29,12 @@ print(num_positive_examples)
 print('\ntriplet loading test\n')
 
 triplet_dataset = TripletDataset(FingerprintDataset(os.path.join(DATA_FOLDER, 'train'), train=True))
-triplet_dataloader = DataLoader(triplet_dataset, batch_size=1, shuffle=True)
+triplet_dataloader = DataLoader(triplet_dataset, batch_size=8, shuffle=True)
 
 num_positive_examples = 0
 for i in range(30):#range(len(training_data)):
     test_images, test_labels, test_filepaths = next(iter(triplet_dataloader))
     embedder = EmbeddingNet()
-    embedder(test_images[0])
+    #for img in test_images:
+    #    print(embedder(img).size())
     print(test_filepaths, test_labels)
