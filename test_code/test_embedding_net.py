@@ -16,7 +16,7 @@ from common_filepaths import DATA_FOLDER
 print('pair loading test\n')
 
 training_dataset = SiameseDataset(FingerprintDataset(os.path.join(DATA_FOLDER, 'train'), train=True))
-train_dataloader = DataLoader(training_dataset, batch_size=1, shuffle=True)
+train_dataloader = DataLoader(training_dataset, batch_size=4, shuffle=True)
 
 num_positive_examples = 0
 for i in range(30):#range(len(training_data)):
