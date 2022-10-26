@@ -42,10 +42,16 @@ num_positive_examples = 0
 
 triplet_net = TripletNet(EmbeddingNet())
 
-optimizer=torch.optim.SGD()
+learning_rate = 0.1
+momentum = 0.9
+weight_decay = 5e-5
+lr_decay_step=2
+lr_decay_factor=0.8
+optimizer = optim.SGD(triplet_net.parameters(), lr=learning_rate, momentum=momentum, weight_decay=weight_decay)
+scheduler = lr_scheduler.StepLR(optimizer, step_size=lr_decay_ste[], gamma=lr_decay_factor)
 
 fit(train_loader=train_dataloader, val_loader=val_dataloader, model=triplet_net, \
-    loss_fn=TripletLoss(), optimizer=optimizer, scheduler=ExponentialLR(optimizer, gamma=0.9), \
+    loss_fn=TripletLoss(), optimizer=optimizer, scheduler=scheduler, \
     n_epochs=10, cuda='cuda:1', log_interval=10, metrics=[], start_epoch=0)
 
 # distances between embedding of positive and negative pair
