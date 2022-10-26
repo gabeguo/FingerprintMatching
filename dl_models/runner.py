@@ -1,3 +1,5 @@
+# this kind of works - does not have testing loop yet
+
 import torch
 from torch.utils.data import Dataset
 from torch.utils.data import DataLoader
