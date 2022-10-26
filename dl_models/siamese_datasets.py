@@ -4,6 +4,7 @@ from PIL import Image
 from torch.utils.data import Dataset
 from torch.utils.data.sampler import BatchSampler
 from torchvision.io import read_image, ImageReadMode
+from torchvision import models, transforms
 
 import torchvision.transforms.functional as F
 
@@ -11,22 +12,22 @@ import torchvision.transforms.functional as F
 # makes images squares by padding
 class SquarePad:
     def __call__(self, image):
-        max_wh = max(image.size)
-        p_left, p_top = [(max_wh - s) // 2 for s in image.size]
-        p_right, p_bottom = [max_wh - (s+pad) for s, pad in zip(image.size, [p_left, p_top])]
+        max_wh = max(image.size())
+        p_left, p_top = [(max_wh - s) // 2 for s in image.size()[1:]] # first channel is just colors
+        p_right, p_bottom = [max_wh - (s+pad) for s, pad in zip(image.size()[1:], [p_left, p_top])]
         padding = (p_left, p_top, p_right, p_bottom)
         return F.pad(image, padding, 0, 'constant')
 
 # returns the image as a normalized square with standard size
-def my_transformation(target_image_size=(512, 512)):
+def my_transformation(the_image, target_image_size=(512, 512)):
+    #print(target_image_size)
     assert target_image_size[0] == target_image_size[1]
     transform=transforms.Compose([
         SquarePad(),
         transforms.Resize(target_image_size),
-        transforms.ToTensor(),
         transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5)),
     ])
-    return transform
+    return transform(the_image.float())
 
 class SiameseDataset(Dataset):
     """
