@@ -23,15 +23,8 @@ def fit(train_loader, val_loader, model, loss_fn, optimizer, scheduler, n_epochs
     for epoch in range(start_epoch, n_epochs):
         scheduler.step()
 
-        past_train_losses = []
-
         # Train stage
         train_loss, metrics = train_epoch(train_loader, model, loss_fn, optimizer, cuda, log_interval, metrics)
-        
-        past_train_losses.append(train_loss)
-        if len(past_train_losses) > 20 and train_loss > sum(past_train_losses[-20:]) / len(past_train_losses[-20:]):
-            print('train loss no longer decreasing - stop training')
-            return
 
         message = 'Epoch: {}/{}. Train set: Average loss: {:.4f}'.format(epoch + 1, n_epochs, train_loss)
         for metric in metrics:
@@ -102,6 +95,10 @@ def train_epoch(train_loader, model, loss_fn, optimizer, cuda, log_interval, met
                 100. * batch_idx / len(train_loader), np.mean(losses))
             for metric in metrics:
                 message += '\t{}: {}'.format(metric.name(), metric.value())
+
+            if loss > sum(losses) / len(losses):
+                print('train loss no longer decreasing - stop training')
+                return
 
             print(message)
             losses = []
