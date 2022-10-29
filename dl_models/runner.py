@@ -29,6 +29,10 @@ test_dataset = TripletDataset(FingerprintDataset(os.path.join(DATA_FOLDER, 'test
 test_dataloader = DataLoader(test_dataset, batch_size=batch_size, shuffle=True)
 
 embedder = EmbeddingNet()
+# freeze all layers except the last one
+for the_param in list(embedder.feature_extractor.children())[:-1]:
+    the_param.requires_grad = False
+# make triplet net
 triplet_net = TripletNet(embedder)
 
 # TRAIN
