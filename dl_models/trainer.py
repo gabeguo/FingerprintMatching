@@ -18,6 +18,8 @@ def fit(train_loader, val_loader, model, loss_fn, optimizer, scheduler, n_epochs
     for epoch in range(0, start_epoch):
         scheduler.step()
 
+    past_val_losses = []
+
     for epoch in range(start_epoch, n_epochs):
         scheduler.step()
 
@@ -31,12 +33,19 @@ def fit(train_loader, val_loader, model, loss_fn, optimizer, scheduler, n_epochs
         val_loss, metrics = test_epoch(val_loader, model, loss_fn, cuda, metrics)
         val_loss /= len(val_loader)
 
+        past_val_losses.append(val_loss)
+        if len(past_val_losses) > 10 and val_loss > sum(past_val_losses[-10:]) / len(past_val_losses[-10:]):
+            print('val loss no longer decreasing - stop training')
+        return
+        
         message += '\nEpoch: {}/{}. Validation set: Average loss: {:.4f}'.format(epoch + 1, n_epochs,
                                                                                  val_loss)
         for metric in metrics:
             message += '\t{}: {}'.format(metric.name(), metric.value())
 
         print(message)
+
+        return
 
 
 def train_epoch(train_loader, model, loss_fn, optimizer, cuda, log_interval, metrics):
