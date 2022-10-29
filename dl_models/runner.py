@@ -1,5 +1,3 @@
-# this kind of works - does not have testing loop yet
-
 import torch
 from torch.utils.data import Dataset
 from torch.utils.data import DataLoader
@@ -17,6 +15,8 @@ from embedding_models import *
 
 from common_filepaths import DATA_FOLDER
 
+MODEL_PATH = 'embedding_net_weights.pth'
+
 batch_size=4
 
 training_dataset = TripletDataset(FingerprintDataset(os.path.join(DATA_FOLDER, 'train'), train=True))
@@ -25,7 +25,13 @@ train_dataloader = DataLoader(training_dataset, batch_size=batch_size, shuffle=T
 val_dataset = TripletDataset(FingerprintDataset(os.path.join(DATA_FOLDER, 'val'), train=True))
 val_dataloader = DataLoader(val_dataset, batch_size=batch_size, shuffle=True)
 
-triplet_net = TripletNet(EmbeddingNet())
+test_dataset = TripletDataset(FingerprintDataset(os.path.join(DATA_FOLDER, 'test'), train=True))
+test_dataloader = DataLoader(test_dataset, batch_size=batch_size, shuffle=True)
+
+embedder = EmbeddingNet()
+triplet_net = TripletNet(embedder)
+
+# TRAIN
 
 learning_rate = 0.1
 momentum = 0.9
@@ -45,8 +51,13 @@ _01_dist = []
 _02_dist = []
 dist = torch.nn.CosineSimilarity(dim=0, eps=1e-8)
 
-for i in range(10):#range(len(training_data)):
-    test_images, test_labels, test_filepaths = next(iter(triplet_dataloader))
+# SAVE MODEL
+torch.save(embedder.state_dict(), MODEL_PATH)
+
+# TEST
+
+for i in range(len(test_dataloader)):
+    test_images, test_labels, test_filepaths = next(iter(test_dataloader))
 
     embeddings = [torch.reshape(e, (batch_size, e.size()[1])) for e in triplet_net(*test_images)]
     # embeddings.shape[0] is (anchor, pos, neg); embeddings.shape[1] is batch size; embeddings.shape[2] is embedding length
@@ -61,8 +72,8 @@ for i in range(10):#range(len(training_data)):
 #print(_01_dist[0].size())
 #print(_02_dist[0].size())
 
-print(len(_01_dist))
-print(len(_02_dist))
+print('number of testing positive pairs:', len(_01_dist))
+print('number of testing negative pairs:', len(_02_dist))
 
 print('average cosine sim between matching pairs:', sum(_01_dist) / len(_01_dist))
 print('average cosine sim between non-matching pairs:', sum(_02_dist) / len(_02_dist))
