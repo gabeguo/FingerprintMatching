@@ -19,7 +19,7 @@ class SquarePad:
         return F.pad(image, padding, 0, 'constant')
 
 # returns the image as a normalized square with standard size
-def my_transformation(the_image, target_image_size=(512, 512)):
+def my_transformation(the_image, target_image_size=(224, 224)):
     #print(target_image_size)
     assert target_image_size[0] == target_image_size[1]
     transform=transforms.Compose([
@@ -163,7 +163,7 @@ class TripletDataset(Dataset):
         img2 = my_transformation(read_image(img2, mode=ImageReadMode.RGB))
         img3 = my_transformation(read_image(img3, mode=ImageReadMode.RGB))
 
-        return (img1, img2, img3), the_labels, (filepath1, filepath2, filepath3)
+        return (img1, img2, img3), [], (filepath1, filepath2, filepath3)
 
     def __len__(self):
         return len(self.fingerprint_dataset)
