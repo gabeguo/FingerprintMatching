@@ -96,10 +96,6 @@ def train_epoch(train_loader, model, loss_fn, optimizer, cuda, log_interval, met
             for metric in metrics:
                 message += '\t{}: {}'.format(metric.name(), metric.value())
 
-            if loss > sum(losses) / len(losses):
-                print('train loss no longer decreasing - stop training')
-                return
-
             print(message)
             losses = []
 
