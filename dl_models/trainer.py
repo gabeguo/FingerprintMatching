@@ -21,6 +21,7 @@ def fit(train_loader, val_loader, model, loss_fn, optimizer, scheduler, n_epochs
     past_val_losses = []
 
     for epoch in range(start_epoch, n_epochs):
+        print('current epoch:', epoch)
 
         # Train stage
         train_loss, metrics = train_epoch(train_loader, model, loss_fn, optimizer, cuda, log_interval, metrics)
