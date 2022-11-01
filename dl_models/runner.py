@@ -47,7 +47,7 @@ plt.show()
 
 embedder = EmbeddingNet()
 
-# load saved weights
+# load saved weights!
 embedder.load_state_dict(torch.load(MODEL_PATH))
 """
 # freeze all layers except the last one
