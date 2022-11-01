@@ -19,7 +19,7 @@ from common_filepaths import DATA_FOLDER
 
 MODEL_PATH = 'embedding_net_weights.pth'
 
-batch_size=16
+batch_size=64
 
 training_dataset = TripletDataset(FingerprintDataset(os.path.join(DATA_FOLDER, 'train'), train=True))
 #training_dataset = torch.utils.data.Subset(training_dataset, list(range(0, len(training_dataset), 5)))
@@ -48,7 +48,7 @@ plt.show()
 embedder = EmbeddingNet()
 
 # load saved weights
-# embedder.load_state_dict(torch.load(MODEL_PATH))
+embedder.load_state_dict(torch.load(MODEL_PATH))
 """
 # freeze all layers except the last one
 for the_param in list(embedder.feature_extractor.children())[:-3]:
@@ -65,13 +65,13 @@ momentum = 0.99
 weight_decay = 5e-5
 lr_decay_step=2
 lr_decay_factor=0.9
-optimizer = optim.SGD(triplet_net.parameters(), lr=learning_rate, momentum=momentum, weight_decay=weight_decay)
+optimizer = optim.Adam(triplet_net.parameters(), lr=learning_rate) #optim.SGD(triplet_net.parameters(), lr=learning_rate, momentum=momentum, weight_decay=weight_decay)
 scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=lr_decay_step, gamma=lr_decay_factor)
 tripletLoss_margin = 1
 
 fit(train_loader=train_dataloader, val_loader=val_dataloader, model=triplet_net, \
     loss_fn=nn.TripletMarginLoss(margin=tripletLoss_margin), optimizer=optimizer, scheduler=scheduler, \
-    n_epochs=10, cuda='cuda:0', log_interval=10, metrics=[], start_epoch=0)
+    n_epochs=30, cuda='cuda:0', log_interval=10, metrics=[], start_epoch=0)
 
 # distances between embedding of positive and negative pair
 _01_dist = []
