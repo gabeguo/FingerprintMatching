@@ -19,7 +19,7 @@ from common_filepaths import DATA_FOLDER
 
 MODEL_PATH = 'embedding_net_weights.pth'
 
-batch_size=4
+batch_size=16
 
 training_dataset = TripletDataset(FingerprintDataset(os.path.join(DATA_FOLDER, 'train'), train=True))
 #training_dataset = torch.utils.data.Subset(training_dataset, list(range(0, len(training_dataset), 5)))
@@ -49,20 +49,21 @@ embedder = EmbeddingNet()
 
 # load saved weights
 # embedder.load_state_dict(torch.load(MODEL_PATH))
-
+"""
 # freeze all layers except the last one
-for the_param in list(embedder.feature_extractor.children())[:-1]:
+for the_param in list(embedder.feature_extractor.children())[:-3]:
     the_param.requires_grad = False
+"""
 
 # CREATE TRIPLET NET
 triplet_net = TripletNet(embedder)
 
 # TRAIN
 
-learning_rate = 0.001
-momentum = 0.9
+learning_rate = 0.005
+momentum = 0.99
 weight_decay = 5e-5
-lr_decay_step=10
+lr_decay_step=2
 lr_decay_factor=0.9
 optimizer = optim.SGD(triplet_net.parameters(), lr=learning_rate, momentum=momentum, weight_decay=weight_decay)
 scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=lr_decay_step, gamma=lr_decay_factor)
