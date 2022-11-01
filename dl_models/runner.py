@@ -1,9 +1,11 @@
 import torch
+import torch.nn as nn
 from torch.utils.data import Dataset
 from torch.utils.data import DataLoader
 import torch.optim as optim
 import sys
 import os
+import math
 
 sys.path.append('../')
 
@@ -20,52 +22,55 @@ MODEL_PATH = 'embedding_net_weights.pth'
 batch_size=4
 
 training_dataset = TripletDataset(FingerprintDataset(os.path.join(DATA_FOLDER, 'train'), train=True))
-training_dataset = torch.utils.data.Subset(training_dataset, list(range(0, len(training_dataset), 5)))
+#training_dataset = torch.utils.data.Subset(training_dataset, list(range(0, len(training_dataset), 5)))
 train_dataloader = DataLoader(training_dataset, batch_size=batch_size, shuffle=True)
 
 val_dataset = TripletDataset(FingerprintDataset(os.path.join(DATA_FOLDER, 'val'), train=True))
-val_dataset = torch.utils.data.Subset(val_dataset, list(range(0, len(val_dataset), 5)))
+#val_dataset = torch.utils.data.Subset(val_dataset, list(range(0, len(val_dataset), 5)))
 val_dataloader = DataLoader(val_dataset, batch_size=batch_size, shuffle=True)
 
 test_dataset = TripletDataset(FingerprintDataset(os.path.join(DATA_FOLDER, 'test'), train=True))
-test_dataset = torch.utils.data.Subset(test_dataset, list(range(0, len(test_dataset), 5)))
+#test_dataset = torch.utils.data.Subset(test_dataset, list(range(0, len(test_dataset), 5)))
 test_dataloader = DataLoader(test_dataset, batch_size=batch_size, shuffle=True)
 
 # SHOW IMAGES
-
+"""
 import matplotlib.pyplot as plt
 images, labels, filepaths = next(iter(test_dataloader))
 next_img = images[2][0]
 print(next_img[0])
 plt.imshow(next_img.permute(1, 2, 0))
 plt.show()
+"""
 
 # CREATE EMBEDDER
 
 embedder = EmbeddingNet()
-embedder.load_state_dict(torch.load(MODEL_PATH))
+
+# load saved weights
+# embedder.load_state_dict(torch.load(MODEL_PATH))
+
 # freeze all layers except the last one
-"""
 for the_param in list(embedder.feature_extractor.children())[:-1]:
     the_param.requires_grad = False
-"""
-# make triplet net
+
+# CREATE TRIPLET NET
 triplet_net = TripletNet(embedder)
 
 # TRAIN
 
-learning_rate = 0.01
+learning_rate = 0.001
 momentum = 0.9
 weight_decay = 5e-5
-lr_decay_step=3
+lr_decay_step=10
 lr_decay_factor=0.9
 optimizer = optim.SGD(triplet_net.parameters(), lr=learning_rate, momentum=momentum, weight_decay=weight_decay)
 scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=lr_decay_step, gamma=lr_decay_factor)
 tripletLoss_margin = 1
 
 fit(train_loader=train_dataloader, val_loader=val_dataloader, model=triplet_net, \
-    loss_fn=TripletLoss(margin=tripletLoss_margin), optimizer=optimizer, scheduler=scheduler, \
-    n_epochs=1, cuda='cuda:0', log_interval=10, metrics=[], start_epoch=0)
+    loss_fn=nn.TripletMarginLoss(margin=tripletLoss_margin), optimizer=optimizer, scheduler=scheduler, \
+    n_epochs=10, cuda='cuda:0', log_interval=10, metrics=[], start_epoch=0)
 
 # distances between embedding of positive and negative pair
 _01_dist = []
@@ -92,10 +97,23 @@ for i in range(len(test_dataloader)):
     #print([embedding.size() for embedding in embeddings])
 
     for batch_index in range(batch_size):
+        #print(dist(embeddings[0][batch_index], embeddings[1][batch_index]))
+        #print(dist(embeddings[0][batch_index], embeddings[2][batch_index]))
         _01_dist.append(dist(embeddings[0][batch_index], embeddings[1][batch_index]).item())
         _02_dist.append(dist(embeddings[0][batch_index], embeddings[2][batch_index]).item())
+        if math.isnan(_01_dist[-1]):
+            print('nan: {}, {}'.format(embeddings[0][batch_index], embeddings[1][batch_index]))
+        if math.isnan(_02_dist[-1]):
+            print('nan: {}, {}'.format(embeddings[0][batch_index], embeddings[2][batch_index]))
 
+    if i % 50 == 0:
+        print('Batch {} out of {}'.format(i, len(test_dataloader)))
+        print('\taverage cosine sim between matching pairs:', np.mean(np.array(_01_dist)))
+        print('\taverage cosine sim between non-matching pairs:', np.mean(np.array(_02_dist)))
     #print(test_filepaths, test_labels)
+
+_01_dist = np.array(_01_dist)
+_02_dist = np.array(_02_dist)
 
 #print(_01_dist[0].size())
 #print(_02_dist[0].size())
@@ -103,5 +121,5 @@ for i in range(len(test_dataloader)):
 print('number of testing positive pairs:', len(_01_dist))
 print('number of testing negative pairs:', len(_02_dist))
 
-print('average cosine sim between matching pairs:', sum(_01_dist) / len(_01_dist))
-print('average cosine sim between non-matching pairs:', sum(_02_dist) / len(_02_dist))
+print('average cosine sim between matching pairs:', np.mean(_01_dist))
+print('average cosine sim between non-matching pairs:', np.mean(_02_dist))
