@@ -1,6 +1,7 @@
 import numpy as np
 from PIL import Image
 
+import torch
 from torch.utils.data import Dataset
 from torch.utils.data.sampler import BatchSampler
 from torchvision.io import read_image, ImageReadMode
@@ -25,8 +26,11 @@ def my_transformation(the_image, target_image_size=(224, 224)):
     transform=transforms.Compose([
         SquarePad(),
         transforms.Resize(target_image_size),
-        transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5)),
+        #transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5)),
     ])
+    the_min = torch.min(the_image)
+    the_max = torch.max(the_image)
+    the_image = (the_image - the_min) / (the_max - the_min)
     return transform(the_image.float())
 
 class SiameseDataset(Dataset):

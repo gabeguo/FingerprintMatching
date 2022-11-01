@@ -31,6 +31,17 @@ test_dataset = TripletDataset(FingerprintDataset(os.path.join(DATA_FOLDER, 'test
 test_dataset = torch.utils.data.Subset(test_dataset, list(range(0, len(test_dataset), 5)))
 test_dataloader = DataLoader(test_dataset, batch_size=batch_size, shuffle=True)
 
+# SHOW IMAGES
+
+import matplotlib.pyplot as plt
+images, labels, filepaths = next(iter(test_dataloader))
+next_img = images[2][0]
+print(next_img[0])
+plt.imshow(next_img.permute(1, 2, 0))
+plt.show()
+
+# CREATE EMBEDDER
+
 embedder = EmbeddingNet()
 embedder.load_state_dict(torch.load(MODEL_PATH))
 # freeze all layers except the last one
