@@ -26,11 +26,12 @@ def my_transformation(the_image, target_image_size=(224, 224)):
     transform=transforms.Compose([
         SquarePad(),
         transforms.Resize(target_image_size),
+        transforms.Normalize((0, 0, 0), (1, 1, 1)),
         #transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5)),
     ])
-    the_min = torch.min(the_image)
-    the_max = torch.max(the_image)
-    the_image = (the_image - the_min) / (the_max - the_min)
+    #the_min = torch.min(the_image)
+    #the_max = torch.max(the_image)
+    #the_image = (the_image - the_min) / (the_max - the_min)
     return transform(the_image.float())
 
 class SiameseDataset(Dataset):
