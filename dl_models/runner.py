@@ -36,7 +36,7 @@ test_dataloader = DataLoader(test_dataset, batch_size=batch_size, shuffle=True)
 # SHOW IMAGES
 
 import matplotlib.pyplot as plt
-it = iter(val_dataloader)
+it = iter(train_dataloader)
 for i in range(5):
     images, labels, filepaths = next(it)
     next_img = images[2][0]

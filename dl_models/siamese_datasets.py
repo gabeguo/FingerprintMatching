@@ -17,7 +17,7 @@ class SquarePad:
         p_left, p_top = [(max_wh - s) // 2 for s in image.size()[1:]] # first channel is just colors
         p_right, p_bottom = [max_wh - (s+pad) for s, pad in zip(image.size()[1:], [p_left, p_top])]
         padding = (p_left, p_top, p_right, p_bottom)
-        return F.pad(image, padding, 0, 'constant')
+        return F.pad(image, padding, 255, 'constant')
 
 # returns the image as a normalized square with standard size
 def my_transformation(the_image, train=False, target_image_size=(224, 224)):
@@ -31,9 +31,9 @@ def my_transformation(the_image, train=False, target_image_size=(224, 224)):
     ])
     if train:
         transform = transforms.Compose([
-            transform,
-            transforms.RandomRotation(30),
+            transforms.RandomRotation(30, fill=255),
             transforms.ColorJitter(),
+            transform,
         ])
     #the_min = torch.min(the_image)
     #the_max = torch.max(the_image)
