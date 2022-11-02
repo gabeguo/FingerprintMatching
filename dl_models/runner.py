@@ -25,18 +25,18 @@ training_dataset = TripletDataset(FingerprintDataset(os.path.join(DATA_FOLDER, '
 #training_dataset = torch.utils.data.Subset(training_dataset, list(range(0, len(training_dataset), 5)))
 train_dataloader = DataLoader(training_dataset, batch_size=batch_size, shuffle=True)
 
-val_dataset = TripletDataset(FingerprintDataset(os.path.join(DATA_FOLDER, 'val'), train=True))
+val_dataset = TripletDataset(FingerprintDataset(os.path.join(DATA_FOLDER, 'val'), train=False))
 #val_dataset = torch.utils.data.Subset(val_dataset, list(range(0, len(val_dataset), 5)))
 val_dataloader = DataLoader(val_dataset, batch_size=batch_size, shuffle=True)
 
-test_dataset = TripletDataset(FingerprintDataset(os.path.join(DATA_FOLDER, 'test'), train=True))
+test_dataset = TripletDataset(FingerprintDataset(os.path.join(DATA_FOLDER, 'test'), train=False))
 #test_dataset = torch.utils.data.Subset(test_dataset, list(range(0, len(test_dataset), 5)))
 test_dataloader = DataLoader(test_dataset, batch_size=batch_size, shuffle=True)
 
 # SHOW IMAGES
 
 import matplotlib.pyplot as plt
-it = iter(test_dataloader)
+it = iter(val_dataloader)
 for i in range(5):
     images, labels, filepaths = next(it)
     next_img = images[2][0]
