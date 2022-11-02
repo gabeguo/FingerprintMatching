@@ -101,6 +101,8 @@ print('number of testing positive pairs:', len(_01_dist))
 print('number of testing negative pairs:', len(_02_dist))
 
 print('average squared L2 distance between positve pairs:', np.mean(_01_dist))
-print('average squared L2 distance between positve pairs:', np.std(_01_dist))
+print('std of  squared L2 distance between positve pairs:', np.std(_01_dist))
 print('average squared L2 distance between negative pairs:', np.mean(_02_dist))
-print('average squared L2 distance between negative pairs:', np.std(_02_dist))
+print('std of  squared L2 distance between negative pairs:', np.std(_02_dist))
+
+
