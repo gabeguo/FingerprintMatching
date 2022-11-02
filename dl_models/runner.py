@@ -34,14 +34,19 @@ test_dataset = TripletDataset(FingerprintDataset(os.path.join(DATA_FOLDER, 'test
 test_dataloader = DataLoader(test_dataset, batch_size=batch_size, shuffle=True)
 
 # SHOW IMAGES
-"""
+
 import matplotlib.pyplot as plt
-images, labels, filepaths = next(iter(test_dataloader))
-next_img = images[2][0]
-print(next_img[0])
-plt.imshow(next_img.permute(1, 2, 0))
-plt.show()
-"""
+it = iter(test_dataloader)
+for i in range(5):
+    images, labels, filepaths = next(it)
+    next_img = images[2][0]
+    the_min = torch.min(next_img)
+    the_max = torch.max(next_img)
+    next_img = (next_img - the_min) / (the_max - the_min)
+    print(next_img[0])
+    plt.imshow(next_img.permute(1, 2, 0))
+    plt.show()
+
 
 # CREATE EMBEDDER
 
@@ -71,7 +76,7 @@ tripletLoss_margin = 1
 
 fit(train_loader=train_dataloader, val_loader=val_dataloader, model=triplet_net, \
     loss_fn=nn.TripletMarginLoss(margin=tripletLoss_margin), optimizer=optimizer, scheduler=scheduler, \
-    n_epochs=30, cuda='cuda:0', log_interval=10, metrics=[], start_epoch=0)
+    n_epochs=100, cuda='cuda:0', log_interval=10, metrics=[], start_epoch=30)
 
 # distances between embedding of positive and negative pair
 _01_dist = []
