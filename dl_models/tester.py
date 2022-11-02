@@ -94,6 +94,27 @@ for i in range(len(test_dataloader)):
         print('\taverage squared L2 distance between positive pairs:', np.mean(np.array(_01_dist)))
         print('\taverage squared L2 distance between negative pairs:', np.mean(np.array(_02_dist)))
 
+
+# FIND THRESHOLDS
+all_distances = _01_dist +_02_dist
+all_distances.sort()
+
+tp, fp, tn, fn = list(), list(), list(), list()
+acc = list()
+
+for dist in all_distances:
+    tp.append(len([x for x in _01_dist if x < dist])
+    tn.append(len([x for x in _02_dist if x >= dist])
+    fn.append(len(_01_dist) - tp[-1])
+    fp.append(len(_02_dist) - tn[-1])
+    
+    acc = (tp[-1] + tn[-1]) / len(all_distances)
+
+print('best accuracy:', max(acc))
+plt.plot([i for i in range(len(acc))], acc)
+plt.show()
+
+# PRINT DISTANCES
 _01_dist = np.array(_01_dist)
 _02_dist = np.array(_02_dist)
 
