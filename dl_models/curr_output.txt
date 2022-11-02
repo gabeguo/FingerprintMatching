@@ -1,0 +1,2 @@
+average cosine sim between matching pairs: 0.9138031073978213
+average cosine sim between non-matching pairs: 0.8556544276068135
