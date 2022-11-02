@@ -20,7 +20,7 @@ class SquarePad:
         return F.pad(image, padding, 0, 'constant')
 
 # returns the image as a normalized square with standard size
-def test_transformation(the_image, train=False, target_image_size=(224, 224)):
+def my_transformation(the_image, train=False, target_image_size=(224, 224)):
     #print(target_image_size)
     assert target_image_size[0] == target_image_size[1]
     transform=transforms.Compose([
