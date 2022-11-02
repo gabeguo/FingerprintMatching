@@ -20,7 +20,7 @@ class SquarePad:
         return F.pad(image, padding, 0, 'constant')
 
 # returns the image as a normalized square with standard size
-def my_transformation(the_image, target_image_size=(224, 224)):
+def test_transformation(the_image, train=False, target_image_size=(224, 224)):
     #print(target_image_size)
     assert target_image_size[0] == target_image_size[1]
     transform=transforms.Compose([
@@ -29,6 +29,12 @@ def my_transformation(the_image, target_image_size=(224, 224)):
         transforms.Normalize((0, 0, 0), (1, 1, 1)),
         #transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5)),
     ])
+    if train:
+        transform = transforms.Compose([
+            transform,
+            transforms.RandomRotation(30),
+            transforms.ColorJitter(),
+        ])
     #the_min = torch.min(the_image)
     #the_max = torch.max(the_image)
     #the_image = (the_image - the_min) / (the_max - the_min)
@@ -95,8 +101,8 @@ class SiameseDataset(Dataset):
             target = self.test_pairs[index][2]
 
         filepath1, filepath2 = img1, img2
-        img1 = my_transformation(read_image(img1, mode=ImageReadMode.RGB))
-        img2 = my_transformation(read_image(img2, mode=ImageReadMode.RGB))
+        img1 = my_transformation(read_image(img1, mode=ImageReadMode.RGB), train=self.train)
+        img2 = my_transformation(read_image(img2, mode=ImageReadMode.RGB), train=self.train)
 
         return (img1, img2), target, (filepath1, filepath2)
 
@@ -164,9 +170,9 @@ class TripletDataset(Dataset):
 
         filepath1, filepath2, filepath3 = img1, img2, img3
 
-        img1 = my_transformation(read_image(img1, mode=ImageReadMode.RGB))
-        img2 = my_transformation(read_image(img2, mode=ImageReadMode.RGB))
-        img3 = my_transformation(read_image(img3, mode=ImageReadMode.RGB))
+        img1 = my_transformation(read_image(img1, mode=ImageReadMode.RGB), train=self.train)
+        img2 = my_transformation(read_image(img2, mode=ImageReadMode.RGB), train=self.train)
+        img3 = my_transformation(read_image(img3, mode=ImageReadMode.RGB), train=self.train)
 
         return (img1, img2, img3), [], (filepath1, filepath2, filepath3)
 
