@@ -103,8 +103,8 @@ tp, fp, tn, fn = list(), list(), list(), list()
 acc = list()
 
 for dist in all_distances:
-    tp.append(len([x for x in _01_dist if x < dist])
-    tn.append(len([x for x in _02_dist if x >= dist])
+    tp.append(len([x for x in _01_dist if x < dist]))
+    tn.append(len([x for x in _02_dist if x >= dist]))
     fn.append(len(_01_dist) - tp[-1])
     fp.append(len(_02_dist) - tn[-1])
     
