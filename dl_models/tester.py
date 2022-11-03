@@ -89,7 +89,7 @@ for i in range(len(test_dataloader)):
         if math.isnan(_02_dist[-1]):
             print('nan: {}, {}'.format(embeddings[0][batch_index], embeddings[2][batch_index]))
 
-    if i % 50 == 0:
+    if i % 5 == 0:
         print('Batch {} out of {}'.format(i, len(test_dataloader)))
         print('\taverage squared L2 distance between positive pairs:', np.mean(np.array(_01_dist)))
         print('\taverage squared L2 distance between negative pairs:', np.mean(np.array(_02_dist)))
