@@ -1,0 +1,16 @@
+Batch 0 out of 110
+	average squared L2 distance between positive pairs: 432.61536945262924
+	average squared L2 distance between negative pairs: 1086.6310574375093
+Batch 50 out of 110
+	average squared L2 distance between positive pairs: 453.6480499610702
+	average squared L2 distance between negative pairs: 895.743654693793
+Batch 100 out of 110
+	average squared L2 distance between positive pairs: 446.0636616906
+	average squared L2 distance between negative pairs: 890.5627899736669
+best accuracy: 0.603125
+number of testing positive pairs: 7040
+number of testing negative pairs: 7040
+average squared L2 distance between positve pairs: 446.7910047058823
+std of  squared L2 distance between positve pairs: 734.687212047669
+average squared L2 distance between negative pairs: 898.9785948506355
+std of  squared L2 distance between negative pairs: 1126.8897110697021
