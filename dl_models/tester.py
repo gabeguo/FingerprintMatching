@@ -108,7 +108,7 @@ for dist in all_distances:
     fn.append(len(_01_dist) - tp[-1])
     fp.append(len(_02_dist) - tn[-1])
     
-    acc = (tp[-1] + tn[-1]) / len(all_distances)
+    acc.append((tp[-1] + tn[-1]) / len(all_distances))
 
 print('best accuracy:', max(acc))
 plt.plot([i for i in range(len(acc))], acc)
