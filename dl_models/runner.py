@@ -39,12 +39,13 @@ import matplotlib.pyplot as plt
 for the_name, the_dataloader in zip(['train', 'val', 'test'], [train_dataloader, val_dataloader, test_dataloader]):
     print(the_name)
     it = iter(the_dataloader)
-    for i in range(4):
+    for i in range(10):
         images, labels, filepaths = next(it)
         next_img = images[2][0]
         the_min = torch.min(next_img)
         the_max = torch.max(next_img)
         next_img = (next_img - the_min) / (the_max - the_min)
+        print(filepaths[2][0])
         print(next_img[0])
         plt.imshow(next_img.permute(1, 2, 0))
         plt.show()
