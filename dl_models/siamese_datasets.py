@@ -26,24 +26,15 @@ def my_transformation(the_image, train=False, target_image_size=(224, 224)):
     transform=transforms.Compose([
         SquarePad(),
         transforms.Resize(target_image_size),
-        #transforms.Normalize([0, 0, 0], [1, 1, 1]),
-        transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225]),
+        transforms.Normalize([0, 0, 0], [1, 1, 1]),
     ])
+    """
     if train:
         transform = transforms.Compose([
-            transforms.RandomRotation(30, fill=255),
-            transforms.RandomAffine(degrees=5, shear=(-5, 5, -5, 5), fill=255),
-            #transforms.ColorJitter(),
+            #transforms.RandomRotation(15, fill=255),
             transform,
-            #transforms.Resize((int(target_image_size[0] * 1.1), int(target_image_size[1] * 1.1))),
-            #transforms.RandomResizedCrop(target_image_size, scale=(0.75, 1.0), ratio=(0.9, 1.1)),
-            #transforms.RandomHorizontalFlip(p=0.25),
-            #transforms.RandomVerticalFlip(p=0.25),
-            #transforms.RandomAdjustSharpness(1.5, p=0.25),
         ])
-    #the_min = torch.min(the_image)
-    #the_max = torch.max(the_image)
-    #the_image = (the_image - the_min) / (the_max - the_min)
+    """
     return transform(the_image.float())
 
 class SiameseDataset(Dataset):
