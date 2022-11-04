@@ -34,7 +34,8 @@ def fit(train_loader, val_loader, model, loss_fn, optimizer, scheduler, n_epochs
         val_loss /= len(val_loader)
 
         past_val_losses.append(val_loss)
-        if len(past_val_losses) > 10 and val_loss > sum(past_val_losses[-10:]) / len(past_val_losses[-10:]):
+        val_loss_window = 20
+        if len(past_val_losses) > val_loss_window and val_loss > sum(past_val_losses[-val_loss_window:]) / len(past_val_losses[-val_loss_window:]):
             print('val loss no longer decreasing - stop training')
             return
         
