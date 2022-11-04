@@ -6,17 +6,17 @@ import torch.nn.functional as F
 from torchvision import models
 
 class EmbeddingNet(nn.Module):
-    def __init__(self):
+    def __init__(self, pretrained=True):
         super(EmbeddingNet, self).__init__()
         # Thanks # https://discuss.pytorch.org/t/how-can-l-use-the-pre-trained-resnet-to-extract-feautres-from-my-own-dataset/9008
-        self.the_resnet = models.resnet18(pretrained=True)
+        self.the_resnet = models.resnet18(pretrained=pretrained)
         modules=list(self.the_resnet.children())[:-1]
         self.feature_extractor=nn.Sequential(*modules)
         self.fc = self.the_resnet.fc
 
     def forward(self, x):
         output = self.feature_extractor(x)
-        print(output.shape)
+        #print(output.shape)
         return output
 
     def get_embedding(self, x):

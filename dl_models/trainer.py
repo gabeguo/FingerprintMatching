@@ -5,7 +5,7 @@ import numpy as np
 
 
 def fit(train_loader, val_loader, model, loss_fn, optimizer, scheduler, n_epochs, cuda, log_interval, metrics=[],
-        start_epoch=0):
+        start_epoch=0, early_stopping_interval=10, temp_model_path='temp.pth'):
     """
     Loaders, model, loss function and metrics should work together for a given task,
     i.e. The model should be able to process data output of loaders,
@@ -14,7 +14,15 @@ def fit(train_loader, val_loader, model, loss_fn, optimizer, scheduler, n_epochs
     Examples: Classification: batch loader, classification model, NLL loss, accuracy metric
     Siamese network: Siamese loader, siamese model, contrastive loss
     Online triplet learning: batch loader, embedding model, online triplet loss
+    
+    Returns: epoch stopped on and final val loss
+    Loads the best validation weights into the model
     """
+
+    torch.save(model.state_dict(), temp_model_path)
+    best_val_loss = 100
+    best_val_epoch = -1
+
     for epoch in range(0, start_epoch):
         scheduler.step()
 
@@ -32,12 +40,17 @@ def fit(train_loader, val_loader, model, loss_fn, optimizer, scheduler, n_epochs
 
         val_loss, metrics = test_epoch(val_loader, model, loss_fn, cuda, metrics)
         val_loss /= len(val_loader)
-
+        if val_loss < best_val_loss:
+            best_val_loss = val_loss
+            best_val_epoch = epoch
+            torch.save(model.state_dict(), temp_model_path)
         past_val_losses.append(val_loss)
-        val_loss_window = 20
-        if len(past_val_losses) > val_loss_window and val_loss > sum(past_val_losses[-val_loss_window:]) / len(past_val_losses[-val_loss_window:]):
+        if len(past_val_losses) > early_stopping_interval and val_loss > sum(past_val_losses[-early_stopping_interval:]) / len(past_val_losses[-early_stopping_interval:]):
             print('val loss no longer decreasing - stop training')
-            return
+            # load best weights
+            model.load_state_dict(torch.load(temp_model_path))
+            model.eval()
+            return best_val_epoch, best_val_loss
         
         message += '\nEpoch: {}/{}. Validation set: Average loss: {:.4f}'.format(epoch + 1, n_epochs,
                                                                                  val_loss)
@@ -48,7 +61,9 @@ def fit(train_loader, val_loader, model, loss_fn, optimizer, scheduler, n_epochs
         
         scheduler.step()
 
-    return
+    model.load_state_dict(torch.load(temp_model_path))
+    model.eval()
+    return best_val_epoch, best_val_loss
 
 
 def train_epoch(train_loader, model, loss_fn, optimizer, cuda, log_interval, metrics):

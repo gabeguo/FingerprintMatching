@@ -55,21 +55,25 @@ for the_name, the_dataloader in zip(['train', 'val', 'test'], [train_dataloader,
 log = ""
 
 # CREATE EMBEDDER
-
-embedder = EmbeddingNet()
+pretrained=False
+embedder = EmbeddingNet(pretrained=pretrained)
+log += 'pretrained: {}\n'.format(pretrained)
+print('pretrained:', pretrained)
 
 # load saved weights!
 # embedder.load_state_dict(torch.load(MODEL_PATH))
 
+"""
 # freeze all layers except the last one
 n_layers = list(embedder.feature_extractor.children())
 print(n_layers)
 print(len(n_layers))
-n_frozen_layers = 3
+n_frozen_layers = 4
 for the_param in list(embedder.feature_extractor.children())[:n_frozen_layers]:
     log += 'freezing{}\n'.format(the_param)
     print('freezing {}'.format(the_param))
     the_param.requires_grad = False
+"""
 
 # CREATE TRIPLET NET
 triplet_net = TripletNet(embedder)
@@ -88,9 +92,15 @@ tripletLoss_margin = 1
 log += 'learning_rate = {}\nmomentum = {}\nweight_decay = {}\nlr_decay_step = {}\nlr_decay_factor = {}\n'.format(learning_rate, \
         momentum, weight_decay, lr_decay_step, lr_decay_factor)
 
-fit(train_loader=train_dataloader, val_loader=val_dataloader, model=triplet_net, \
+best_val_epoch, best_val_loss = 0, 0
+
+best_val_epoch, best_val_loss = fit(train_loader=train_dataloader, val_loader=val_dataloader, model=triplet_net, \
     loss_fn=nn.TripletMarginLoss(margin=tripletLoss_margin), optimizer=optimizer, scheduler=scheduler, \
-    n_epochs=100, cuda='cuda:0', log_interval=10, metrics=[], start_epoch=0)
+    n_epochs=30, cuda='cuda:0', log_interval=10, metrics=[], start_epoch=0, early_stopping_interval=10)
+
+
+log += 'best_val_epoch = {}\nbest_val_loss = {}\n'.format(best_val_epoch, best_val_loss)
+print('best_val_epoch = {}\nbest_val_loss = {}\n'.format(best_val_epoch, best_val_loss))
 
 # distances between embedding of positive and negative pair
 _01_dist = []
@@ -113,12 +123,8 @@ for i in range(len(test_dataloader)):
     test_images = [item.to('cuda:0') for item in test_images]
 
     embeddings = [torch.reshape(e, (batch_size, e.size()[1])) for e in triplet_net(*test_images)]
-    # embeddings.shape[0] is (anchor, pos, neg); embeddings.shape[1] is batch size; embeddings.shape[2] is embedding length
-    #print([embedding.size() for embedding in embeddings])
 
     for batch_index in range(batch_size):
-        #print(dist(embeddings[0][batch_index], embeddings[1][batch_index]))
-        #print(dist(embeddings[0][batch_index], embeddings[2][batch_index]))
         _01_dist.append(dist(embeddings[0][batch_index], embeddings[1][batch_index]).item())
         _02_dist.append(dist(embeddings[0][batch_index], embeddings[2][batch_index]).item())
         if math.isnan(_01_dist[-1]):
@@ -126,7 +132,7 @@ for i in range(len(test_dataloader)):
         if math.isnan(_02_dist[-1]):
             print('nan: {}, {}'.format(embeddings[0][batch_index], embeddings[2][batch_index]))
 
-    if i % 50 == 0:
+    if i % 10 == 0:
         print('Batch {} out of {}'.format(i, len(test_dataloader)))
         print('\taverage cosine sim between matching pairs:', np.mean(np.array(_01_dist)))
         print('\taverage cosine sim between non-matching pairs:', np.mean(np.array(_02_dist)))
@@ -135,9 +141,6 @@ for i in range(len(test_dataloader)):
 
 _01_dist = np.array(_01_dist)
 _02_dist = np.array(_02_dist)
-
-#print(_01_dist[0].size())
-#print(_02_dist[0].size())
 
 log += 'average cosine sim b/w matching pairs: {}\n'.format(np.mean(_01_dist))
 log += 'average cosine sim b/w nonmatching pairs: {}\n'.format(np.mean(_02_dist))
@@ -148,6 +151,9 @@ print('number of testing negative pairs:', len(_02_dist))
 print('average cosine sim between matching pairs:', np.mean(_01_dist))
 print('average cosine sim between non-matching pairs:', np.mean(_02_dist))
 
-with open('results_freeze_{}.txt'.format(n_frozen_layers), 'w') as fout:
+from datetime import datetime
+datetime_str = datetime.now().strftime("%d-%m-%Y_%H:%M:%S")
+with open('results/results_{}.txt'.format(datetime_str), 'w') as fout:
     fout.write(log + '\n')
+torch.save(embedder.state_dict(), 'results/weights_{}.pth'.format(datetime_str))
 
