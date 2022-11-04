@@ -92,9 +92,12 @@ tripletLoss_margin = 1
 log += 'learning_rate = {}\nmomentum = {}\nweight_decay = {}\nlr_decay_step = {}\nlr_decay_factor = {}\n'.format(learning_rate, \
         momentum, weight_decay, lr_decay_step, lr_decay_factor)
 
+best_val_epoch, best_val_loss = 0, 0
+
 best_val_epoch, best_val_loss = fit(train_loader=train_dataloader, val_loader=val_dataloader, model=triplet_net, \
     loss_fn=nn.TripletMarginLoss(margin=tripletLoss_margin), optimizer=optimizer, scheduler=scheduler, \
-    n_epochs=1, cuda='cuda:0', log_interval=10, metrics=[], start_epoch=0, early_stopping_interval=10)
+    n_epochs=30, cuda='cuda:0', log_interval=10, metrics=[], start_epoch=0, early_stopping_interval=10)
+
 
 log += 'best_val_epoch = {}\nbest_val_loss = {}\n'.format(best_val_epoch, best_val_loss)
 print('best_val_epoch = {}\nbest_val_loss = {}\n'.format(best_val_epoch, best_val_loss))
@@ -129,7 +132,7 @@ for i in range(len(test_dataloader)):
         if math.isnan(_02_dist[-1]):
             print('nan: {}, {}'.format(embeddings[0][batch_index], embeddings[2][batch_index]))
 
-    if i % 50 == 0:
+    if i % 10 == 0:
         print('Batch {} out of {}'.format(i, len(test_dataloader)))
         print('\taverage cosine sim between matching pairs:', np.mean(np.array(_01_dist)))
         print('\taverage cosine sim between non-matching pairs:', np.mean(np.array(_02_dist)))
@@ -149,7 +152,7 @@ print('average cosine sim between matching pairs:', np.mean(_01_dist))
 print('average cosine sim between non-matching pairs:', np.mean(_02_dist))
 
 from datetime import datetime
-datetime_str = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+datetime_str = datetime.now().strftime("%d-%m-%Y_%H:%M:%S")
 with open('results/results_{}.txt'.format(datetime_str), 'w') as fout:
     fout.write(log + '\n')
 torch.save(embedder.state_dict(), 'results/weights_{}.pth'.format(datetime_str))
