@@ -51,6 +51,9 @@ for the_name, the_dataloader in zip(['train', 'val', 'test'], [train_dataloader,
         plt.show()
 """
 
+# FILE OUTPUT
+log = ""
+
 # CREATE EMBEDDER
 
 embedder = EmbeddingNet()
@@ -62,7 +65,9 @@ embedder = EmbeddingNet()
 n_layers = list(embedder.feature_extractor.children())
 print(n_layers)
 print(len(n_layers))
-for the_param in list(embedder.feature_extractor.children())[:1]:
+n_frozen_layers = 3
+for the_param in list(embedder.feature_extractor.children())[:n_frozen_layers]:
+    log += 'freezing{}\n'.format(the_param)
     print('freezing {}'.format(the_param))
     the_param.requires_grad = False
 
@@ -79,6 +84,9 @@ lr_decay_factor=0.9
 optimizer = optim.Adam(triplet_net.parameters(), lr=learning_rate) #optim.SGD(triplet_net.parameters(), lr=learning_rate, momentum=momentum, weight_decay=weight_decay)
 scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=lr_decay_step, gamma=lr_decay_factor)
 tripletLoss_margin = 1
+
+log += 'learning_rate = {}\nmomentum = {}\nweight_decay = {}\nlr_decay_step = {}\nlr_decay_factor = {}\n'.format(learning_rate, \
+        momentum, weight_decay, lr_decay_step, lr_decay_factor)
 
 fit(train_loader=train_dataloader, val_loader=val_dataloader, model=triplet_net, \
     loss_fn=nn.TripletMarginLoss(margin=tripletLoss_margin), optimizer=optimizer, scheduler=scheduler, \
@@ -122,6 +130,7 @@ for i in range(len(test_dataloader)):
         print('Batch {} out of {}'.format(i, len(test_dataloader)))
         print('\taverage cosine sim between matching pairs:', np.mean(np.array(_01_dist)))
         print('\taverage cosine sim between non-matching pairs:', np.mean(np.array(_02_dist)))
+    
     #print(test_filepaths, test_labels)
 
 _01_dist = np.array(_01_dist)
@@ -130,8 +139,15 @@ _02_dist = np.array(_02_dist)
 #print(_01_dist[0].size())
 #print(_02_dist[0].size())
 
+log += 'average cosine sim b/w matching pairs: {}\n'.format(np.mean(_01_dist))
+log += 'average cosine sim b/w nonmatching pairs: {}\n'.format(np.mean(_02_dist))
+
 print('number of testing positive pairs:', len(_01_dist))
 print('number of testing negative pairs:', len(_02_dist))
 
 print('average cosine sim between matching pairs:', np.mean(_01_dist))
 print('average cosine sim between non-matching pairs:', np.mean(_02_dist))
+
+with open('results_freeze_{}.txt'.format(n_frozen_layers), 'w') as fout:
+    fout.write(log + '\n')
+
