@@ -58,6 +58,7 @@ log = ""
 pretrained=False
 embedder = EmbeddingNet(pretrained=pretrained)
 log += 'pretrained: {}\n'.format(pretrained)
+print('pretrained:', pretrained)
 
 # load saved weights!
 # embedder.load_state_dict(torch.load(MODEL_PATH))
@@ -147,6 +148,9 @@ print('number of testing negative pairs:', len(_02_dist))
 print('average cosine sim between matching pairs:', np.mean(_01_dist))
 print('average cosine sim between non-matching pairs:', np.mean(_02_dist))
 
-with open('results_freeze_{}.txt'.format(n_frozen_layers), 'w') as fout:
+from datetime import datetime
+datetime_str = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+with open('results/results_{}.txt'.format(datetime_str), 'w') as fout:
     fout.write(log + '\n')
+torch.save(embedder.state_dict(), 'results/weights_{}.pth'.format(datetime_str))
 
