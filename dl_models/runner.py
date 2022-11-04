@@ -91,9 +91,12 @@ tripletLoss_margin = 1
 log += 'learning_rate = {}\nmomentum = {}\nweight_decay = {}\nlr_decay_step = {}\nlr_decay_factor = {}\n'.format(learning_rate, \
         momentum, weight_decay, lr_decay_step, lr_decay_factor)
 
-fit(train_loader=train_dataloader, val_loader=val_dataloader, model=triplet_net, \
+best_val_epoch, best_val_loss = fit(train_loader=train_dataloader, val_loader=val_dataloader, model=triplet_net, \
     loss_fn=nn.TripletMarginLoss(margin=tripletLoss_margin), optimizer=optimizer, scheduler=scheduler, \
-    n_epochs=100, cuda='cuda:0', log_interval=10, metrics=[], start_epoch=0, early_stopping_interval=10)
+    n_epochs=1, cuda='cuda:0', log_interval=10, metrics=[], start_epoch=0, early_stopping_interval=10)
+
+log += 'best_val_epoch = {}\nbest_val_loss = {}\n'.format(best_val_epoch, best_val_loss)
+print('best_val_epoch = {}\nbest_val_loss = {}\n'.format(best_val_epoch, best_val_loss))
 
 # distances between embedding of positive and negative pair
 _01_dist = []
