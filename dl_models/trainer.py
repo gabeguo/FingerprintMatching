@@ -5,7 +5,7 @@ import numpy as np
 
 
 def fit(train_loader, val_loader, model, loss_fn, optimizer, scheduler, n_epochs, cuda, log_interval, metrics=[],
-        start_epoch=0):
+        start_epoch=0, early_stopping_interval=10):
     """
     Loaders, model, loss function and metrics should work together for a given task,
     i.e. The model should be able to process data output of loaders,
@@ -34,8 +34,7 @@ def fit(train_loader, val_loader, model, loss_fn, optimizer, scheduler, n_epochs
         val_loss /= len(val_loader)
 
         past_val_losses.append(val_loss)
-        val_loss_window = 20
-        if len(past_val_losses) > val_loss_window and val_loss > sum(past_val_losses[-val_loss_window:]) / len(past_val_losses[-val_loss_window:]):
+        if len(past_val_losses) > early_stopping_interval and val_loss > sum(past_val_losses[-early_stopping_interval:]) / len(past_val_losses[-early_stopping_interval:]):
             print('val loss no longer decreasing - stop training')
             return
         
