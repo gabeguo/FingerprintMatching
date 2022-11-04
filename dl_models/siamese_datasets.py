@@ -33,12 +33,12 @@ def my_transformation(the_image, train=False, target_image_size=(224, 224)):
         transform = transforms.Compose([
             transforms.RandomRotation(30, fill=255),
             transforms.RandomAffine(degrees=5, shear=(-5, 5, -5, 5), fill=255),
-            transforms.ColorJitter(),
+            #transforms.ColorJitter(),
             transform,
-            transforms.Resize((int(target_image_size[0] * 1.1), int(target_image_size[1] * 1.1))),
-            transforms.RandomResizedCrop(target_image_size, scale=(0.75, 1.0), ratio=(0.9, 1.1)),
-            transforms.RandomHorizontalFlip(p=0.25),
-            transforms.RandomVerticalFlip(p=0.25),
+            #transforms.Resize((int(target_image_size[0] * 1.1), int(target_image_size[1] * 1.1))),
+            #transforms.RandomResizedCrop(target_image_size, scale=(0.75, 1.0), ratio=(0.9, 1.1)),
+            #transforms.RandomHorizontalFlip(p=0.25),
+            #transforms.RandomVerticalFlip(p=0.25),
             #transforms.RandomAdjustSharpness(1.5, p=0.25),
         ])
     #the_min = torch.min(the_image)
