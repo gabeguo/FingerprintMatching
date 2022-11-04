@@ -56,19 +56,22 @@ for the_name, the_dataloader in zip(['train', 'val', 'test'], [train_dataloader,
 embedder = EmbeddingNet()
 
 # load saved weights!
-embedder.load_state_dict(torch.load(MODEL_PATH))
-"""
+# embedder.load_state_dict(torch.load(MODEL_PATH))
+
 # freeze all layers except the last one
-for the_param in list(embedder.feature_extractor.children())[:-3]:
+n_layers = list(embedder.feature_extractor.children())
+print(n_layers)
+print(len(n_layers))
+for the_param in list(embedder.feature_extractor.children())[:1]:
+    print('freezing {}'.format(the_param))
     the_param.requires_grad = False
-"""
 
 # CREATE TRIPLET NET
 triplet_net = TripletNet(embedder)
 
 # TRAIN
 
-learning_rate = 0.001
+learning_rate = 0.005
 momentum = 0.99
 weight_decay = 5e-5
 lr_decay_step=3
