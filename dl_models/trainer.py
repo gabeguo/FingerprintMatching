@@ -142,7 +142,8 @@ def test_epoch(val_loader, model, loss_fn, cuda, metrics):
             if cuda:
                 data = tuple(d.cuda() for d in data)
                 if target is not None:
-                    target = target.cuda()
+                    #target = target.cuda()
+                    target = torch.tensor([int(item) for item in target]).cuda()
 
             outputs = model(*data)
 
