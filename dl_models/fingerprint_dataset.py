@@ -59,4 +59,4 @@ class FingerprintDataset(Dataset):
 
     # returns filepath, label
     def __getitem__(self, idx):
-        return self.images[idx], self.image_labels[idx]
+        return self.images[idx], self.img_labels[idx]
