@@ -24,9 +24,9 @@ MODEL_PATH = 'embedding_net_weights.pth'
 batch_size=64
 
 training_dataset = FingerprintDataset(os.path.join(DATA_FOLDER, 'train'), train=True)
-train_batch_sampler = BalancedBatchSampler(training_dataset.train_labels, n_classes=10, n_samples=25)
+train_batch_sampler = BalancedBatchSampler(training_dataset.train_labels, n_classes=10, n_samples=10)
 online_train_loader = DataLoader(training_dataset, batch_sampler=train_batch_sampler)
-
+"""
 val_dataset = FingerprintDataset(os.path.join(DATA_FOLDER, 'val'), train=False)
 val_batch_sampler = BalancedBatchSampler(val_dataset.test_labels, n_classes=10, n_samples=25)
 val_dataloader = DataLoader(val_dataset, batch_sampler=val_batch_sampler)
@@ -34,6 +34,12 @@ val_dataloader = DataLoader(val_dataset, batch_sampler=val_batch_sampler)
 test_dataset = FingerprintDataset(os.path.join(DATA_FOLDER, 'test'), train=False)
 test_batch_sampler = BalancedBatchSampler(test_dataset.test_labels, n_classes=10, n_samples=25)
 test_dataloader = DataLoader(test_dataset, batch_sampler=test_batch_sampler)
+"""
+val_dataset = TripletDataset(FingerprintDataset(os.path.join(DATA_FOLDER, 'val'), train=False))
+val_dataloader = DataLoader(val_dataset, batch_size=batch_size, shuffle=True)
+
+test_dataset = TripletDataset(FingerprintDataset(os.path.join(DATA_FOLDER, 'test'), train=False))
+test_dataloader = DataLoader(test_dataset, batch_size=batch_size, shuffle=True)
 
 # SHOW IMAGES
 """
