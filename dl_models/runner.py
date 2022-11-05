@@ -22,7 +22,7 @@ MODEL_PATH = 'embedding_net_weights.pth'
 batch_size=64
 
 training_dataset = TripletDataset(FingerprintDataset(os.path.join(DATA_FOLDER, 'train'), train=True))
-#training_dataset = torch.utils.data.Subset(training_dataset, list(range(0, len(training_dataset), 5)))
+#training_dataset = torch.utils.data.Subset(training_dataset, list(range(0, len(training_dataset), 50)))
 train_dataloader = DataLoader(training_dataset, batch_size=batch_size, shuffle=True)
 
 val_dataset = TripletDataset(FingerprintDataset(os.path.join(DATA_FOLDER, 'val'), train=False))
@@ -61,7 +61,7 @@ log += 'pretrained: {}\n'.format(pretrained)
 print('pretrained:', pretrained)
 
 # load saved weights!
-# embedder.load_state_dict(torch.load(MODEL_PATH))
+embedder.load_state_dict(torch.load(MODEL_PATH))
 
 """
 # freeze all layers except the last one
@@ -96,7 +96,7 @@ best_val_epoch, best_val_loss = 0, 0
 
 best_val_epoch, best_val_loss = fit(train_loader=train_dataloader, val_loader=val_dataloader, model=triplet_net, \
     loss_fn=nn.TripletMarginLoss(margin=tripletLoss_margin), optimizer=optimizer, scheduler=scheduler, \
-    n_epochs=30, cuda='cuda:0', log_interval=10, metrics=[], start_epoch=0, early_stopping_interval=10)
+    n_epochs=100, cuda='cuda:0', log_interval=10, metrics=[], start_epoch=27, early_stopping_interval=100)
 
 
 log += 'best_val_epoch = {}\nbest_val_loss = {}\n'.format(best_val_epoch, best_val_loss)
