@@ -61,6 +61,9 @@ def fit(train_loader, val_loader, model, loss_fn, optimizer, scheduler, n_epochs
         
         scheduler.step()
 
+    with open('curr_val_losses.txt', 'w') as fout:
+        fout.write(str([epoch for epoch in range(start_epoch, n_epochs)]) + '\n')
+        fout.write(str(past_val_losses) + '\n')
     model.load_state_dict(torch.load(temp_model_path))
     model.eval()
     return best_val_epoch, best_val_loss
