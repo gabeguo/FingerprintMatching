@@ -57,8 +57,10 @@ for the_name, the_dataloader in zip(['train', 'val', 'test'], [train_dataloader,
 log = ""
 
 # CREATE EMBEDDER
-
-embedder = EmbeddingNet()
+pretrained=False
+embedder = EmbeddingNet(pretrained=pretrained)
+log += 'pretrained: {}\n'.format(pretrained)
+print('pretrained:', pretrained)
 
 # load saved weights!
 # embedder.load_state_dict(torch.load(MODEL_PATH))
@@ -80,13 +82,14 @@ tripletLoss_margin = 1
 log += 'learning_rate = {}\nmomentum = {}\nweight_decay = {}\nlr_decay_step = {}\nlr_decay_factor = {}\n'.format(learning_rate, \
         momentum, weight_decay, lr_decay_step, lr_decay_factor)
 
-#
-# nn.TripletMarginLoss(margin=tripletLoss_margin)
-#
+best_val_epoch, best_val_loss = 0, 0
 
-fit(train_loader=online_train_loader, val_loader=val_dataloader, model=triplet_net, \
+best_val_epoch, best_val_loss = fit(train_loader=online_train_loader, val_loader=val_dataloader, model=triplet_net, \
     loss_fn=OnlineTripletLoss(tripletLoss_margin, SemihardNegativeTripletSelector(tripletLoss_margin)), optimizer=optimizer, scheduler=scheduler, \
     n_epochs=100, cuda='cuda:0', log_interval=10, metrics=[AverageNonzeroTripletsMetric()], start_epoch=0)
+
+log += 'best_val_epoch = {}\nbest_val_loss = {}\n'.format(best_val_epoch, best_val_loss)
+print('best_val_epoch = {}\nbest_val_loss = {}\n'.format(best_val_epoch, best_val_loss))
 
 # distances between embedding of positive and negative pair
 _01_dist = []
@@ -126,7 +129,7 @@ for i in range(len(test_dataloader)):
         print('Batch {} out of {}'.format(i, len(test_dataloader)))
         print('\taverage cosine sim between matching pairs:', np.mean(np.array(_01_dist)))
         print('\taverage cosine sim between non-matching pairs:', np.mean(np.array(_02_dist)))
-    
+
     #print(test_filepaths, test_labels)
 
 _01_dist = np.array(_01_dist)
@@ -144,6 +147,8 @@ print('number of testing negative pairs:', len(_02_dist))
 print('average cosine sim between matching pairs:', np.mean(_01_dist))
 print('average cosine sim between non-matching pairs:', np.mean(_02_dist))
 
-with open('results_freeze_{}.txt'.format(n_frozen_layers), 'w') as fout:
+from datetime import datetime
+datetime_str = datetime.now().strftime("%d-%m-%Y_%H:%M:%S")
+with open('results/results_{}.txt'.format(datetime_str), 'w') as fout:
     fout.write(log + '\n')
-
+torch.save(embedder.state_dict(), 'results/weights_{}.pth'.format(datetime_str))
