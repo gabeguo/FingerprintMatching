@@ -26,19 +26,18 @@ batch_size=64
 training_dataset = FingerprintDataset(os.path.join(DATA_FOLDER, 'train'), train=True)
 train_batch_sampler = BalancedBatchSampler(training_dataset.train_labels, n_classes=10, n_samples=10)
 online_train_loader = DataLoader(training_dataset, batch_sampler=train_batch_sampler)
-"""
+
 val_dataset = FingerprintDataset(os.path.join(DATA_FOLDER, 'val'), train=False)
-val_batch_sampler = BalancedBatchSampler(val_dataset.test_labels, n_classes=10, n_samples=25)
+val_batch_sampler = BalancedBatchSampler(val_dataset.test_labels, n_classes=10, n_samples=10)
 val_dataloader = DataLoader(val_dataset, batch_sampler=val_batch_sampler)
 
+"""
 test_dataset = FingerprintDataset(os.path.join(DATA_FOLDER, 'test'), train=False)
-test_batch_sampler = BalancedBatchSampler(test_dataset.test_labels, n_classes=10, n_samples=25)
+test_batch_sampler = BalancedBatchSampler(test_dataset.test_labels, n_classes=10, n_samples=10)
 test_dataloader = DataLoader(test_dataset, batch_sampler=test_batch_sampler)
 """
-val_dataset = TripletDataset(FingerprintDataset(os.path.join(DATA_FOLDER, 'val'), train=False))
-val_dataloader = DataLoader(val_dataset, batch_size=batch_size, shuffle=True)
-
 test_dataset = TripletDataset(FingerprintDataset(os.path.join(DATA_FOLDER, 'test'), train=False))
+#test_dataset = torch.utils.data.Subset(test_dataset, list(range(0, len(test_dataset), 5)))
 test_dataloader = DataLoader(test_dataset, batch_size=batch_size, shuffle=True)
 
 # SHOW IMAGES
@@ -75,7 +74,6 @@ print('pretrained:', pretrained)
 triplet_net = embedder
 
 # TRAIN
-
 learning_rate = 0.005
 momentum = 0.99
 weight_decay = 5e-5
@@ -92,7 +90,7 @@ best_val_epoch, best_val_loss = 0, 0
 
 best_val_epoch, best_val_loss = fit(train_loader=online_train_loader, val_loader=val_dataloader, model=triplet_net, \
     loss_fn=OnlineTripletLoss(tripletLoss_margin, SemihardNegativeTripletSelector(tripletLoss_margin)), optimizer=optimizer, scheduler=scheduler, \
-    n_epochs=100, cuda='cuda:0', log_interval=10, metrics=[AverageNonzeroTripletsMetric()], start_epoch=0)
+    n_epochs=1, cuda='cuda:0', log_interval=10, metrics=[AverageNonzeroTripletsMetric()], start_epoch=0)
 
 log += 'best_val_epoch = {}\nbest_val_loss = {}\n'.format(best_val_epoch, best_val_loss)
 print('best_val_epoch = {}\nbest_val_loss = {}\n'.format(best_val_epoch, best_val_loss))
@@ -112,6 +110,7 @@ embedder = embedder.to('cuda:0')
 
 # TEST
 
+triplet_net = TripletNet(embedder)
 for i in range(len(test_dataloader)):
     test_images, test_labels, test_filepaths = next(iter(test_dataloader))
 
