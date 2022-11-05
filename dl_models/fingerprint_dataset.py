@@ -1,9 +1,38 @@
 import os
 import torch
 from torch.utils.data import Dataset, DataLoader
-from torchvision import transforms, utils
-from torchvision.io import read_image
+from torchvision import models, transforms, utils
+from torchvision.io import read_image, ImageReadMode
 import numpy as np
+import torchvision.transforms.functional as F
+
+# Use https://discuss.pytorch.org/t/how-to-resize-and-pad-in-a-torchvision-transforms-compose/71850/10
+# makes images squares by padding
+class SquarePad:
+    def __call__(self, image):
+        max_wh = max(image.size())
+        p_left, p_top = [(max_wh - s) // 2 for s in image.size()[1:]] # first channel is just colors
+        p_right, p_bottom = [max_wh - (s+pad) for s, pad in zip(image.size()[1:], [p_left, p_top])]
+        padding = (p_left, p_top, p_right, p_bottom)
+        return F.pad(image, padding, 255, 'constant')
+
+# returns the image as a normalized square with standard size
+def my_transformation(the_image, train=False, target_image_size=(224, 224)):
+    #print(target_image_size)
+    assert target_image_size[0] == target_image_size[1]
+    transform=transforms.Compose([
+        SquarePad(),
+        transforms.Resize(target_image_size),
+        transforms.Normalize([0, 0, 0], [1, 1, 1]),
+    ])
+    """
+    if train:
+        transform = transforms.Compose([
+            #transforms.RandomRotation(15, fill=255),
+            transform,
+        ])
+    """
+    return transform(the_image.float())
 
 class FingerprintDataset(Dataset):
     def is_image_filename(self, filename):
@@ -57,6 +86,8 @@ class FingerprintDataset(Dataset):
     def __len__(self):
         return self.len
 
-    # returns filepath, label
+    # returns image, label, filepath
     def __getitem__(self, idx):
-        return self.images[idx], self.img_labels[idx]
+        return my_transformation(read_image(self.images[idx], mode=ImageReadMode.RGB), train=self.train), \
+        self.img_labels[idx], \
+        self.images[idx]
