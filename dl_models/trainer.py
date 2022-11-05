@@ -82,6 +82,15 @@ def train_epoch(train_loader, model, loss_fn, optimizer, cuda, log_interval, met
     losses = []
     total_loss = 0
 
+    """
+    i = 0
+    for item in enumerate(train_loader):
+        print(item)
+        i += 1
+        if i >= 5:
+            break
+    """
+
     for batch_idx, (data, target, filepaths) in enumerate(train_loader):
         target = target if len(target) > 0 else None
         if not type(data) in (tuple, list):
