@@ -90,7 +90,7 @@ best_val_epoch, best_val_loss = 0, 0
 
 best_val_epoch, best_val_loss = fit(train_loader=online_train_loader, val_loader=val_dataloader, model=triplet_net, \
     loss_fn=OnlineTripletLoss(tripletLoss_margin, SemihardNegativeTripletSelector(tripletLoss_margin)), optimizer=optimizer, scheduler=scheduler, \
-    n_epochs=30, cuda='cuda:0', log_interval=10, metrics=[AverageNonzeroTripletsMetric()], start_epoch=0)
+    n_epochs=100, cuda='cuda:0', log_interval=10, metrics=[AverageNonzeroTripletsMetric()], start_epoch=0, early_stopping_interval=30)
 
 log += 'best_val_epoch = {}\nbest_val_loss = {}\n'.format(best_val_epoch, best_val_loss)
 print('best_val_epoch = {}\nbest_val_loss = {}\n'.format(best_val_epoch, best_val_loss))
