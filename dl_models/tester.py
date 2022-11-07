@@ -32,7 +32,7 @@ val_dataset = TripletDataset(FingerprintDataset(os.path.join(DATA_FOLDER, 'val')
 val_dataloader = DataLoader(val_dataset, batch_size=batch_size, shuffle=True)
 
 test_dataset = TripletDataset(FingerprintDataset(os.path.join(DATA_FOLDER, 'test'), train=False))
-#test_dataset = torch.utils.data.Subset(test_dataset, list(range(0, len(test_dataset), 5)))
+#test_dataset = torch.utils.data.Subset(test_dataset, list(range(0, len(test_dataset), 100)))
 test_dataloader = DataLoader(test_dataset, batch_size=batch_size, shuffle=True)
 
 # SHOW IMAGES
@@ -146,6 +146,7 @@ for dist in all_distances:
 
     acc.append((tp[-1] + tn[-1]) / len(all_distances))
 
+max_acc = max(acc)
 print('best accuracy:', max(acc))
 threshold = all_distances[max(range(len(acc)), key=acc.__getitem__)]
 
@@ -165,6 +166,8 @@ print('std of  squared L2 distance between positive pairs:', np.std(_01_dist))
 print('average squared L2 distance between negative pairs:', np.mean(_02_dist))
 print('std of  squared L2 distance between negative pairs:', np.std(_02_dist))
 
+acc_by_trait = dict()
+
 # distance by sample trait (sensor type, finger)
 for trait_name, the_dists in zip(['same sensor', 'diff sensor', 'same finger', 'diff finger'], \
                             [same_sensor_dist, diff_sensor_dist, same_finger_dist, diff_finger_dist]):
@@ -182,6 +185,8 @@ for trait_name, the_dists in zip(['same sensor', 'diff sensor', 'same finger', '
     acc = (tp + tn) / (len(the_dists[SAME_PERSON]) + len(the_dists[DIFF_PERSON]))
     print('\tacc:', acc)
 
+    acc_by_trait[trait_name] = acc
+
 from datetime import datetime
 datetime_str = datetime.now().strftime("%d-%m-%Y_%H:%M:%S")
 with open('results/test_results_{}.txt'.format(datetime_str), 'w') as fout:
@@ -189,7 +194,7 @@ with open('results/test_results_{}.txt'.format(datetime_str), 'w') as fout:
     fout.write('std of  squared L2 distance between positive pairs: {}\n'.format(np.std(_01_dist)))
     fout.write('average squared L2 distance between negative pairs: {}\n'.format(np.mean(_02_dist)))
     fout.write('std of  squared L2 distance between negative pairs: {}\n'.format(np.std(_02_dist)))
-    fout.write('best accuracy: {}\n\n'.format(max(acc)))
+    fout.write('best accuracy: {}\n\n'.format(str(max_acc)))
 
     # distance by sample trait (sensor type, finger)
     for trait_name, the_dists in zip(['same sensor', 'diff sensor', 'same finger', 'diff finger'], \
@@ -199,3 +204,4 @@ with open('results/test_results_{}.txt'.format(datetime_str), 'w') as fout:
         fout.write('\tstd of  squared L2 distance between same person: {}\n'.format(np.std(the_dists[SAME_PERSON])))
         fout.write('\taverage squared L2 distance between diff person: {}\n'.format(np.mean(the_dists[DIFF_PERSON])))
         fout.write('\tstd of  squared L2 distance between diff person: {}\n'.format(np.std(the_dists[DIFF_PERSON])))
+        fout.write('\taccuracy: {}\n\n'.format(str(acc_by_trait[trait_name])))
