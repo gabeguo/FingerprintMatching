@@ -52,6 +52,12 @@ def fit(train_loader, val_loader, model, loss_fn, optimizer, scheduler, n_epochs
             # load best weights
             model.load_state_dict(torch.load(temp_model_path))
             model.eval()
+            
+            with open('curr_val_losses.txt', 'w') as fout:
+                fout.write('epoch: ' + str([epoch for epoch in range(start_epoch, n_epochs)]) + '\n')
+                fout.write('train loss: ' + str(past_train_losses) + '\n')
+                fout.write('val loss: ' + str(past_val_losses) + '\n')
+
             return best_val_epoch, best_val_loss
         
         message += '\nEpoch: {}/{}. Validation set: Average loss: {:.4f}'.format(epoch + 1, n_epochs,
