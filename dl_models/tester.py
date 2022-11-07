@@ -36,7 +36,7 @@ test_dataset = TripletDataset(FingerprintDataset(os.path.join(DATA_FOLDER, 'test
 test_dataloader = DataLoader(test_dataset, batch_size=batch_size, shuffle=True)
 
 # SHOW IMAGES
-
+"""
 import matplotlib.pyplot as plt
 it = iter(val_dataloader)
 for i in range(5):
@@ -48,7 +48,7 @@ for i in range(5):
     print(next_img[0])
     plt.imshow(next_img.permute(1, 2, 0))
     plt.show()
-
+"""
 
 # CREATE EMBEDDER
 
@@ -96,8 +96,11 @@ for i in range(len(test_dataloader)):
         # process traits of these samples (same finger, same sensor)
         anchor_filename, pos_filename, neg_filename = \
             test_filepaths[0][batch_index], test_filepaths[1][batch_index], test_filepaths[2][batch_index]
+        anchor_filename, pos_filename, neg_filename = anchor_filename.split('/')[-1], pos_filename.split('/')[-1], neg_filename.split('/')[-1]
         anchor_fgrp, pos_fgrp, neg_fgrp = get_fgrp(anchor_filename), get_fgrp(pos_filename), get_fgrp(neg_filename)
-        anchor_sensor, pos_sensor, neg_sensor = get_sensor(anchor_sensor), get_sensor(pos_sensor), get_sensor(neg_sensor)
+        anchor_sensor, pos_sensor, neg_sensor = get_sensor(anchor_filename), get_sensor(pos_filename), get_sensor(neg_filename)
+
+        # print(anchor_filename, pos_filename, neg_filename)
 
         assert get_id(anchor_filename) == get_id(pos_filename)
         assert get_id(anchor_filename) != get_id(neg_filename)
@@ -144,6 +147,9 @@ for dist in all_distances:
     acc.append((tp[-1] + tn[-1]) / len(all_distances))
 
 print('best accuracy:', max(acc))
+threshold = all_distances[max(range(len(acc)), key=acc.__getitem__)]
+
+import matplotlib.pyplot as plt
 plt.plot([i for i in range(len(acc))], acc)
 plt.show()
 
@@ -167,6 +173,14 @@ for trait_name, the_dists in zip(['same sensor', 'diff sensor', 'same finger', '
     print('\tstd of  squared L2 distance between same person:', np.std(the_dists[SAME_PERSON]))
     print('\taverage squared L2 distance between diff person:', np.mean(the_dists[DIFF_PERSON]))
     print('\tstd of  squared L2 distance between diff person:', np.std(the_dists[DIFF_PERSON]))
+
+    tp = len([x for x in the_dists[SAME_PERSON] if x < threshold])
+    tn = len([x for x in the_dists[DIFF_PERSON] if x >= threshold])
+    fn = len(the_dists[SAME_PERSON]) - tp
+    fp = len(the_dists[DIFF_PERSON]) - tn
+
+    acc = (tp + tn) / (len(the_dists[SAME_PERSON]) + len(the_dists[DIFF_PERSON]))
+    print('\tacc:', acc)
 
 from datetime import datetime
 datetime_str = datetime.now().strftime("%d-%m-%Y_%H:%M:%S")
