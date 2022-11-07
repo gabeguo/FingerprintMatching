@@ -14,7 +14,7 @@ def fit(train_loader, val_loader, model, loss_fn, optimizer, scheduler, n_epochs
     Examples: Classification: batch loader, classification model, NLL loss, accuracy metric
     Siamese network: Siamese loader, siamese model, contrastive loss
     Online triplet learning: batch loader, embedding model, online triplet loss
-    
+
     Returns: epoch stopped on and final val loss
     Loads the best validation weights into the model
     """
@@ -52,27 +52,30 @@ def fit(train_loader, val_loader, model, loss_fn, optimizer, scheduler, n_epochs
             # load best weights
             model.load_state_dict(torch.load(temp_model_path))
             model.eval()
-            
+
             with open('curr_val_losses.txt', 'w') as fout:
                 fout.write('epoch: ' + str([epoch for epoch in range(start_epoch, n_epochs)]) + '\n')
                 fout.write('train loss: ' + str(past_train_losses) + '\n')
                 fout.write('val loss: ' + str(past_val_losses) + '\n')
 
             return best_val_epoch, best_val_loss
-        
+
         message += '\nEpoch: {}/{}. Validation set: Average loss: {:.4f}'.format(epoch + 1, n_epochs,
                                                                                  val_loss)
         for metric in metrics:
             message += '\t{}: {}'.format(metric.name(), metric.value())
 
         print(message)
-        
+
         scheduler.step()
 
-    with open('curr_val_losses.txt', 'w') as fout:
+    from datetime import datetime
+    datetime_str = datetime.now().strftime("%d-%m-%Y_%H:%M:%S")
+    with open('results/val_losses_{}.txt'.format(datetime_str), 'w') as fout:
         fout.write('epoch: ' + str([epoch for epoch in range(start_epoch, n_epochs)]) + '\n')
         fout.write('train loss: ' + str(past_train_losses) + '\n')
         fout.write('val loss: ' + str(past_val_losses) + '\n')
+
     model.load_state_dict(torch.load(temp_model_path))
     model.eval()
     return best_val_epoch, best_val_loss

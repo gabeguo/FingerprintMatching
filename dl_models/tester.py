@@ -8,12 +8,14 @@ import os
 import math
 
 sys.path.append('../')
+sys.path.append('../directory_organization')
 
 from trainer import *
 from losses import *
 from siamese_datasets import *
 from fingerprint_dataset import *
 from embedding_models import *
+from fileProcessingUtil import *
 
 from common_filepaths import DATA_FOLDER
 
@@ -59,6 +61,13 @@ triplet_net = TripletNet(embedder)
 _01_dist = []
 _02_dist = []
 
+SAME_PERSON = 1
+DIFF_PERSON = 0
+same_sensor_dist = {SAME_PERSON : list(), DIFF_PERSON : list()}
+diff_sensor_dist = {SAME_PERSON : list(), DIFF_PERSON : list()}
+same_finger_dist = {SAME_PERSON : list(), DIFF_PERSON : list()}
+diff_finger_dist = {SAME_PERSON : list(), DIFF_PERSON : list()}
+
 # Pre: parameters are 2 1D tensors
 def euclideanDist(tensor1, tensor2):
     return (tensor1 - tensor2).pow(2).sum(0)
@@ -79,21 +88,45 @@ for i in range(len(test_dataloader)):
     embeddings = [torch.reshape(e, (batch_size, e.size()[1])) for e in triplet_net(*test_images)]
     # len(embeddings) == 3 reprenting the following (anchor, pos, neg)
     # Each index in the list contains a tensor of size (batch size, embedding length)
-    # embeddings.shape[0] is (anchor, pos, neg); embeddings.shape[1] is batch size; embeddings.shape[2] is embedding length
 
     for batch_index in range(batch_size):
         _01_dist.append(euclideanDist(embeddings[0][batch_index], embeddings[1][batch_index]).item())
         _02_dist.append(euclideanDist(embeddings[0][batch_index], embeddings[2][batch_index]).item())
-        if math.isnan(_01_dist[-1]):
-            print('nan: {}, {}'.format(embeddings[0][batch_index], embeddings[1][batch_index]))
-        if math.isnan(_02_dist[-1]):
-            print('nan: {}, {}'.format(embeddings[0][batch_index], embeddings[2][batch_index]))
+
+        # process traits of these samples (same finger, same sensor)
+        anchor_filename, pos_filename, neg_filename = \
+            test_filepaths[0][batch_index], test_filepaths[1][batch_index], test_filepaths[2][batch_index]
+        anchor_fgrp, pos_fgrp, neg_fgrp = get_fgrp(anchor_filename), get_fgrp(pos_filename), get_fgrp(neg_filename)
+        anchor_sensor, pos_sensor, neg_sensor = get_sensor(anchor_sensor), get_sensor(pos_sensor), get_sensor(neg_sensor)
+
+        assert get_id(anchor_filename) == get_id(pos_filename)
+        assert get_id(anchor_filename) != get_id(neg_filename)
+
+        # same finger, same person
+        if anchor_fgrp == pos_fgrp:
+            same_finger_dist[SAME_PERSON].append(_01_dist[-1])
+        else:
+            diff_finger_dist[SAME_PERSON].append(_01_dist[-1])
+        # same finger, diff person
+        if anchor_fgrp == neg_fgrp:
+            same_finger_dist[DIFF_PERSON].append(_02_dist[-1]) #_02_dist[-1] is the dist between the current anchor and negative sample
+        else:
+            diff_finger_dist[DIFF_PERSON].append(_02_dist[-1])
+        # same sensor, same person
+        if anchor_sensor == pos_sensor:
+            same_sensor_dist[SAME_PERSON].append(_01_dist[-1])
+        else:
+            diff_sensor_dist[SAME_PERSON].append(_01_dist[-1])
+        # same sensor, diff person
+        if anchor_sensor == neg_sensor:
+            same_sensor_dist[DIFF_PERSON].append(_02_dist[-1])
+        else:
+            diff_sensor_dist[DIFF_PERSON].append(_02_dist[-1])
 
     if i % 5 == 0:
         print('Batch {} out of {}'.format(i, len(test_dataloader)))
         print('\taverage squared L2 distance between positive pairs:', np.mean(np.array(_01_dist)))
         print('\taverage squared L2 distance between negative pairs:', np.mean(np.array(_02_dist)))
-
 
 # FIND THRESHOLDS
 all_distances = _01_dist +_02_dist
@@ -107,7 +140,7 @@ for dist in all_distances:
     tn.append(len([x for x in _02_dist if x >= dist]))
     fn.append(len(_01_dist) - tp[-1])
     fp.append(len(_02_dist) - tn[-1])
-    
+
     acc.append((tp[-1] + tn[-1]) / len(all_distances))
 
 print('best accuracy:', max(acc))
@@ -121,9 +154,34 @@ _02_dist = np.array(_02_dist)
 print('number of testing positive pairs:', len(_01_dist))
 print('number of testing negative pairs:', len(_02_dist))
 
-print('average squared L2 distance between positve pairs:', np.mean(_01_dist))
-print('std of  squared L2 distance between positve pairs:', np.std(_01_dist))
+print('average squared L2 distance between positive pairs:', np.mean(_01_dist))
+print('std of  squared L2 distance between positive pairs:', np.std(_01_dist))
 print('average squared L2 distance between negative pairs:', np.mean(_02_dist))
 print('std of  squared L2 distance between negative pairs:', np.std(_02_dist))
 
+# distance by sample trait (sensor type, finger)
+for trait_name, the_dists in zip(['same sensor', 'diff sensor', 'same finger', 'diff finger'], \
+                            [same_sensor_dist, diff_sensor_dist, same_finger_dist, diff_finger_dist]):
+    print('Results for {}'.format(trait_name))
+    print('\taverage squared L2 distance between same person:', np.mean(the_dists[SAME_PERSON]))
+    print('\tstd of  squared L2 distance between same person:', np.std(the_dists[SAME_PERSON]))
+    print('\taverage squared L2 distance between diff person:', np.mean(the_dists[DIFF_PERSON]))
+    print('\tstd of  squared L2 distance between diff person:', np.std(the_dists[DIFF_PERSON]))
 
+from datetime import datetime
+datetime_str = datetime.now().strftime("%d-%m-%Y_%H:%M:%S")
+with open('results/test_results_{}.txt'.format(datetime_str), 'w') as fout:
+    fout.write('average squared L2 distance between positive pairs: {}\n'.format(np.mean(_01_dist)))
+    fout.write('std of  squared L2 distance between positive pairs: {}\n'.format(np.std(_01_dist)))
+    fout.write('average squared L2 distance between negative pairs: {}\n'.format(np.mean(_02_dist)))
+    fout.write('std of  squared L2 distance between negative pairs: {}\n'.format(np.std(_02_dist)))
+    fout.write('best accuracy: {}\n\n'.format(max(acc)))
+
+    # distance by sample trait (sensor type, finger)
+    for trait_name, the_dists in zip(['same sensor', 'diff sensor', 'same finger', 'diff finger'], \
+                                [same_sensor_dist, diff_sensor_dist, same_finger_dist, diff_finger_dist]):
+        fout.write('Results for {}\n'.format(trait_name))
+        fout.write('\taverage squared L2 distance between same person: {}\n'.format(np.mean(the_dists[SAME_PERSON])))
+        fout.write('\tstd of  squared L2 distance between same person: {}\n'.format(np.std(the_dists[SAME_PERSON])))
+        fout.write('\taverage squared L2 distance between diff person: {}\n'.format(np.mean(the_dists[DIFF_PERSON])))
+        fout.write('\tstd of  squared L2 distance between diff person: {}\n'.format(np.std(the_dists[DIFF_PERSON])))

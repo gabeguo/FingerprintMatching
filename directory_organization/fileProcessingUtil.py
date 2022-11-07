@@ -7,3 +7,5 @@ def get_fgrp(filename):
     return filename.split('_')[-1]
     #return filename.replace('.', '_').split('_')[-2]
 
+def get_sensor(filename):
+    return filename.split('_')[1]
