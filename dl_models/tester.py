@@ -107,7 +107,7 @@ for dist in all_distances:
     tn.append(len([x for x in _02_dist if x >= dist]))
     fn.append(len(_01_dist) - tp[-1])
     fp.append(len(_02_dist) - tn[-1])
-    
+
     acc.append((tp[-1] + tn[-1]) / len(all_distances))
 
 print('best accuracy:', max(acc))
@@ -126,4 +126,11 @@ print('std of  squared L2 distance between positve pairs:', np.std(_01_dist))
 print('average squared L2 distance between negative pairs:', np.mean(_02_dist))
 print('std of  squared L2 distance between negative pairs:', np.std(_02_dist))
 
-
+from datetime import datetime
+datetime_str = datetime.now().strftime("%d-%m-%Y_%H:%M:%S")
+with open('results/test_results_{}.txt'.format(datetime_str), 'w') as fout:
+    fout.write('average squared L2 distance between positive pairs: {}\n'.format(np.mean(_01_dist)))
+    fout.write('std of  squared L2 distance between positive pairs: {}\n'.format(np.std(_01_dist)))
+    fout.write('average squared L2 distance between negative pairs: {}\n'.format(np.mean(_02_dist)))
+    fout.write('std of  squared L2 distance between negative pairs: {}\n'.format(np.std(_02_dist)))
+    fout.write('best accuracy: {}\n'.format(max(acc)))
