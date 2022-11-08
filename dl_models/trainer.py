@@ -1,4 +1,4 @@
-# Thanks https://github.com/adambielski/siamese-triplet
+# Thanks https://github.com/adambielski/siamese-triplet`
 
 import torch
 import numpy as np
@@ -96,9 +96,9 @@ def train_epoch(train_loader, model, loss_fn, optimizer, cuda, log_interval, met
         if not type(data) in (tuple, list):
             data = (data,)
         if cuda:
-            data = tuple(d.cuda() for d in data)
+            data = tuple(d.cuda(device=cuda) for d in data)
             if target is not None:
-                target = torch.tensor([int(item) for item in target]).cuda()
+                target = torch.tensor([int(item) for item in target]).cuda(device=cuda)
 
 
         optimizer.zero_grad()
@@ -149,10 +149,10 @@ def test_epoch(val_loader, model, loss_fn, cuda, metrics):
             if not type(data) in (tuple, list):
                 data = (data,)
             if cuda:
-                data = tuple(d.cuda() for d in data)
+                data = tuple(d.cuda(device=cuda) for d in data)
                 if target is not None:
                     #target = target.cuda()
-                    target = torch.tensor([int(item) for item in target]).cuda()
+                    target = torch.tensor([int(item) for item in target]).cuda(device=cuda)
 
             outputs = model(*data)
 
