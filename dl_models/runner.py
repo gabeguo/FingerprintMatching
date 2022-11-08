@@ -55,13 +55,13 @@ for the_name, the_dataloader in zip(['train', 'val', 'test'], [train_dataloader,
 log = ""
 
 # CREATE EMBEDDER
-pretrained=False
+pretrained=True
 embedder = EmbeddingNet(pretrained=pretrained)
 log += 'pretrained: {}\n'.format(pretrained)
 print('pretrained:', pretrained)
 
 # load saved weights!
-# embedder.load_state_dict(torch.load(MODEL_PATH))
+#embedder.load_state_dict(torch.load(MODEL_PATH))
 
 """
 # freeze all layers except the last one
@@ -87,7 +87,7 @@ lr_decay_step=3
 lr_decay_factor=0.9
 optimizer = optim.Adam(triplet_net.parameters(), lr=learning_rate) #optim.SGD(triplet_net.parameters(), lr=learning_rate, momentum=momentum, weight_decay=weight_decay)
 scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=lr_decay_step, gamma=lr_decay_factor)
-tripletLoss_margin = 2
+tripletLoss_margin = 1
 
 log += 'learning_rate = {}\nmomentum = {}\nweight_decay = {}\nlr_decay_step = {}\nlr_decay_factor = {}\n'.format(learning_rate, \
         momentum, weight_decay, lr_decay_step, lr_decay_factor)
@@ -96,7 +96,7 @@ best_val_epoch, best_val_loss = 0, 0
 
 best_val_epoch, best_val_loss = fit(train_loader=train_dataloader, val_loader=val_dataloader, model=triplet_net, \
     loss_fn=nn.TripletMarginLoss(margin=tripletLoss_margin), optimizer=optimizer, scheduler=scheduler, \
-    n_epochs=50, cuda='cuda:0', log_interval=10, metrics=[], start_epoch=0, early_stopping_interval=15)
+    n_epochs=100, cuda='cuda:0', log_interval=10, metrics=[], start_epoch=0, early_stopping_interval=50)
 
 
 log += 'best_val_epoch = {}\nbest_val_loss = {}\n'.format(best_val_epoch, best_val_loss)
