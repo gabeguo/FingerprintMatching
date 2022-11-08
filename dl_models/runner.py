@@ -51,6 +51,12 @@ for the_name, the_dataloader in zip(['train', 'val', 'test'], [train_dataloader,
         plt.show()
 """
 
+# CLEAR CUDA MEMORY
+# https://stackoverflow.com/questions/54374935/how-to-fix-this-strange-error-runtimeerror-cuda-error-out-of-memory
+import gc
+gc.collect()
+torch.cuda.empty_cache()
+
 # FILE OUTPUT
 log = ""
 
