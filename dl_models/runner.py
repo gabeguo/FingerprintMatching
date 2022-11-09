@@ -19,7 +19,8 @@ from common_filepaths import DATA_FOLDER
 
 MODEL_PATH = 'embedding_net_weights.pth'
 
-batch_size=64
+# gpu can't support larger batch
+batch_size=64#16
 
 training_dataset = TripletDataset(FingerprintDataset(os.path.join(DATA_FOLDER, 'train'), train=True))
 #training_dataset = torch.utils.data.Subset(training_dataset, list(range(0, len(training_dataset), 50)))
@@ -102,7 +103,7 @@ best_val_epoch, best_val_loss = 0, 0
 
 best_val_epoch, best_val_loss = fit(train_loader=train_dataloader, val_loader=val_dataloader, model=triplet_net, \
     loss_fn=nn.TripletMarginLoss(margin=tripletLoss_margin), optimizer=optimizer, scheduler=scheduler, \
-    n_epochs=100, cuda='cuda:0', log_interval=10, metrics=[], start_epoch=0, early_stopping_interval=50)
+    n_epochs=100, cuda='cuda:1', log_interval=25, metrics=[], start_epoch=0, early_stopping_interval=50)
 
 
 log += 'best_val_epoch = {}\nbest_val_loss = {}\n'.format(best_val_epoch, best_val_loss)
@@ -119,14 +120,14 @@ torch.save(embedder.state_dict(), MODEL_PATH)
 # LOAD MODEL
 embedder.load_state_dict(torch.load(MODEL_PATH))
 embedder.eval()
-embedder = embedder.to('cuda:0')
+embedder = embedder.to('cuda:1')
 
 # TEST
 
 for i in range(len(test_dataloader)):
     test_images, test_labels, test_filepaths = next(iter(test_dataloader))
 
-    test_images = [item.to('cuda:0') for item in test_images]
+    test_images = [item.to('cuda:1') for item in test_images]
 
     embeddings = [torch.reshape(e, (batch_size, e.size()[1])) for e in triplet_net(*test_images)]
 
