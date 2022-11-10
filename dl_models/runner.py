@@ -17,7 +17,7 @@ from embedding_models import *
 
 from common_filepaths import DATA_FOLDER
 
-MODEL_PATH = 'embedding_net_weights.pth'
+MODEL_PATH = '/data/therealgabeguo/embedding_net_weights.pth'
 
 # gpu can't support larger batch
 batch_size=64#16
@@ -160,7 +160,7 @@ print('average cosine sim between non-matching pairs:', np.mean(_02_dist))
 
 from datetime import datetime
 datetime_str = datetime.now().strftime("%d-%m-%Y_%H:%M:%S")
-with open('results/results_{}.txt'.format(datetime_str), 'w') as fout:
+with open('/data/therealgabeguo/results/results_{}.txt'.format(datetime_str), 'w') as fout:
     fout.write(log + '\n')
-torch.save(embedder.state_dict(), 'results/weights_{}.pth'.format(datetime_str))
+torch.save(embedder.state_dict(), '/data/therealgabeguo/results/weights_{}.pth'.format(datetime_str))
 

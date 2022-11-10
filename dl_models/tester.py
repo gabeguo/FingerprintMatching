@@ -190,7 +190,7 @@ for trait_name, the_dists in zip(['same sensor', 'diff sensor', 'same finger', '
 
 from datetime import datetime
 datetime_str = datetime.now().strftime("%d-%m-%Y_%H:%M:%S")
-with open('results/test_results_{}.txt'.format(datetime_str), 'w') as fout:
+with open('/data/therealgabeguo/results/test_results_{}.txt'.format(datetime_str), 'w') as fout:
     fout.write('average squared L2 distance between positive pairs: {}\n'.format(np.mean(_01_dist)))
     fout.write('std of  squared L2 distance between positive pairs: {}\n'.format(np.std(_01_dist)))
     fout.write('average squared L2 distance between negative pairs: {}\n'.format(np.mean(_02_dist)))

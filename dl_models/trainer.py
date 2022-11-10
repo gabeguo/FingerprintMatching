@@ -49,11 +49,12 @@ def fit(train_loader, val_loader, model, loss_fn, optimizer, scheduler, n_epochs
         past_val_losses.append(val_loss)
         if len(past_val_losses) > early_stopping_interval and val_loss > sum(past_val_losses[-early_stopping_interval:]) / len(past_val_losses[-early_stopping_interval:]):
             print('val loss no longer decreasing - stop training')
+
             # load best weights
             model.load_state_dict(torch.load(temp_model_path))
             model.eval()
-
-            with open('curr_val_losses.txt', 'w') as fout:
+            
+            with open('/data/therealgabeguo/results/train_res_{}.txt'.format(datetime_str), 'w') as fout:
                 fout.write('epoch: ' + str([epoch for epoch in range(start_epoch, n_epochs)]) + '\n')
                 fout.write('train loss: ' + str(past_train_losses) + '\n')
                 fout.write('val loss: ' + str(past_val_losses) + '\n')
@@ -71,11 +72,12 @@ def fit(train_loader, val_loader, model, loss_fn, optimizer, scheduler, n_epochs
 
     from datetime import datetime
     datetime_str = datetime.now().strftime("%d-%m-%Y_%H:%M:%S")
-    with open('results/val_losses_{}.txt'.format(datetime_str), 'w') as fout:
+    with open('/data/therealgabeguo/results/train_res_{}.txt'.format(datetime_str), 'w') as fout:
         fout.write('epoch: ' + str([epoch for epoch in range(start_epoch, n_epochs)]) + '\n')
         fout.write('train loss: ' + str(past_train_losses) + '\n')
         fout.write('val loss: ' + str(past_val_losses) + '\n')
 
+    # load best weights
     model.load_state_dict(torch.load(temp_model_path))
     model.eval()
     return best_val_epoch, best_val_loss
