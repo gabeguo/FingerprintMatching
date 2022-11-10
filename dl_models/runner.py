@@ -102,7 +102,7 @@ best_val_epoch, best_val_loss = 0, 0
 
 best_val_epoch, best_val_loss = fit(train_loader=train_dataloader, val_loader=val_dataloader, model=triplet_net, \
     loss_fn=nn.TripletMarginLoss(margin=tripletLoss_margin), optimizer=optimizer, scheduler=scheduler, \
-    n_epochs=100, cuda='cuda:1', log_interval=25, metrics=[], start_epoch=0, early_stopping_interval=50)
+    n_epochs=100, cuda='cuda:1', log_interval=100, metrics=[], start_epoch=0, early_stopping_interval=50)
 
 
 log += 'best_val_epoch = {}\nbest_val_loss = {}\n'.format(best_val_epoch, best_val_loss)
