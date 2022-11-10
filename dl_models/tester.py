@@ -21,7 +21,7 @@ from common_filepaths import DATA_FOLDER
 
 MODEL_PATH = 'embedding_net_weights.pth'
 
-batch_size=64
+batch_size=8
 
 training_dataset = TripletDataset(FingerprintDataset(os.path.join(DATA_FOLDER, 'train'), train=True))
 #training_dataset = torch.utils.data.Subset(training_dataset, list(range(0, len(training_dataset), 5)))
@@ -126,7 +126,7 @@ for i in range(len(test_dataloader)):
         else:
             diff_sensor_dist[DIFF_PERSON].append(_02_dist[-1])
 
-    if i % 5 == 0:
+    if i % 40 == 0:
         print('Batch {} out of {}'.format(i, len(test_dataloader)))
         print('\taverage squared L2 distance between positive pairs:', np.mean(np.array(_01_dist)))
         print('\taverage squared L2 distance between negative pairs:', np.mean(np.array(_02_dist)))
@@ -149,11 +149,11 @@ for dist in all_distances:
 max_acc = max(acc)
 print('best accuracy:', max(acc))
 threshold = all_distances[max(range(len(acc)), key=acc.__getitem__)]
-
+"""
 import matplotlib.pyplot as plt
 plt.plot([i for i in range(len(acc))], acc)
 plt.show()
-
+"""
 # PRINT DISTANCES
 _01_dist = np.array(_01_dist)
 _02_dist = np.array(_02_dist)
@@ -172,10 +172,11 @@ acc_by_trait = dict()
 for trait_name, the_dists in zip(['same sensor', 'diff sensor', 'same finger', 'diff finger'], \
                             [same_sensor_dist, diff_sensor_dist, same_finger_dist, diff_finger_dist]):
     print('Results for {}'.format(trait_name))
-    print('\taverage squared L2 distance between same person:', np.mean(the_dists[SAME_PERSON]))
-    print('\tstd of  squared L2 distance between same person:', np.std(the_dists[SAME_PERSON]))
-    print('\taverage squared L2 distance between diff person:', np.mean(the_dists[DIFF_PERSON]))
-    print('\tstd of  squared L2 distance between diff person:', np.std(the_dists[DIFF_PERSON]))
+    for person in (SAME_PERSON, DIFF_PERSON):
+        person_str = 'same' if person == SAME_PERSON else 'diff'
+        print('\tnum people in category - {} person, {}: {}'.format(person_str, trait_name, len(the_dists[person])))
+        print('\t\taverage squared L2 distance between {} person: {}'.format(person_str, np.mean(the_dists[person])))
+        print('\t\tstd of  squared L2 distance between {} person: {}'.format(person_str, np.std(the_dists[person])))
 
     tp = len([x for x in the_dists[SAME_PERSON] if x < threshold])
     tn = len([x for x in the_dists[DIFF_PERSON] if x >= threshold])
@@ -200,8 +201,9 @@ with open('results/test_results_{}.txt'.format(datetime_str), 'w') as fout:
     for trait_name, the_dists in zip(['same sensor', 'diff sensor', 'same finger', 'diff finger'], \
                                 [same_sensor_dist, diff_sensor_dist, same_finger_dist, diff_finger_dist]):
         fout.write('Results for {}\n'.format(trait_name))
-        fout.write('\taverage squared L2 distance between same person: {}\n'.format(np.mean(the_dists[SAME_PERSON])))
-        fout.write('\tstd of  squared L2 distance between same person: {}\n'.format(np.std(the_dists[SAME_PERSON])))
-        fout.write('\taverage squared L2 distance between diff person: {}\n'.format(np.mean(the_dists[DIFF_PERSON])))
-        fout.write('\tstd of  squared L2 distance between diff person: {}\n'.format(np.std(the_dists[DIFF_PERSON])))
+        for person in (SAME_PERSON, DIFF_PERSON):
+            person_str = 'same' if person == SAME_PERSON else 'diff'
+            fout.write('\tnum people in category - {} person, {}: {}\n'.format(person_str, trait_name, len(the_dists[person])))
+            fout.write('\t\taverage squared L2 distance between {} person: {}\n'.format(person_str, np.mean(the_dists[person])))
+            fout.write('\t\tstd of  squared L2 distance between {} person: {}\n'.format(person_str, np.std(the_dists[person])))
         fout.write('\taccuracy: {}\n\n'.format(str(acc_by_trait[trait_name])))
