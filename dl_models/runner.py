@@ -88,7 +88,7 @@ triplet_net = TripletNet(embedder)
 # TRAIN
 
 learning_rate = 0.001
-scheduler=None
+scheduler=None # not needed for Adam
 optimizer = optim.Adam(triplet_net.parameters(), lr=learning_rate)
 tripletLoss_margin = 1
 
