@@ -20,6 +20,7 @@ from common_filepaths import DATA_FOLDER
 MODEL_PATH = '/data/therealgabeguo/embedding_net_weights.pth'
 
 batch_size=16
+test_batch_size=2
 
 training_dataset = TripletDataset(FingerprintDataset(os.path.join(DATA_FOLDER, 'train'), train=True))
 #training_dataset = torch.utils.data.Subset(training_dataset, list(range(0, len(training_dataset), 50)))
@@ -31,7 +32,7 @@ val_dataloader = DataLoader(val_dataset, batch_size=batch_size, shuffle=True)
 
 test_dataset = TripletDataset(FingerprintDataset(os.path.join(DATA_FOLDER, 'test'), train=False))
 #test_dataset = torch.utils.data.Subset(test_dataset, list(range(0, len(test_dataset), 5)))
-test_dataloader = DataLoader(test_dataset, batch_size=batch_size, shuffle=True)
+test_dataloader = DataLoader(test_dataset, batch_size=test_batch_size, shuffle=True)
 
 # SHOW IMAGES
 """
@@ -104,7 +105,6 @@ best_val_epoch, best_val_loss = fit(train_loader=train_dataloader, val_loader=va
     loss_fn=nn.TripletMarginLoss(margin=tripletLoss_margin), optimizer=optimizer, scheduler=scheduler, \
     n_epochs=100, cuda='cuda:1', log_interval=100, metrics=[], start_epoch=0, early_stopping_interval=15)
 
-
 log += 'best_val_epoch = {}\nbest_val_loss = {}\n'.format(best_val_epoch, best_val_loss)
 print('best_val_epoch = {}\nbest_val_loss = {}\n'.format(best_val_epoch, best_val_loss))
 
@@ -128,9 +128,9 @@ for i in range(len(test_dataloader)):
 
     test_images = [item.to('cuda:1') for item in test_images]
 
-    embeddings = [torch.reshape(e, (batch_size, e.size()[1])) for e in triplet_net(*test_images)]
+    embeddings = [torch.reshape(e, (test_batch_size, e.size()[1])) for e in triplet_net(*test_images)]
 
-    for batch_index in range(batch_size):
+    for batch_index in range(test_batch_size):
         _01_dist.append(dist(embeddings[0][batch_index], embeddings[1][batch_index]).item())
         _02_dist.append(dist(embeddings[0][batch_index], embeddings[2][batch_index]).item())
         if math.isnan(_01_dist[-1]):
@@ -138,7 +138,7 @@ for i in range(len(test_dataloader)):
         if math.isnan(_02_dist[-1]):
             print('nan: {}, {}'.format(embeddings[0][batch_index], embeddings[2][batch_index]))
 
-    if i % 10 == 0:
+    if i % 200 == 0:
         print('Batch {} out of {}'.format(i, len(test_dataloader)))
         print('\taverage cosine sim between matching pairs:', np.mean(np.array(_01_dist)))
         print('\taverage cosine sim between non-matching pairs:', np.mean(np.array(_02_dist)))
