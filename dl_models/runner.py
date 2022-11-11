@@ -96,8 +96,8 @@ optimizer = optim.Adam(triplet_net.parameters(), lr=learning_rate) #optim.SGD(tr
 scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=lr_decay_step, gamma=lr_decay_factor)
 tripletLoss_margin = 1
 
-log += 'learning_rate = {}\nmomentum = {}\nweight_decay = {}\nlr_decay_step = {}\nlr_decay_factor = {}\n'.format(learning_rate, \
-        momentum, weight_decay, lr_decay_step, lr_decay_factor)
+log += 'learning_rate = {}\nweight_decay = {}\nlr_decay_step = {}\nlr_decay_factor = {}\n'.format(learning_rate, \
+        weight_decay, lr_decay_step, lr_decay_factor)
 
 best_val_epoch, best_val_loss = 0, 0
 
