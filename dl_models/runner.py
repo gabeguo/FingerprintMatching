@@ -90,7 +90,7 @@ learning_rate = 0.01
 momentum = 0.99
 weight_decay = 5e-5
 lr_decay_step=2
-lr_decay_factor=0.5
+lr_decay_factor=0.8
 optimizer = optim.Adam(triplet_net.parameters(), lr=learning_rate) #optim.SGD(triplet_net.parameters(), lr=learning_rate, momentum=momentum, weight_decay=weight_decay)
 scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=lr_decay_step, gamma=lr_decay_factor)
 tripletLoss_margin = 1
