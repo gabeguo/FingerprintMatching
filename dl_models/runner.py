@@ -88,9 +88,9 @@ triplet_net = TripletNet(embedder)
 
 learning_rate = 0.01
 momentum = 0.99
-weight_decay = 1e-4
+weight_decay = 5e-5
 lr_decay_step=2
-lr_decay_factor=0.7
+lr_decay_factor=0.5
 optimizer = optim.Adam(triplet_net.parameters(), lr=learning_rate) #optim.SGD(triplet_net.parameters(), lr=learning_rate, momentum=momentum, weight_decay=weight_decay)
 scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=lr_decay_step, gamma=lr_decay_factor)
 tripletLoss_margin = 1
@@ -102,7 +102,7 @@ best_val_epoch, best_val_loss = 0, 0
 
 best_val_epoch, best_val_loss = fit(train_loader=train_dataloader, val_loader=val_dataloader, model=triplet_net, \
     loss_fn=nn.TripletMarginLoss(margin=tripletLoss_margin), optimizer=optimizer, scheduler=scheduler, \
-    n_epochs=100, cuda='cuda:1', log_interval=100, metrics=[], start_epoch=0, early_stopping_interval=50)
+    n_epochs=100, cuda='cuda:1', log_interval=100, metrics=[], start_epoch=0, early_stopping_interval=15)
 
 
 log += 'best_val_epoch = {}\nbest_val_loss = {}\n'.format(best_val_epoch, best_val_loss)
