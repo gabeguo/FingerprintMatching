@@ -20,7 +20,7 @@ from common_filepaths import DATA_FOLDER
 MODEL_PATH = '/data/therealgabeguo/embedding_net_weights.pth'
 
 batch_size=16
-test_batch_size=2
+test_batch_size=4
 
 training_dataset = TripletDataset(FingerprintDataset(os.path.join(DATA_FOLDER, 'train'), train=True))
 #training_dataset = torch.utils.data.Subset(training_dataset, list(range(0, len(training_dataset), 50)))
