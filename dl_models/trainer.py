@@ -22,9 +22,10 @@ def fit(train_loader, val_loader, model, loss_fn, optimizer, scheduler, n_epochs
     torch.save(model.state_dict(), temp_model_path)
     best_val_loss = 100
     best_val_epoch = -1
-
-    for epoch in range(0, start_epoch):
-        scheduler.step()
+    
+    if scheduler is not None:
+        for epoch in range(0, start_epoch):
+            scheduler.step()
 
     past_val_losses = []
     past_train_losses = []
@@ -70,8 +71,9 @@ def fit(train_loader, val_loader, model, loss_fn, optimizer, scheduler, n_epochs
             message += '\t{}: {}'.format(metric.name(), metric.value())
 
         print(message)
-
-        scheduler.step()
+        
+        if scheduler is not None:
+            scheduler.step()
 
     from datetime import datetime
     datetime_str = datetime.now().strftime("%d-%m-%Y_%H:%M:%S")
