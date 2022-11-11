@@ -87,8 +87,8 @@ triplet_net = TripletNet(embedder)
 
 # TRAIN
 
-learning_rate = 0.01
-momentum = 0.99
+learning_rate = 0.001
+#momentum = 0.99
 weight_decay = 5e-5
 lr_decay_step=2
 lr_decay_factor=0.8
@@ -103,7 +103,7 @@ best_val_epoch, best_val_loss = 0, 0
 
 best_val_epoch, best_val_loss = fit(train_loader=train_dataloader, val_loader=val_dataloader, model=triplet_net, \
     loss_fn=nn.TripletMarginLoss(margin=tripletLoss_margin), optimizer=optimizer, scheduler=scheduler, \
-    n_epochs=100, cuda='cuda:1', log_interval=100, metrics=[], start_epoch=0, early_stopping_interval=15)
+    n_epochs=50, cuda='cuda:1', log_interval=100, metrics=[], start_epoch=0, early_stopping_interval=15)
 
 log += 'best_val_epoch = {}\nbest_val_loss = {}\n'.format(best_val_epoch, best_val_loss)
 print('best_val_epoch = {}\nbest_val_loss = {}\n'.format(best_val_epoch, best_val_loss))
