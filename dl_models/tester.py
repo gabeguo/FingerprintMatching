@@ -19,7 +19,7 @@ from fileProcessingUtil import *
 
 from common_filepaths import DATA_FOLDER
 
-MODEL_PATH = 'embedding_net_weights.pth'
+MODEL_PATH = '/data/therealgabeguo/embedding_net_weights.pth'
 
 batch_size=8
 
