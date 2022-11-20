@@ -3,6 +3,7 @@ import torch.nn as nn
 from torch.utils.data import Dataset
 from torch.utils.data import DataLoader
 import torch.optim as optim
+from torchvision.utils import save_image
 import sys
 import os
 import math
@@ -29,12 +30,17 @@ train_dataloader = DataLoader(training_dataset, batch_size=batch_size, shuffle=F
 import matplotlib.pyplot as plt
 print("Training Images")
 counter = 0
-for image, label, filepath in train_dataloader:
+for images, labels, filepaths in train_dataloader:
+    image, label, filepath = images[0], labels[0], filepaths[0] # Can do this because batch size = 1
     if counter == 10:
         break
     print("Label is: ", label)
     print("Filepath is: ", filepath)
     print("Shape of image: ", image.size())
+    head, tail = os.path.split(filepath)
+    filename = tail.split(".")[0]
+    augmented_file_path = os.path.join(head, "augmented_images", filename + "_aug1.png")
+    save_image(image, augmented_file_path)
     #next_img = image[2][0]
     #the_min = torch.min(next_img)
     #the_max = torch.max(next_img)
