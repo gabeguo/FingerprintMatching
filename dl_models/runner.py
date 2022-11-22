@@ -17,10 +17,11 @@ from embedding_models import *
 
 from common_filepaths import DATA_FOLDER
 
-MODEL_PATH = '/data/therealgabeguo/embedding_net_weights.pth'
+PRETRAINED_MODEL_PATH = '/data/therealgabeguo/embedding_net_weights_printsgan.pth'
+POSTRAINED_MODEL_PATH = '/data/therealgabeguo/embedding_net_weights.pth'
 
-batch_size=16
-test_batch_size=4
+batch_size=64
+test_batch_size=16
 
 training_dataset = TripletDataset(FingerprintDataset(os.path.join(DATA_FOLDER, 'train'), train=True))
 #training_dataset = torch.utils.data.Subset(training_dataset, list(range(0, len(training_dataset), 50)))
@@ -68,7 +69,7 @@ log += 'pretrained: {}\n'.format(pretrained)
 print('pretrained:', pretrained)
 
 # load saved weights!
-#embedder.load_state_dict(torch.load(MODEL_PATH))
+embedder.load_state_dict(torch.load(PRETRAINED_MODEL_PATH))
 
 """
 # freeze all layers except the last one
@@ -109,10 +110,10 @@ _02_dist = []
 dist = torch.nn.CosineSimilarity(dim=0, eps=1e-8)
 
 # SAVE MODEL
-torch.save(embedder.state_dict(), MODEL_PATH)
+torch.save(embedder.state_dict(), POSTRAINED_MODEL_PATH)
 
 # LOAD MODEL
-embedder.load_state_dict(torch.load(MODEL_PATH))
+embedder.load_state_dict(torch.load(POSTRAINED_MODEL_PATH))
 embedder.eval()
 embedder = embedder.to('cuda:1')
 
