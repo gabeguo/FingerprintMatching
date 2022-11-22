@@ -63,7 +63,7 @@ torch.cuda.empty_cache()
 log = ""
 
 # CREATE EMBEDDER
-pretrained=True
+pretrained=False # on image net
 embedder = EmbeddingNet(pretrained=pretrained)
 log += 'pretrained: {}\n'.format(pretrained)
 print('pretrained:', pretrained)
