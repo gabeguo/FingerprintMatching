@@ -66,6 +66,9 @@ def copy_files(data_folder, subset_data_folder, desired_sensors):
                 orig_path = os.path.join(dirpath, filename)
                 new_path = os.path.join(subset_data_folder, rel_file)
                 
+                if not os.path.exists(rel_dir):
+                    os.mkdir(rel_dir)
+
                 # print('\t', orig_path, '\n\t', new_path, '\n')
                 shutil.copy(orig_path, new_path)
     return
