@@ -109,7 +109,7 @@ def main():
     print(desired_sensors)
 
     # create new datafolder
-    subset_data_folder = data_folder[:-1 if data_folder[-1] == '/' else len(data_folder)] + '_subset'
+    subset_data_folder = data_folder[:-1 if data_folder[-1] == '/' else len(data_folder)] + '_subset_' + '_'.join(desired_sensors)
     if not os.path.exists(subset_data_folder):
         os.mkdir(subset_data_folder)
 
