@@ -74,7 +74,7 @@ if pretrained_other_data:
     embedder.load_state_dict(torch.load(PRETRAINED_MODEL_PATH))
 
 pretrained_other_msg = 'pretrained on other data: {}\n'.format(pretrained_other_data)
-print(pretraied_other_msg)
+print(pretrained_other_msg)
 log += pretrained_other_msg
 
 """
