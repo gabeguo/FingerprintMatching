@@ -68,7 +68,7 @@ log += 'pretrained: {}\n'.format(pretrained)
 print('pretrained:', pretrained)
 
 # load saved weights!
-embedder.load_state_dict(torch.load(MODEL_PATH))
+# embedder.load_state_dict(torch.load(MODEL_PATH))
 
 """
 # freeze all layers except the last one
@@ -87,7 +87,7 @@ triplet_net = TripletNet(embedder)
 
 # TRAIN
 
-learning_rate = 0.001
+learning_rate = 0.01
 scheduler=None # not needed for Adam
 optimizer = optim.Adam(triplet_net.parameters(), lr=learning_rate)
 tripletLoss_margin = 1
@@ -98,7 +98,7 @@ best_val_epoch, best_val_loss = 0, 0
 
 best_val_epoch, best_val_loss = fit(train_loader=train_dataloader, val_loader=val_dataloader, model=triplet_net, \
     loss_fn=nn.TripletMarginLoss(margin=tripletLoss_margin), optimizer=optimizer, scheduler=scheduler, \
-    n_epochs=25, cuda='cuda:1', log_interval=1000, metrics=[], start_epoch=10, early_stopping_interval=5)
+    n_epochs=25, cuda='cuda:1', log_interval=1000, metrics=[], start_epoch=0, early_stopping_interval=12)
 
 log += 'best_val_epoch = {}\nbest_val_loss = {}\n'.format(best_val_epoch, best_val_loss)
 print('best_val_epoch = {}\nbest_val_loss = {}\n'.format(best_val_epoch, best_val_loss))
