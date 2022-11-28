@@ -16,7 +16,7 @@ class EmbeddingNet(nn.Module):
         self.fc = self.the_resnet.fc
 
     def forward(self, x):
-        output = self.feature_extractor(x)
+        output = F.normalize(self.feature_extractor(x), p=2, dim=1)
         #print(output.shape)
         return output
 

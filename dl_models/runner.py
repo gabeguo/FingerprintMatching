@@ -25,15 +25,15 @@ test_batch_size=16
 
 training_dataset = TripletDataset(FingerprintDataset(os.path.join(SUBSET_DATA_FOLDER, 'train'), train=True))
 #training_dataset = torch.utils.data.Subset(training_dataset, list(range(0, len(training_dataset), 50)))
-train_dataloader = DataLoader(training_dataset, batch_size=batch_size, shuffle=True)
+train_dataloader = DataLoader(training_dataset, batch_size=batch_size, shuffle=True, num_workers=16)
 
 val_dataset = TripletDataset(FingerprintDataset(os.path.join(SUBSET_DATA_FOLDER, 'val'), train=False))
 #val_dataset = torch.utils.data.Subset(val_dataset, list(range(0, len(val_dataset), 5)))
-val_dataloader = DataLoader(val_dataset, batch_size=batch_size, shuffle=True)
+val_dataloader = DataLoader(val_dataset, batch_size=batch_size, shuffle=True, num_workers=16)
 
 test_dataset = TripletDataset(FingerprintDataset(os.path.join(SUBSET_DATA_FOLDER, 'test'), train=False))
 #test_dataset = torch.utils.data.Subset(test_dataset, list(range(0, len(test_dataset), 5)))
-test_dataloader = DataLoader(test_dataset, batch_size=test_batch_size, shuffle=True)
+test_dataloader = DataLoader(test_dataset, batch_size=test_batch_size, shuffle=True, num_workers=16)
 
 # SHOW IMAGES
 """

@@ -16,7 +16,8 @@ class EmbeddingNet(nn.Module):
         self.fc = self.the_resnet.fc
 
     def forward(self, x):
-        output = self.feature_extractor(x)
+        # https://discuss.pytorch.org/t/how-to-normalize-embedding-vectors/1209
+        output = F.normalize(self.feature_extractor(x), p=2, dim=1) # |output| = 1
         #print(output.shape)
         return output
 
