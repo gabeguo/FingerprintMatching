@@ -135,7 +135,7 @@ print('std of  squared L2 distance between negative pairs:', np.std(_02_dist))
 
 from datetime import datetime
 datetime_str = datetime.now().strftime("%d-%m-%Y_%H:%M:%S")
-with open('/data/therealgabeguo/results/test_results_{}.txt'.format(datetime_str), 'w') as fout:
+with open('/data/therealgabeguo/pretrain_results/test_results_{}.txt'.format(datetime_str), 'w') as fout:
     fout.write('average squared L2 distance between positive pairs: {}\n'.format(np.mean(_01_dist)))
     fout.write('std of  squared L2 distance between positive pairs: {}\n'.format(np.std(_01_dist)))
     fout.write('average squared L2 distance between negative pairs: {}\n'.format(np.mean(_02_dist)))
