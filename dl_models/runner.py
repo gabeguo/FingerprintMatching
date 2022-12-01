@@ -97,7 +97,7 @@ triplet_net = TripletNet(embedder)
 learning_rate = 0.001
 scheduler=None # not needed for Adam
 optimizer = optim.Adam(triplet_net.parameters(), lr=learning_rate)
-tripletLoss_margin = 1
+tripletLoss_margin = 0.2
 
 log += 'learning rate = {}\ntriplet loss margin = {}\n'.format(learning_rate, tripletLoss_margin)
 
@@ -105,7 +105,7 @@ best_val_epoch, best_val_loss = 0, 0
 
 best_val_epoch, best_val_loss = fit(train_loader=train_dataloader, val_loader=val_dataloader, model=triplet_net, \
     loss_fn=nn.TripletMarginLoss(margin=tripletLoss_margin), optimizer=optimizer, scheduler=scheduler, \
-    n_epochs=50, cuda='cuda:1', log_interval=100, metrics=[], start_epoch=0, early_stopping_interval=25)
+    n_epochs=50, cuda='cuda:1', log_interval=100, metrics=[], start_epoch=0, early_stopping_interval=10)
 
 log += 'best_val_epoch = {}\nbest_val_loss = {}\n'.format(best_val_epoch, best_val_loss)
 print('best_val_epoch = {}\nbest_val_loss = {}\n'.format(best_val_epoch, best_val_loss))
