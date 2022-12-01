@@ -2,6 +2,7 @@
 
 import torch
 import numpy as np
+import torch.nn as nn
 
 
 def fit(train_loader, val_loader, model, loss_fn, optimizer, scheduler, n_epochs, cuda, log_interval, metrics=[],
@@ -97,6 +98,11 @@ def train_epoch(train_loader, model, loss_fn, optimizer, cuda, log_interval, met
     model.train()
     losses = []
     total_loss = 0
+    n_nonzero_losses = 0
+
+    # individual losses
+    individual_loss_fn = nn.TripletMarginLoss(margin=0.2, reduction='none')
+    # individual losses
 
     for batch_idx, (data, target, filepaths) in enumerate(train_loader):
         target = target if len(target) > 0 else None
@@ -121,6 +127,18 @@ def train_epoch(train_loader, model, loss_fn, optimizer, cuda, log_interval, met
 
         #print(loss_inputs)
 
+        loss_inputs = list(loss_inputs)
+        for i in range(len(loss_inputs)):
+            loss_inputs[i] = loss_inputs[i].reshape(loss_inputs[i].size(dim=0), loss_inputs[i].size(dim=1))
+
+        # individual losses
+        individual_loss_outputs = individual_loss_fn(*loss_inputs)
+        #print(loss_inputs[0].size())
+        #print(individual_loss_outputs.size())
+        #print('percentage with 0 loss:', 1 - (torch.count_nonzero(individual_loss_outputs) / loss_inputs[0].size(dim=0)).item())
+        n_nonzero_losses += torch.count_nonzero(individual_loss_outputs)
+        # individual losses
+
         loss_outputs = loss_fn(*loss_inputs)
         loss = loss_outputs[0] if type(loss_outputs) in (tuple, list) else loss_outputs
         losses.append(loss.item())
@@ -137,9 +155,10 @@ def train_epoch(train_loader, model, loss_fn, optimizer, cuda, log_interval, met
                 100. * batch_idx / len(train_loader), np.mean(losses))
             for metric in metrics:
                 message += '\t{}: {}'.format(metric.name(), metric.value())
-
+            message += '\n\tPercent of losses that are zero: {}'.format(1 - (n_nonzero_losses / (log_interval * loss_inputs[0].size(dim=0))))
             print(message)
             losses = []
+            n_nonzero_losses = 0
 
     total_loss /= (batch_idx + 1)
     return total_loss, metrics
