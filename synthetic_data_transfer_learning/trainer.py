@@ -173,6 +173,11 @@ def test_epoch(val_loader, model, loss_fn, cuda, metrics):
             if target is not None:
                 target = (target,)
                 loss_inputs += target
+            
+            # reshape to 2D, as triplet margin loss expects
+            loss_inputs = list(loss_inputs)
+            for i in range(len(loss_inputs)):
+                loss_inputs[i] = loss_inputs[i].reshape(loss_inputs[i].size(dim=0), loss_inputs[i].size(dim=1))
 
             loss_outputs = loss_fn(*loss_inputs)
             loss = loss_outputs[0] if type(loss_outputs) in (tuple, list) else loss_outputs
