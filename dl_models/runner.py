@@ -105,7 +105,7 @@ best_val_epoch, best_val_loss = 0, 0
 
 best_val_epoch, best_val_loss = fit(train_loader=train_dataloader, val_loader=val_dataloader, model=triplet_net, \
     loss_fn=nn.TripletMarginLoss(margin=tripletLoss_margin), optimizer=optimizer, scheduler=scheduler, \
-    n_epochs=50, cuda='cuda:1', log_interval=75, metrics=[], start_epoch=0, early_stopping_interval=10)
+    n_epochs=100, cuda='cuda:1', log_interval=75, metrics=[], start_epoch=0, early_stopping_interval=50)
 
 log += 'best_val_epoch = {}\nbest_val_loss = {}\n'.format(best_val_epoch, best_val_loss)
 print('best_val_epoch = {}\nbest_val_loss = {}\n'.format(best_val_epoch, best_val_loss))
@@ -140,7 +140,7 @@ for i in range(len(test_dataloader)):
         if math.isnan(_02_dist[-1]):
             print('nan: {}, {}'.format(embeddings[0][batch_index], embeddings[2][batch_index]))
 
-    if i % 200 == 0:
+    if i % 50 == 0:
         print('Batch {} out of {}'.format(i, len(test_dataloader)))
         print('\taverage cosine sim between matching pairs:', np.mean(np.array(_01_dist)))
         print('\taverage cosine sim between non-matching pairs:', np.mean(np.array(_02_dist)))
