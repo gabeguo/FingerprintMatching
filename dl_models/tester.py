@@ -17,21 +17,23 @@ from fingerprint_dataset import *
 from embedding_models import *
 from fileProcessingUtil import *
 
-from common_filepaths import DATA_FOLDER
+from common_filepaths import DATA_FOLDER, SUBSET_DATA_FOLDER
 
 MODEL_PATH = '/data/therealgabeguo/embedding_net_weights.pth'
 
 batch_size=8
 
-training_dataset = TripletDataset(FingerprintDataset(os.path.join(DATA_FOLDER, 'train'), train=True))
+the_data_folder = DATA_FOLDER
+
+#training_dataset = TripletDataset(FingerprintDataset(os.path.join(the_data_folder, 'train'), train=True))
 #training_dataset = torch.utils.data.Subset(training_dataset, list(range(0, len(training_dataset), 5)))
-train_dataloader = DataLoader(training_dataset, batch_size=batch_size, shuffle=True)
+#train_dataloader = DataLoader(training_dataset, batch_size=batch_size, shuffle=True)
 
-val_dataset = TripletDataset(FingerprintDataset(os.path.join(DATA_FOLDER, 'val'), train=False))
+#val_dataset = TripletDataset(FingerprintDataset(os.path.join(the_data_folder, 'val'), train=False))
 #val_dataset = torch.utils.data.Subset(val_dataset, list(range(0, len(val_dataset), 5)))
-val_dataloader = DataLoader(val_dataset, batch_size=batch_size, shuffle=True)
+#val_dataloader = DataLoader(val_dataset, batch_size=batch_size, shuffle=True)
 
-test_dataset = TripletDataset(FingerprintDataset(os.path.join(DATA_FOLDER, 'test'), train=False))
+test_dataset = TripletDataset(FingerprintDataset(os.path.join(the_data_folder, 'test'), train=False))
 #test_dataset = torch.utils.data.Subset(test_dataset, list(range(0, len(test_dataset), 100)))
 test_dataloader = DataLoader(test_dataset, batch_size=batch_size, shuffle=True)
 
@@ -191,6 +193,7 @@ for trait_name, the_dists in zip(['same sensor', 'diff sensor', 'same finger', '
 from datetime import datetime
 datetime_str = datetime.now().strftime("%d-%m-%Y_%H:%M:%S")
 with open('/data/therealgabeguo/results/test_results_{}.txt'.format(datetime_str), 'w') as fout:
+    fout.write('data folder: {}\n\n'.format(the_data_folder))
     fout.write('average squared L2 distance between positive pairs: {}\n'.format(np.mean(_01_dist)))
     fout.write('std of  squared L2 distance between positive pairs: {}\n'.format(np.std(_01_dist)))
     fout.write('average squared L2 distance between negative pairs: {}\n'.format(np.mean(_02_dist)))
