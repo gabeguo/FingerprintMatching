@@ -27,16 +27,24 @@ def my_transformation(the_image, train=False, target_image_size=(224, 224)):
         SquarePad(),
         transforms.Resize(target_image_size),
         transforms.Normalize([0, 0, 0], [1, 1, 1]),
+        #transforms.Normalize([210, 210, 210], [70, 70, 70]),
     ])
     if train:
         transform = transforms.Compose([
-            #transforms.ColorJitter(brightness=0.2, contrast=0.2, saturation=0.2, hue=0),
             transforms.RandomAffine(degrees=10, translate=(0.05, 0.05), scale=(0.95, 1.05), shear=(-5, 5), fill=255),
-            #transforms.RandomAdjustSharpness(sharpness_factor=1.5, p=1),
             transform,
-            transforms.RandomInvert(p=0.25),
-            transforms.GaussianBlur(kernel_size=(3, 3), sigma=(0.01, 0.5)),
+            transforms.RandomInvert(p=0.1),
+            transforms.GaussianBlur(kernel_size=(5, 5), sigma=(0.01, 0.75)),
         ])
+        # add noise
+        shadeScaling = 0.2 * (torch.rand(target_image_size) - 0.5) + torch.ones(target_image_size)
+        the_image = transform(the_image.float()) * shadeScaling
+        """
+        # randomly binarize
+        if torch.rand(1).item() < 1:
+            the_image = (the_image > 0).float()
+        """
+        return the_image
     return transform(the_image.float())
 
 class SiameseDataset(Dataset):
