@@ -6,45 +6,6 @@ from torchvision.io import read_image, ImageReadMode
 import numpy as np
 import torchvision.transforms.functional as F
 
-# Use https://discuss.pytorch.org/t/how-to-resize-and-pad-in-a-torchvision-transforms-compose/71850/10
-# makes images squares by padding
-class SquarePad:
-    def __call__(self, image):
-        max_wh = max(image.size())
-        p_left, p_top = [(max_wh - s) // 2 for s in image.size()[1:]] # first channel is just colors
-        p_right, p_bottom = [max_wh - (s+pad) for s, pad in zip(image.size()[1:], [p_left, p_top])]
-        padding = (p_left, p_top, p_right, p_bottom)
-        return F.pad(image, padding, 255, 'constant')
-
-# performs image augmentations
-def my_augmentations(img, train=False, target_image_size=(224, 224)):
-    transform=transforms.Compose([
-        transforms.RandomResizeCrop(img.size(), scale=(0.85, 1.0), ratio=(0.85, 1.15)), # Crop and Scale
-        transforms.RandomRotation(degrees=(0, 15)), # Rotate
-        transforms.RandomGrayscale(0.05) # Grayscale
-    ])
-    img = transform(img.float())
-    img = my_transformation(img, train=train, target_image_size=target_image_size)
-    return img
-
-# returns the image as a normalized square with standard size
-def my_transformation(the_image, train=False, target_image_size=(224, 224)):
-    #print(target_image_size)
-    assert target_image_size[0] == target_image_size[1]
-    transform=transforms.Compose([
-        SquarePad(),
-        transforms.Resize(target_image_size),
-        transforms.Normalize([0, 0, 0], [1, 1, 1]),
-    ])
-    """
-    if train:
-        transform = transforms.Compose([
-            #transforms.RandomRotation(15, fill=255),
-            transform,
-        ])
-    """
-    return transform(the_image.float())
-
 class FingerprintDataset(Dataset):
     def is_image_filename(self, filename):
         return any(extension in filename for extension in ['.png', \
@@ -97,6 +58,8 @@ class FingerprintDataset(Dataset):
     def __len__(self):
         return self.len
 
+    # TODO: REFACTOR
+    # THIS IS NOT CALLED (WE CALL GET ITEM FROM TRPLET DATASET)
     # returns image, label, filepath
     def __getitem__(self, idx):
         return my_transformation(read_image(self.images[idx], mode=ImageReadMode.RGB), train=self.train), \
