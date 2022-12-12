@@ -5,6 +5,7 @@ from torchvision import models, transforms, utils
 from torchvision.io import read_image, ImageReadMode
 import numpy as np
 import torchvision.transforms.functional as F
+from siamese_datasets import my_transformation
 
 class FingerprintDataset(Dataset):
     def is_image_filename(self, filename):
@@ -58,10 +59,10 @@ class FingerprintDataset(Dataset):
     def __len__(self):
         return self.len
 
-    # TODO: REFACTOR
-    # THIS IS NOT CALLED (WE CALL GET ITEM FROM TRPLET DATASET)
+    # THIS IS NOT CALLED FROM TRIPLET DATASET
     # returns image, label, filepath
     def __getitem__(self, idx):
+        # TODO: Add data augmentation
         return my_transformation(read_image(self.images[idx], mode=ImageReadMode.RGB), train=self.train), \
         self.img_labels[idx], \
         self.images[idx]

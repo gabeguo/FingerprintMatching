@@ -25,7 +25,7 @@ POSTRAINED_MODEL_PATH = '/data/therealgabeguo/embedding_net_weights.pth'
 batch_size=64
 test_batch_size=16
 
-training_dataset = TripletDataset(FingerprintDataset(os.path.join(DATA_FOLDER, 'train'), train=True))
+training_dataset = FingerprintDataset(os.path.join(DATA_FOLDER, 'train'), train=True)
 train_batch_sampler = BalancedBatchSampler(training_dataset.train_labels, n_classes=8, n_samples=8)
 online_train_loader = DataLoader(training_dataset, batch_sampler=train_batch_sampler)
 
@@ -95,7 +95,7 @@ for the_param in list(embedder.feature_extractor.children())[:n_frozen_layers]:
 """
 
 # CREATE TRIPLET NET
-triplet_net = TripletNet(embedder)
+triplet_net = embedder
 
 # TRAIN
 
