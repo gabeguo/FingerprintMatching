@@ -27,7 +27,7 @@ test_batch_size=16
 
 training_dataset = TripletDataset(FingerprintDataset(os.path.join(DATA_FOLDER, 'train'), train=True))
 train_batch_sampler = BalancedBatchSampler(training_dataset.train_labels, n_classes=8, n_samples=8)
-online_train_loader = DataLoader(training_dataset, batch_sampler=train_batch_sampler, shuffle=True, num_workers=16)
+online_train_loader = DataLoader(training_dataset, batch_sampler=train_batch_sampler)
 
 val_dataset = TripletDataset(FingerprintDataset(os.path.join(DATA_FOLDER, 'val'), train=False))
 #val_dataset = torch.utils.data.Subset(val_dataset, list(range(0, len(val_dataset), 5)))
