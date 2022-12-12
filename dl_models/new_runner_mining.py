@@ -9,7 +9,7 @@ import math
 
 sys.path.append('../')
 
-from trainer import *
+from mining_trainer import *
 from losses import *
 from siamese_datasets import *
 from fingerprint_dataset import *
