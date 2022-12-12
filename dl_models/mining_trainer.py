@@ -4,7 +4,7 @@ import torch
 import numpy as np
 import torch.nn as nn
 from losses import OnlineTripletLoss
-
+from embedding_models import TripletNet
 
 def fit(train_loader, val_loader, model, train_loss_fn, val_loss_fn, optimizer, scheduler, n_epochs, cuda, log_interval, metrics=[],
         start_epoch=0, early_stopping_interval=10, temp_model_path='temp.pth'):
@@ -150,6 +150,7 @@ def train_epoch(train_loader, model, loss_fn, optimizer, cuda, log_interval, met
 
 
 def test_epoch(val_loader, model, loss_fn, cuda, metrics):
+    model = TripletNet(model)
     with torch.no_grad():
         for metric in metrics:
             metric.reset()
