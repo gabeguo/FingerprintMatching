@@ -83,7 +83,7 @@ class OnlineTripletLoss(nn.Module):
         # print(embeddings.size())
         embeddings = torch.reshape(embeddings, (embeddings.size(dim=0), -1))
         # print(embeddings)
-        # print(embeddings.size())
+        #print('embedding size:', embeddings.size())
 
         triplets = self.triplet_selector.get_triplets(embeddings, target)
 
