@@ -55,23 +55,27 @@ triplet_net = TripletNet(embedder)
 _01_dist = []
 _02_dist = []
 
-SAME_PERSON = 1
-DIFF_PERSON = 0
+SAME_PERSON = 0
+DIFF_PERSON = 1
 same_sensor_dist = {SAME_PERSON : list(), DIFF_PERSON : list()}
 diff_sensor_dist = {SAME_PERSON : list(), DIFF_PERSON : list()}
 same_finger_dist = {SAME_PERSON : list(), DIFF_PERSON : list()}
 diff_finger_dist = {SAME_PERSON : list(), DIFF_PERSON : list()}
+
+# finger_to_finger_dist[i][j][k] = list of distances between FGRP (i, j) for matching status k (SAME_PERSON or DIFF_PERSON)
+finger_to_finger_dist = [[[[] for k in (SAME_PERSON, DIFF_PERSON)] for j in range(0, 10+1)] for i in range(0, 10+1)]
 
 # Pre: parameters are 2 1D tensors
 def euclideanDist(tensor1, tensor2):
     return (tensor1 - tensor2).pow(2).sum(0)
 
 # Inputs: (_01_dist, _02_dist) are distance between anchor and (positive, negative), repsectively
-# Returns: (accuracies, fpr, tpr, roc_auc)
+# Returns: (accuracies, fpr, tpr, roc_auc, threshold)
 # - accuracies are at every possible threshold
 # - fpr is false positive rate at every possible threshold (padded with 0 and 1 at end)
 # - tpr is true positive rate at every possible threshold (padded with 0 and 1 at end)
 # - roc_auc is scalar: area under fpr (x-axis) vs tpr (y-axis) curve
+# - threshold is scalar: below this distance, fingerpritnts match; above, they don't match
 def get_metrics(_01_dist, _02_dist):
     all_distances = _01_dist +_02_dist
     all_distances.sort()
@@ -87,13 +91,14 @@ def get_metrics(_01_dist, _02_dist):
         fp.append(len(_02_dist) - tn[-1])
 
         acc.append((tp[-1] + tn[-1]) / len(all_distances))
+    threshold = all_distances[max(range(len(acc)), key=acc.__getitem__)]
 
     # ROC AUC is FPR = FP / (FP + TN) (x-axis) vs TPR = TP / (TP + FN) (y-axis)
     fpr = [0] + [fp[i] / (fp[i] + tn[i]) for i in range(len(fp))] + [1]
     tpr = [0] + [tp[i] / (tp[i] + fn[i]) for i in range(len(tp))] + [1]
     auc = sum([tpr[i] * (fpr[i] - fpr[i - 1]) for i in range(1, len(tpr))])
 
-    return acc, fpr, tpr, auc
+    return acc, fpr, tpr, auc, threshold
 
 # LOAD MODEL
 embedder.load_state_dict(torch.load(MODEL_PATH))
@@ -119,13 +124,19 @@ for i in range(len(test_dataloader)):
         anchor_filename, pos_filename, neg_filename = \
             test_filepaths[0][batch_index], test_filepaths[1][batch_index], test_filepaths[2][batch_index]
         anchor_filename, pos_filename, neg_filename = anchor_filename.split('/')[-1], pos_filename.split('/')[-1], neg_filename.split('/')[-1]
-        anchor_fgrp, pos_fgrp, neg_fgrp = get_fgrp(anchor_filename), get_fgrp(pos_filename), get_fgrp(neg_filename)
+        anchor_fgrp, pos_fgrp, neg_fgrp = int(get_fgrp(anchor_filename)), int(get_fgrp(pos_filename)), int(get_fgrp(neg_filename))
         anchor_sensor, pos_sensor, neg_sensor = get_sensor(anchor_filename), get_sensor(pos_filename), get_sensor(neg_filename)
 
         # print(anchor_filename, pos_filename, neg_filename)
 
         assert get_id(anchor_filename) == get_id(pos_filename)
         assert get_id(anchor_filename) != get_id(neg_filename)
+
+        # TODO: finish this
+        finger_to_finger_dist[anchor_fgrp][pos_fgrp][SAME_PERSON].append(_01_dist[-1])
+        finger_to_finger_dist[pos_fgrp][anchor_fgrp][SAME_PERSON].append(_01_dist[-1])
+        finger_to_finger_dist[anchor_fgrp][neg_fgrp][DIFF_PERSON].append(_02_dist[-1])
+        finger_to_finger_dist[neg_fgrp][anchor_fgrp][DIFF_PERSON].append(_02_dist[-1])
 
         # same finger, same person
         if anchor_fgrp == pos_fgrp:
@@ -154,7 +165,7 @@ for i in range(len(test_dataloader)):
         print('\taverage squared L2 distance between negative pairs:', np.mean(np.array(_02_dist)))
 
 # CALCULATE ACCURACY AND ROC AUC
-accs, fpr, tpr, auc = get_metrics(_01_dist, _02_dist)
+accs, fpr, tpr, auc, threshold = get_metrics(_01_dist, _02_dist)
 
 max_acc = max(accs)
 print('best accuracy:', max_acc)
@@ -163,11 +174,12 @@ import matplotlib.pyplot as plt
 plt.plot([i for i in range(len(acc))], acc)
 plt.show()
 """
-threshold = all_distances[max(range(len(acc)), key=acc.__getitem__)]
 
 print('auc = {}'.format(auc))
 import matplotlib.pyplot as plt
 plt.plot(fpr, tpr)
+plt.xlabel('FPR')
+plt.ylabel('TPR')
 plt.show()
 assert auc >= 0 and auc <= 1
 
@@ -184,6 +196,7 @@ print('average squared L2 distance between negative pairs:', np.mean(_02_dist))
 print('std of  squared L2 distance between negative pairs:', np.std(_02_dist))
 
 acc_by_trait = dict()
+roc_by_trait = dict()
 
 # distance by sample trait (sensor type, finger)
 for trait_name, the_dists in zip(['same sensor', 'diff sensor', 'same finger', 'diff finger'], \
@@ -195,17 +208,23 @@ for trait_name, the_dists in zip(['same sensor', 'diff sensor', 'same finger', '
         print('\t\taverage squared L2 distance between {} person: {}'.format(person_str, np.mean(the_dists[person])))
         print('\t\tstd of  squared L2 distance between {} person: {}'.format(person_str, np.std(the_dists[person])))
 
-    tp = len([x for x in the_dists[SAME_PERSON] if x < threshold])
-    tn = len([x for x in the_dists[DIFF_PERSON] if x >= threshold])
-    fn = len(the_dists[SAME_PERSON]) - tp
-    fp = len(the_dists[DIFF_PERSON]) - tn
+    curr_accs, curr_fpr, curr_tpr, curr_roc_auc, curr_threshold = get_metrics(the_dists[SAME_PERSON], the_dists[DIFF_PERSON])
+    acc_by_trait[trait_name] = max(curr_accs)
+    roc_by_trait[trait_name] = curr_roc_auc
 
-    acc = (tp + tn) / (len(the_dists[SAME_PERSON]) + len(the_dists[DIFF_PERSON]))
-    print('\tacc:', acc)
+    print('\tacc:', max(curr_accs))
+    print('\troc auc:', curr_roc_auc)
 
-    acc_by_trait[trait_name] = acc
+    # tp = len([x for x in the_dists[SAME_PERSON] if x < threshold])
+    # tn = len([x for x in the_dists[DIFF_PERSON] if x >= threshold])
+    # fn = len(the_dists[SAME_PERSON]) - tp
+    # fp = len(the_dists[DIFF_PERSON]) - tn
+    # acc = (tp + tn) / (len(the_dists[SAME_PERSON]) + len(the_dists[DIFF_PERSON]))
+    # print('\tacc:', acc)
+    # acc_by_trait[trait_name] = acc
 
 from datetime import datetime
+# TODO: fix datae formatting
 datetime_str = datetime.now().strftime("%d-%m-%Y_%H:%M:%S")
 with open('/data/therealgabeguo/results/test_results_{}.txt'.format(datetime_str), 'w') as fout:
     fout.write('data folder: {}\n\n'.format(the_data_folder))
@@ -213,7 +232,8 @@ with open('/data/therealgabeguo/results/test_results_{}.txt'.format(datetime_str
     fout.write('std of  squared L2 distance between positive pairs: {}\n'.format(np.std(_01_dist)))
     fout.write('average squared L2 distance between negative pairs: {}\n'.format(np.mean(_02_dist)))
     fout.write('std of  squared L2 distance between negative pairs: {}\n'.format(np.std(_02_dist)))
-    fout.write('best accuracy: {}\n\n'.format(str(max_acc)))
+    fout.write('best accuracy: {}\n'.format(str(max_acc)))
+    fout.write('ROC AUC: {}\n\n'.format(auc))
 
     # distance by sample trait (sensor type, finger)
     for trait_name, the_dists in zip(['same sensor', 'diff sensor', 'same finger', 'diff finger'], \
@@ -224,4 +244,5 @@ with open('/data/therealgabeguo/results/test_results_{}.txt'.format(datetime_str
             fout.write('\tnum people in category - {} person, {}: {}\n'.format(person_str, trait_name, len(the_dists[person])))
             fout.write('\t\taverage squared L2 distance between {} person: {}\n'.format(person_str, np.mean(the_dists[person])))
             fout.write('\t\tstd of  squared L2 distance between {} person: {}\n'.format(person_str, np.std(the_dists[person])))
-        fout.write('\taccuracy: {}\n\n'.format(str(acc_by_trait[trait_name])))
+        fout.write('\taccuracy: {}\n'.format(str(acc_by_trait[trait_name])))
+        fout.write('\troc auc: {}\n\n'.format(str(roc_by_trait[trait_name])))
