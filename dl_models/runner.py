@@ -43,6 +43,9 @@ for the_name, the_dataloader in zip(['train', 'val', 'test'], [train_dataloader,
     it = iter(the_dataloader)
     for i in range(10):
         images, labels, filepaths = next(it)
+        #print(images[0].shape)
+        #print('mean:', [torch.mean(images[0][:,i]) for i in range(3)])
+        #print('std:', [torch.std(images[0][:,i]) for i in range(3)])
         next_img = images[2][0]
         the_min = torch.min(next_img)
         the_max = torch.max(next_img)
@@ -160,7 +163,7 @@ print('average cosine sim between matching pairs:', np.mean(_01_dist))
 print('average cosine sim between non-matching pairs:', np.mean(_02_dist))
 
 from datetime import datetime
-datetime_str = datetime.now().strftime("%d-%m-%Y_%H:%M:%S")
+datetime_str = datetime.now().strftime("%Y-%m-%d_%H:%M:%S")
 with open('/data/therealgabeguo/results/results_{}.txt'.format(datetime_str), 'w') as fout:
     fout.write(log + '\n')
 torch.save(embedder.state_dict(), '/data/therealgabeguo/results/weights_{}.pth'.format(datetime_str))

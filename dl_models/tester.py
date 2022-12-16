@@ -225,7 +225,7 @@ for trait_name, the_dists in zip(['same sensor', 'diff sensor', 'same finger', '
 
 from datetime import datetime
 # TODO: fix datae formatting
-datetime_str = datetime.now().strftime("%d-%m-%Y_%H:%M:%S")
+datetime_str = datetime.now().strftime("%Y-%m-%d_%H:%M:%S")
 with open('/data/therealgabeguo/results/test_results_{}.txt'.format(datetime_str), 'w') as fout:
     fout.write('data folder: {}\n\n'.format(the_data_folder))
     fout.write('average squared L2 distance between positive pairs: {}\n'.format(np.mean(_01_dist)))
