@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 from torch.utils.data import Dataset
-from torch.utils.data import DataLoader
+from torch.utils.data import DataLoader, ConcatDataset
 import torch.optim as optim
 import sys
 import os
@@ -19,14 +19,23 @@ from fileProcessingUtil import *
 
 from common_filepaths import DATA_FOLDER, SUBSET_DATA_FOLDER
 
+# Create output directory
+from datetime import datetime
+datetime_str = datetime.now().strftime("%Y-%m-%d_%H:%M:%S")
+output_dir = os.path.join('/data/therealgabeguo/results', datetime_str)
+os.makedirs(output_dir, exist_ok=True)
+
+# Model weights
 MODEL_PATH = '/data/therealgabeguo/embedding_net_weights.pth'
 
+# Data loading
 batch_size=8
-
 the_data_folder = DATA_FOLDER
-
-test_dataset = TripletDataset(FingerprintDataset(os.path.join(the_data_folder, 'test'), train=False))
-#test_dataset = torch.utils.data.Subset(test_dataset, list(range(0, len(test_dataset), 100)))
+test_dataset = torch.utils.data.ConcatDataset(\
+    [TripletDataset(FingerprintDataset(os.path.join(the_data_folder, 'test'), train=False)), \
+    TripletDataset(FingerprintDataset(os.path.join(the_data_folder, 'test'), train=False))] \
+)
+#test_dataset = torch.utils.data.Subset(test_dataset, list(range(0, len(test_dataset), 10)))
 test_dataloader = DataLoader(test_dataset, batch_size=batch_size, shuffle=True)
 
 # SHOW IMAGES
@@ -45,7 +54,6 @@ for i in range(5):
 """
 
 # CREATE EMBEDDER
-
 embedder = EmbeddingNet()
 
 # CREATE TRIPLET NET
@@ -180,7 +188,12 @@ import matplotlib.pyplot as plt
 plt.plot(fpr, tpr)
 plt.xlabel('FPR')
 plt.ylabel('TPR')
-plt.show()
+plt.title('ROC Curve')
+plt.grid()
+plt.savefig(os.path.join(output_dir, 'roc_curve.pdf'))
+plt.savefig(os.path.join(output_dir, 'roc_curve.png'))
+plt.clf(); plt.close()
+#plt.show()
 assert auc >= 0 and auc <= 1
 
 # PRINT DISTANCES
@@ -197,8 +210,77 @@ print('std of  squared L2 distance between negative pairs:', np.std(_02_dist))
 
 acc_by_trait = dict()
 roc_by_trait = dict()
+finger_to_finger_num_people = np.zeros((10, 10))
+finger_to_finger_percent_samePerson = np.zeros((10, 10))
+finger_to_finger_acc = np.zeros((10, 10))
+finger_to_finger_roc = np.zeros((10, 10))
+f2f_meanDist_samePerson = np.zeros((10, 10))
+f2f_meanDist_diffPerson = np.zeros((10, 10))
+f2f_stdDist_samePerson = np.zeros((10, 10))
+f2f_stdDist_diffPerson = np.zeros((10, 10))
 
-# distance by sample trait (sensor type, finger)
+# stats by finger-finger-pair
+fgrp_names = ['Right Thumb', 'Right Index', 'Right Middle', 'Right Ring', 'Right Pinky', \
+            'Left Thumb', 'Left Index', 'Left Middle', 'Left Ring', 'Left Pinky']
+for i in range(1, 10+1):
+    for j in range(1, 10+1):
+        same_person_dists = finger_to_finger_dist[i][j][SAME_PERSON]
+        diff_person_dists = finger_to_finger_dist[i][j][DIFF_PERSON]
+
+        curr_accs, curr_fpr, curr_tpr, curr_roc_auc, curr_threshold = get_metrics(same_person_dists, diff_person_dists)
+        
+        _i, _j = i - 1, j - 1
+        finger_to_finger_acc[_i][_j] = max(curr_accs)
+        finger_to_finger_roc[_i][_j] = curr_roc_auc
+
+        finger_to_finger_num_people[_i][_j] = len(same_person_dists) + len(diff_person_dists)
+        finger_to_finger_percent_samePerson[_i][_j] = len(same_person_dists) / finger_to_finger_num_people[_i][_j]
+
+        f2f_meanDist_samePerson[_i][_j] = np.mean(same_person_dists)
+        f2f_meanDist_diffPerson[_i][_j] = np.mean(diff_person_dists)
+        f2f_stdDist_samePerson[_i][_j] = np.std(same_person_dists)
+        f2f_stdDist_diffPerson[_i][_j] = np.std(diff_person_dists)
+
+print('Accuracy finger by finger:')
+print(np.array_str(finger_to_finger_acc, precision=3, suppress_small=True))
+print('ROC AUC finger by finger:')
+print(np.array_str(finger_to_finger_roc, precision=3, suppress_small=True))
+print('Number of finger-to-finger pairs:')
+print(np.array_str(finger_to_finger_num_people, suppress_small=True))
+print('Proportion of same-person samples by finger combo:')
+print(np.array_str(finger_to_finger_percent_samePerson, precision=3, suppress_small=True))
+
+import seaborn as sns
+
+plt.subplots_adjust(bottom=0.22, left=0.22)
+plt.title('Finger-to-Finger Accuracy')
+sns.heatmap(finger_to_finger_acc.round(3), annot=True, xticklabels=fgrp_names, yticklabels=fgrp_names, cmap='Reds')
+plt.savefig(os.path.join(output_dir, 'acc.pdf'))
+plt.savefig(os.path.join(output_dir, 'acc.png'))
+plt.clf(); plt.close()
+
+plt.subplots_adjust(bottom=0.22, left=0.22)
+plt.title('Finger-to-Finger ROC AUC')
+sns.heatmap(finger_to_finger_roc.round(3), annot=True, xticklabels=fgrp_names, yticklabels=fgrp_names, cmap='Reds')
+plt.savefig(os.path.join(output_dir, 'roc_auc.pdf'))
+plt.savefig(os.path.join(output_dir, 'roc_auc.png'))
+plt.clf(); plt.close()
+
+plt.subplots_adjust(bottom=0.22, left=0.22)
+plt.title('Number of Finger-to-Finger Pairs')
+sns.heatmap(finger_to_finger_num_people, annot=True, xticklabels=fgrp_names, yticklabels=fgrp_names, cmap='Blues', fmt='g')
+plt.savefig(os.path.join(output_dir, 'sample_size.pdf'))
+plt.savefig(os.path.join(output_dir, 'sample_size.png'))
+plt.clf(); plt.close()
+
+plt.subplots_adjust(bottom=0.22, left=0.22)
+plt.title('Proportion of Same-Person Samples')
+sns.heatmap(finger_to_finger_percent_samePerson.round(3), annot=True, xticklabels=fgrp_names, yticklabels=fgrp_names, cmap='Greens', vmin=0, vmax=1)
+plt.savefig(os.path.join(output_dir, 'sample_dist.pdf'))
+plt.savefig(os.path.join(output_dir, 'sample_dist.png'))
+plt.clf(); plt.close()
+
+# stats by sample trait (sensor type, finger)
 for trait_name, the_dists in zip(['same sensor', 'diff sensor', 'same finger', 'diff finger'], \
                             [same_sensor_dist, diff_sensor_dist, same_finger_dist, diff_finger_dist]):
     print('Results for {}'.format(trait_name))
@@ -215,18 +297,10 @@ for trait_name, the_dists in zip(['same sensor', 'diff sensor', 'same finger', '
     print('\tacc:', max(curr_accs))
     print('\troc auc:', curr_roc_auc)
 
-    # tp = len([x for x in the_dists[SAME_PERSON] if x < threshold])
-    # tn = len([x for x in the_dists[DIFF_PERSON] if x >= threshold])
-    # fn = len(the_dists[SAME_PERSON]) - tp
-    # fp = len(the_dists[DIFF_PERSON]) - tn
-    # acc = (tp + tn) / (len(the_dists[SAME_PERSON]) + len(the_dists[DIFF_PERSON]))
-    # print('\tacc:', acc)
-    # acc_by_trait[trait_name] = acc
+# do the output
 
-from datetime import datetime
-# TODO: fix datae formatting
-datetime_str = datetime.now().strftime("%Y-%m-%d_%H:%M:%S")
-with open('/data/therealgabeguo/results/test_results_{}.txt'.format(datetime_str), 'w') as fout:
+results_fname = os.path.join(output_dir, 'test_results.txt')
+with open(results_fname, 'w') as fout:
     fout.write('data folder: {}\n\n'.format(the_data_folder))
     fout.write('average squared L2 distance between positive pairs: {}\n'.format(np.mean(_01_dist)))
     fout.write('std of  squared L2 distance between positive pairs: {}\n'.format(np.std(_01_dist)))
@@ -234,6 +308,15 @@ with open('/data/therealgabeguo/results/test_results_{}.txt'.format(datetime_str
     fout.write('std of  squared L2 distance between negative pairs: {}\n'.format(np.std(_02_dist)))
     fout.write('best accuracy: {}\n'.format(str(max_acc)))
     fout.write('ROC AUC: {}\n\n'.format(auc))
+
+    fout.write('Accuracy finger by finger:\n')
+    fout.write(np.array_str(finger_to_finger_acc, precision=3, suppress_small=True) + '\n')
+    fout.write('ROC AUC finger by finger:\n')
+    fout.write(np.array_str(finger_to_finger_roc, precision=3, suppress_small=True) + '\n')
+    fout.write('Number of finger-to-finger pairs:\n')
+    fout.write(np.array_str(finger_to_finger_num_people, suppress_small=True) + '\n')
+    fout.write('Proportion of same-person pairs by finger combo:\n')
+    fout.write(np.array_str(finger_to_finger_percent_samePerson, precision=3, suppress_small=True) + '\n\n')
 
     # distance by sample trait (sensor type, finger)
     for trait_name, the_dists in zip(['same sensor', 'diff sensor', 'same finger', 'diff finger'], \
@@ -246,3 +329,4 @@ with open('/data/therealgabeguo/results/test_results_{}.txt'.format(datetime_str
             fout.write('\t\tstd of  squared L2 distance between {} person: {}\n'.format(person_str, np.std(the_dists[person])))
         fout.write('\taccuracy: {}\n'.format(str(acc_by_trait[trait_name])))
         fout.write('\troc auc: {}\n\n'.format(str(roc_by_trait[trait_name])))
+
