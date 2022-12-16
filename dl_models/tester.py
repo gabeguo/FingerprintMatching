@@ -25,14 +25,6 @@ batch_size=8
 
 the_data_folder = DATA_FOLDER
 
-#training_dataset = TripletDataset(FingerprintDataset(os.path.join(the_data_folder, 'train'), train=True))
-#training_dataset = torch.utils.data.Subset(training_dataset, list(range(0, len(training_dataset), 5)))
-#train_dataloader = DataLoader(training_dataset, batch_size=batch_size, shuffle=True)
-
-#val_dataset = TripletDataset(FingerprintDataset(os.path.join(the_data_folder, 'val'), train=False))
-#val_dataset = torch.utils.data.Subset(val_dataset, list(range(0, len(val_dataset), 5)))
-#val_dataloader = DataLoader(val_dataset, batch_size=batch_size, shuffle=True)
-
 test_dataset = TripletDataset(FingerprintDataset(os.path.join(the_data_folder, 'test'), train=False))
 #test_dataset = torch.utils.data.Subset(test_dataset, list(range(0, len(test_dataset), 100)))
 test_dataloader = DataLoader(test_dataset, batch_size=batch_size, shuffle=True)
@@ -133,13 +125,14 @@ for i in range(len(test_dataloader)):
         print('\taverage squared L2 distance between positive pairs:', np.mean(np.array(_01_dist)))
         print('\taverage squared L2 distance between negative pairs:', np.mean(np.array(_02_dist)))
 
-# FIND THRESHOLDS
+# CALCULATE ACCURACY AND ROC AUC
 all_distances = _01_dist +_02_dist
 all_distances.sort()
 
 tp, fp, tn, fn = list(), list(), list(), list()
 acc = list()
 
+# try different thresholds
 for dist in all_distances:
     tp.append(len([x for x in _01_dist if x < dist]))
     tn.append(len([x for x in _02_dist if x >= dist]))
@@ -156,6 +149,20 @@ import matplotlib.pyplot as plt
 plt.plot([i for i in range(len(acc))], acc)
 plt.show()
 """
+
+# ROC AUC is FPR = FP / (FP + TN) (x-axis) vs TPR = TP / (TP + FN) (y-axis)
+fpr = [0] + [fp[i] / (fp[i] + tn[i]) for i in range(len(fp))] + [1]
+tpr = [0] + [tp[i] / (tp[i] + fn[i]) for i in range(len(tp))] + [1]
+auc = sum([tpr[i] * (fpr[i] - fpr[i - 1]) for i in range(1, len(tpr))])
+
+print('auc = {}'.format(auc))
+
+import matplotlib.pyplot as plt
+plt.plot(fpr, tpr)
+plt.show()
+
+assert auc >= 0 and auc <= 1
+
 # PRINT DISTANCES
 _01_dist = np.array(_01_dist)
 _02_dist = np.array(_02_dist)
