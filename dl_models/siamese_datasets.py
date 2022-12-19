@@ -149,9 +149,11 @@ class TripletDataset(Dataset):
             random_state = np.random.RandomState(29)
             
             # implement balanced number of each fingerprint type pair, e.g., index, pinky
-            count_per_pair = int(2 * len(self.test_labels) // (10 * 10 // 2) * 1.1) # give a bit of slack (not exactly even)
-            desired_num_finger_pairs = np.full((11, 11), count_per_pair)
-            curr_num_finger_pairs = np.zeros((11, 11))
+            POS = 0
+            NEG = 1
+            count_per_pair = int(2 * len(self.test_labels) // (10 * 10 // 2) * 1.075) // 2 # give a bit of slack (not exactly even)
+            desired_num_finger_pairs = np.full((11, 11, 2), count_per_pair)
+            curr_num_finger_pairs = np.zeros((11, 11, 2))
 
             #print(count_per_pair)
 
@@ -178,14 +180,14 @@ class TripletDataset(Dataset):
                     # we can still add more if:
                     # 1) it hasn't reached desired number yet
                     # 2) this sample combo hasn't been seen yet
-                    if curr_num_finger_pairs[anchor_fgrp, pos_fgrp] < desired_num_finger_pairs[anchor_fgrp, pos_fgrp] \
-                            and curr_num_finger_pairs[anchor_fgrp, neg_fgrp] < desired_num_finger_pairs[anchor_fgrp, neg_fgrp] \
+                    if curr_num_finger_pairs[anchor_fgrp, pos_fgrp, POS] < desired_num_finger_pairs[anchor_fgrp, pos_fgrp, POS] \
+                            and curr_num_finger_pairs[anchor_fgrp, neg_fgrp, NEG] < desired_num_finger_pairs[anchor_fgrp, neg_fgrp, NEG] \
                             and (anchor_index, pos_index) not in seen_pairs and (anchor_index, neg_index) not in seen_pairs:
                         # update counts
-                        curr_num_finger_pairs[anchor_fgrp, pos_fgrp] += 1
-                        curr_num_finger_pairs[pos_fgrp, anchor_fgrp] += 1 # get transpose too
-                        curr_num_finger_pairs[anchor_fgrp, neg_fgrp] += 1
-                        curr_num_finger_pairs[neg_fgrp, anchor_fgrp] += 1
+                        curr_num_finger_pairs[anchor_fgrp, pos_fgrp, POS] += 1
+                        curr_num_finger_pairs[pos_fgrp, anchor_fgrp, POS] += 1 # get transpose too
+                        curr_num_finger_pairs[anchor_fgrp, neg_fgrp, NEG] += 1
+                        curr_num_finger_pairs[neg_fgrp, anchor_fgrp, NEG] += 1
                         
                         # we can use this triplet
                         triplets.append(curr_triplet) 
@@ -193,7 +195,8 @@ class TripletDataset(Dataset):
                         seen_pairs.update([(anchor_index, pos_index), (pos_index, anchor_index),\
                                             (anchor_index, neg_index), (neg_index, anchor_index)]) 
                         break # move on to next index
-            print(curr_num_finger_pairs)
+            print(curr_num_finger_pairs[:,:,POS])
+            print(curr_num_finger_pairs[:,:,NEG])
 
             # Deprecated: unbalanced triplets
             # triplets = [[i,
