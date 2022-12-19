@@ -31,10 +31,13 @@ MODEL_PATH = '/data/therealgabeguo/embedding_net_weights.pth'
 # Data loading
 batch_size=8
 the_data_folder = DATA_FOLDER
-test_dataset = torch.utils.data.ConcatDataset(\
-    [TripletDataset(FingerprintDataset(os.path.join(the_data_folder, 'test'), train=False)), \
-    TripletDataset(FingerprintDataset(os.path.join(the_data_folder, 'test'), train=False))] \
-)
+test_dataset = TripletDataset(FingerprintDataset(os.path.join(the_data_folder, 'test'), train=False))
+print('loaded test dataset')
+# test_dataset = torch.utils.data.ConcatDataset(\
+#     [TripletDataset(FingerprintDataset(os.path.join(the_data_folder, 'test'), train=False)), \
+#     TripletDataset(FingerprintDataset(os.path.join(the_data_folder, 'test'), train=False)), \
+#     TripletDataset(FingerprintDataset(os.path.join(the_data_folder, 'test'), train=False))] \
+# )
 #test_dataset = torch.utils.data.Subset(test_dataset, list(range(0, len(test_dataset), 10)))
 test_dataloader = DataLoader(test_dataset, batch_size=batch_size, shuffle=True)
 
@@ -115,16 +118,18 @@ embedder = embedder.to('cuda:1')
 
 # TEST
 
+data_iter = iter(test_dataloader)
 for i in range(len(test_dataloader)):
-    test_images, test_labels, test_filepaths = next(iter(test_dataloader))
+    test_images, test_labels, test_filepaths = next(data_iter)
 
     test_images = [item.to('cuda:1') for item in test_images]
 
-    embeddings = [torch.reshape(e, (batch_size, e.size()[1])) for e in triplet_net(*test_images)]
+    #print(triplet_net(*test_images)[0].size())
+    embeddings = [torch.reshape(e, (e.size()[0], e.size()[1])) for e in triplet_net(*test_images)]
     # len(embeddings) == 3 reprenting the following (anchor, pos, neg)
     # Each index in the list contains a tensor of size (batch size, embedding length)
 
-    for batch_index in range(batch_size):
+    for batch_index in range(embeddings[0].size()[0]): # should be equivalent to range(batch_size):
         _01_dist.append(euclideanDist(embeddings[0][batch_index], embeddings[1][batch_index]).item())
         _02_dist.append(euclideanDist(embeddings[0][batch_index], embeddings[2][batch_index]).item())
 

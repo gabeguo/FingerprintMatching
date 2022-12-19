@@ -9,6 +9,10 @@ from torchvision import models, transforms
 
 import torchvision.transforms.functional as F
 
+import sys
+sys.path.append('../directory_organization')
+from fileProcessingUtil import get_id, get_fgrp
+
 # Use https://discuss.pytorch.org/t/how-to-resize-and-pad-in-a-torchvision-transforms-compose/71850/10
 # makes images squares by padding
 class SquarePad:
@@ -143,16 +147,64 @@ class TripletDataset(Dataset):
                                      for label in self.labels_set}
 
             random_state = np.random.RandomState(29)
+            
+            # implement balanced number of each fingerprint type pair, e.g., index, pinky
+            count_per_pair = int(2 * len(self.test_labels) // (10 * 10 // 2) * 1.1) # give a bit of slack (not exactly even)
+            desired_num_finger_pairs = np.full((11, 11), count_per_pair)
+            curr_num_finger_pairs = np.zeros((11, 11))
 
-            triplets = [[i,
-                         random_state.choice(self.label_to_indices[self.test_labels[i]]),
-                         random_state.choice(self.label_to_indices[
-                                                 np.random.choice(
-                                                     list(self.labels_set - set([self.test_labels[i]]))
-                                                 )
-                                             ])
-                         ]
-                        for i in range(len(self.test_data))]
+            #print(count_per_pair)
+
+            # Don't allow duplicate pairs
+            seen_pairs = set()
+
+            # Create balanced triplets
+            triplets = list()
+            for i in range(len(self.test_data)):
+                #print('{} out of {}'.format(i, len(self.test_data)))
+                while True: # do until we find a triplet that doesn't exceed capacity
+                    anchor_index = i
+                    pos_index = random_state.choice(self.label_to_indices[self.test_labels[i]])
+                    neg_index = random_state.choice(self.label_to_indices[
+                        np.random.choice(
+                            list(self.labels_set - set([self.test_labels[i]]))
+                        )
+                    ])
+                    curr_triplet = [anchor_index, pos_index, neg_index]
+                    filepaths = (self.test_data[anchor_index], self.test_data[pos_index], self.test_data[neg_index])
+                    anchor_fname, pos_fname, neg_fname = (the_filepath.split('/')[-1] for the_filepath in filepaths)
+                    anchor_fgrp, pos_fgrp, neg_fgrp = int(get_fgrp(anchor_fname)), int(get_fgrp(pos_fname)), int(get_fgrp(neg_fname))
+
+                    # we can still add more if:
+                    # 1) it hasn't reached desired number yet
+                    # 2) this sample combo hasn't been seen yet
+                    if curr_num_finger_pairs[anchor_fgrp, pos_fgrp] < desired_num_finger_pairs[anchor_fgrp, pos_fgrp] \
+                            and curr_num_finger_pairs[anchor_fgrp, neg_fgrp] < desired_num_finger_pairs[anchor_fgrp, neg_fgrp] \
+                            and (anchor_index, pos_index) not in seen_pairs and (anchor_index, neg_index) not in seen_pairs:
+                        # update counts
+                        curr_num_finger_pairs[anchor_fgrp, pos_fgrp] += 1
+                        curr_num_finger_pairs[pos_fgrp, anchor_fgrp] += 1 # get transpose too
+                        curr_num_finger_pairs[anchor_fgrp, neg_fgrp] += 1
+                        curr_num_finger_pairs[neg_fgrp, anchor_fgrp] += 1
+                        
+                        # we can use this triplet
+                        triplets.append(curr_triplet) 
+                        # mark these samples as used
+                        seen_pairs.update([(anchor_index, pos_index), (pos_index, anchor_index),\
+                                            (anchor_index, neg_index), (neg_index, anchor_index)]) 
+                        break # move on to next index
+            print(curr_num_finger_pairs)
+
+            # Deprecated: unbalanced triplets
+            # triplets = [[i,
+            #              random_state.choice(self.label_to_indices[self.test_labels[i]]),
+            #              random_state.choice(self.label_to_indices[
+            #                                      np.random.choice(
+            #                                          list(self.labels_set - set([self.test_labels[i]]))
+            #                                      )
+            #                                  ])
+            #              ]
+            #             for i in range(len(self.test_data))]
             self.test_triplets = triplets
 
     # returns image triplet, class labels of images, filepaths of images
