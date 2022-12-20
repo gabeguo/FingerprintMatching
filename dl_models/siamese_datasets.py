@@ -137,6 +137,7 @@ class TripletDataset(Dataset):
             self.labels_set = set(self.train_labels)
             self.label_to_indices = {label: np.where(np.array(self.train_labels) == label)[0]
                                      for label in self.labels_set}
+            #print(len(self.labels_set), 'labels')
 
         else:
             self.test_labels = self.fingerprint_dataset.test_labels
