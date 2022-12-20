@@ -101,7 +101,7 @@ def train_epoch(train_loader, model, loss_fn, optimizer, cuda, log_interval, met
     n_nonzero_losses = 0
 
     # individual losses
-    individual_loss_fn = nn.TripletMarginLoss(margin=0.2, reduction='none')
+    individual_loss_fn = nn.TripletMarginLoss(margin=loss_fn.margin, reduction='none')
     # individual losses
 
     for batch_idx, (data, target, filepaths) in enumerate(train_loader):
