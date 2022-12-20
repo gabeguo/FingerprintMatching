@@ -23,8 +23,9 @@ POSTRAINED_MODEL_PATH = '/data/therealgabeguo/embedding_net_weights.pth'
 batch_size=64
 test_batch_size=16
 
-training_dataset = TripletDataset(FingerprintDataset([\
-    os.path.join(DATA_FOLDER, 'train'), os.path.join(ENHANCED_DATA_FOLDER, 'train')], train=True))
+train_dir_paths = [os.path.join(x, 'train') for x in (DATA_FOLDER, ENHANCED_DATA_FOLDER)]
+
+training_dataset = TripletDataset(FingerprintDataset(train_dir_paths, train=True))
 #training_dataset = torch.utils.data.Subset(training_dataset, list(range(0, len(training_dataset), 50)))
 train_dataloader = DataLoader(training_dataset, batch_size=batch_size, shuffle=True, num_workers=16)
 
@@ -67,6 +68,10 @@ torch.cuda.empty_cache()
 # FILE OUTPUT
 log = ""
 
+# LOG TRAINING DATA
+log += 'Training data: {}\n'.format(train_dir_paths)
+print('Training data: {}\n'.format(train_dir_paths))
+
 # CREATE EMBEDDER
 pretrained=False # on image net
 embedder = EmbeddingNet(pretrained=pretrained)
@@ -102,7 +107,7 @@ triplet_net = TripletNet(embedder)
 learning_rate = 0.001
 scheduler=None # not needed for Adam
 optimizer = optim.Adam(triplet_net.parameters(), lr=learning_rate)
-tripletLoss_margin = 0.2
+tripletLoss_margin = 0.3
 
 log += 'learning rate = {}\ntriplet loss margin = {}\n'.format(learning_rate, tripletLoss_margin)
 
