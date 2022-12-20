@@ -30,6 +30,7 @@ def my_transformation(the_image, train=False, target_image_size=(224, 224)):
     transform=transforms.Compose([
         SquarePad(),
         transforms.Resize(target_image_size),
+        transforms.Grayscale(num_output_channels=3),
         transforms.Normalize([0, 0, 0], [1, 1, 1]),
         #transforms.Normalize([210, 210, 210], [70, 70, 70]),
     ])

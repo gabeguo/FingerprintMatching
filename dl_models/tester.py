@@ -30,9 +30,9 @@ MODEL_PATH = '/data/therealgabeguo/embedding_net_weights.pth'
 
 # Data loading 
 batch_size=8
-the_data_folder = UNSEEN_DATA_FOLDER#BALANCED_DATA_FOLDER
+the_data_folder = UNSEEN_DATA_FOLDER # BALANCED_DATA_FOLDER
 test_dataset = TripletDataset(FingerprintDataset(os.path.join(the_data_folder, 'test'), train=False))
-print('loaded test dataset')
+print('loaded test dataset: {}'.format(the_data_folder))
 # test_dataset = torch.utils.data.ConcatDataset(\
 #     [TripletDataset(FingerprintDataset(os.path.join(the_data_folder, 'test'), train=False)), \
 #     TripletDataset(FingerprintDataset(os.path.join(the_data_folder, 'test'), train=False)), \
