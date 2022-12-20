@@ -17,7 +17,7 @@ from fingerprint_dataset import *
 from embedding_models import *
 from fileProcessingUtil import *
 
-from common_filepaths import DATA_FOLDER, SUBSET_DATA_FOLDER, BALANCED_DATA_FOLDER
+from common_filepaths import DATA_FOLDER, SUBSET_DATA_FOLDER, BALANCED_DATA_FOLDER, UNSEEN_DATA_FOLDER
 
 # Create output directory
 from datetime import datetime
@@ -28,9 +28,9 @@ os.makedirs(output_dir, exist_ok=True)
 # Model weights
 MODEL_PATH = '/data/therealgabeguo/embedding_net_weights.pth'
 
-# Data loading
+# Data loading 
 batch_size=8
-the_data_folder = BALANCED_DATA_FOLDER
+the_data_folder = UNSEEN_DATA_FOLDER#BALANCED_DATA_FOLDER
 test_dataset = TripletDataset(FingerprintDataset(os.path.join(the_data_folder, 'test'), train=False))
 print('loaded test dataset')
 # test_dataset = torch.utils.data.ConcatDataset(\
@@ -286,7 +286,7 @@ plt.savefig(os.path.join(output_dir, 'sample_dist.png'))
 plt.clf(); plt.close()
 
 # stats by sample trait (sensor type, finger)
-for trait_name, the_dists in zip(['same sensor', 'diff sensor', 'same finger', 'diff finger'], \
+for trait_name, the_dists in zip(['same sensor encounter', 'diff sensor encounter', 'same finger', 'diff finger'], \
                             [same_sensor_dist, diff_sensor_dist, same_finger_dist, diff_finger_dist]):
     print('Results for {}'.format(trait_name))
     for person in (SAME_PERSON, DIFF_PERSON):
@@ -324,7 +324,7 @@ with open(results_fname, 'w') as fout:
     fout.write(np.array_str(finger_to_finger_percent_samePerson, precision=3, suppress_small=True) + '\n\n')
 
     # distance by sample trait (sensor type, finger)
-    for trait_name, the_dists in zip(['same sensor', 'diff sensor', 'same finger', 'diff finger'], \
+    for trait_name, the_dists in zip(['same sensor encounter', 'diff sensor encounter', 'same finger', 'diff finger'], \
                                 [same_sensor_dist, diff_sensor_dist, same_finger_dist, diff_finger_dist]):
         fout.write('Results for {}\n'.format(trait_name))
         for person in (SAME_PERSON, DIFF_PERSON):
