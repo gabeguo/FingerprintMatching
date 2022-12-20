@@ -26,9 +26,11 @@ def renameFile(filepath):
     filename = tokens[-1]
     fgrp = get_fgrp(filename)
     assert int(fgrp) <= 12
+    assert fgrp == '11' or fgrp == '12'
     if int(fgrp) > 10:
         old_fgrp = fgrp
-        fgrp = '01' if int(fgrp) == '11' else '06' #'{:02d}'.format(int(fgrp) % 10)
+        # '11' & '01' are right thumbs; '12' and '06' are left thumbs
+        fgrp = '01' if fgrp == '11' else '06' #'{:02d}'.format(int(fgrp) % 10)
         #print(fgrp)
         filename = filename[:-6] + 'MOD' + old_fgrp + '_' + fgrp + filename[-4:]
         #print(filename)
@@ -38,7 +40,7 @@ def renameFile(filepath):
         #return filepath
         os.rename(old_filepath, new_filepath)
 
-def copyFiles(TRAIN_NIST_DATA_DIRS:list, TEST_NIST_DATA_DIRS:list, DEEP_LEARNING_DIR:str):
+def copyFiles(TRAIN_NIST_DATA_DIRS:list, TEST_NIST_DATA_DIRS:list, DEEP_LEARNING_DIR:str, max_fgrp=10):
     num_samples = {x:0 for x in ['train', 'val']}
     num_copied = {x:0 for x in ['train', 'val']}
     num_missed = {x:0 for x in ['train', 'val']}
@@ -75,14 +77,14 @@ def copyFiles(TRAIN_NIST_DATA_DIRS:list, TEST_NIST_DATA_DIRS:list, DEEP_LEARNING
 
                         dest = os.path.join(dest_folder, filename)
 
-                        # Get all FGRPs <= 10
-                        if int(fgrp) <= 10:
+                        # Get all FGRPs <= max_fgrp (default 10)
+                        if int(fgrp) <= max_fgrp:
                             if os.path.exists(src[:-len(filename)]) and os.path.exists(dest[:-len(filename)]):
                                 shutil.copyfile(src, dest)
                                 num_copied[group] += 1
-                                # if int(fgrp) > 10:
-                                #     print('renaming:', src)
-                                #     renameFile(dest)
+                                if int(fgrp) > 10:
+                                    print('renaming:', src)
+                                    renameFile(dest)
                                 if pid not in id2validCount[group]:
                                     id2validCount[group][pid] = 0
                                 id2validCount[group][pid] += 1
@@ -101,12 +103,14 @@ def main(argv):
 
     TRAIN_NIST_DATA_DIRS = TEST_NIST_DATA_DIRS = ''
     DEEP_LEARNING_DIR = ''
+    MAX_FGRP = 10 # default 10 (don't include higher samples)
     print_summary = False
 
-    usage_msg = "Usage: gather_nist_data.py --train_src <string of training_src_dirs separated by spaces> --test_src <string of testing_src_dirs separated by spaces> --dest <dest_dir> [--summary]"
+    usage_msg = "Usage: gather_nist_data.py --train_src <string of training_src_dirs separated by spaces> --test_src <string of testing_src_dirs separated by spaces> \n" + \
+        "--dest <dest_dir> --max_fgrp <max_fgrp> [--summary]"
 
     try:
-        opts, args = getopt.getopt(argv,"h?s",["help", "summary", "train_src=", "test_src=", "dest="])
+        opts, args = getopt.getopt(argv,"h?s",["help", "summary", "train_src=", "test_src=", "dest=", "max_fgrp="])
     except getopt.GetoptError:
         print(usage_msg)
         sys.exit(1)
@@ -121,6 +125,8 @@ def main(argv):
             TEST_NIST_DATA_DIRS = arg.split()
         elif opt in ('--dest', '--dest_dir', '-d'):
             DEEP_LEARNING_DIR = arg
+        elif opt in ('--max_fgrp', '-mf'):
+            MAX_FGRP = int(arg)
         elif opt in ('--summary', '-s'):
             print_summary = True
 
@@ -141,7 +147,7 @@ def main(argv):
         #sys.exit(1)
 
     num_samples, num_copied, num_missed, num_nonFgrp, fgrp2count, id2count, id2validCount = \
-    copyFiles(TRAIN_NIST_DATA_DIRS, TEST_NIST_DATA_DIRS, DEEP_LEARNING_DIR)
+    copyFiles(TRAIN_NIST_DATA_DIRS, TEST_NIST_DATA_DIRS, DEEP_LEARNING_DIR, max_fgrp=MAX_FGRP)
 
     if print_summary:
         print('Both groups contain same people:', id2count['train'].keys() == id2count['val'].keys())
