@@ -13,34 +13,40 @@ class FingerprintDataset(Dataset):
             '.PNG', '.pneg', '.PNEG', '.jpg', '.JPG', '.jpeg', '.JPEG'])
 
     """
-    Loads the unpaired images from the folder
+    Loads the unpaired images from the folder(s)
     1) Stores indexed unpaired images with their corresponding labels in self.images, self.img_labels
     2) Stores all the possible classes in self.classes
     3) Stores images separated by class in self.class_to_images (has image filepath, not actual image)
+
+    Note: root_dirs can be a string with a singular root directory, or a list of strings
     """
-    def load_images(self, root_dir):
+    def load_images(self, root_dirs):
         self.classes = list() # self.classes[i] = the name of class with index i
         self.img_labels = list()
         self.images = list()
         self.class_to_images = list()
 
-        # go through all people
-        for pid in os.listdir(root_dir):
-            self.classes.append(pid)
-            self.class_to_images.append(list())
-            curr_person_folder = os.path.join(root_dir, pid)
-            # go through all images
-            for sample in os.listdir(curr_person_folder):
-                if not self.is_image_filename(sample):
-                    continue
-                curr_image = os.path.join(curr_person_folder, sample)
-                # in testing mode, we can't have duplicate images (i.e., 500, 1000, 2000 res versions of image)
-                if (not self.train) and any(resolution in curr_image for resolution in ['_1000_', '_2000_']): 
-                    continue
-                # all good, add the image
-                self.img_labels.append(pid)
-                self.images.append(curr_image)
-                self.class_to_images[-1].append(curr_image)
+        if type(root_dirs) is not list:
+            root_dirs = [root_dirs]
+        # can have multiple data sources
+        for root_dir in root_dirs:
+            # go through all people
+            for pid in os.listdir(root_dir):
+                self.classes.append(pid)
+                self.class_to_images.append(list())
+                curr_person_folder = os.path.join(root_dir, pid)
+                # go through all images
+                for sample in os.listdir(curr_person_folder):
+                    if not self.is_image_filename(sample):
+                        continue
+                    curr_image = os.path.join(curr_person_folder, sample)
+                    # in testing mode, we can't have duplicate images (i.e., 500, 1000, 2000 res versions of image)
+                    if (not self.train) and any(resolution in curr_image for resolution in ['_1000_', '_2000_']): 
+                        continue
+                    # all good, add the image
+                    self.img_labels.append(pid)
+                    self.images.append(curr_image)
+                    self.class_to_images[-1].append(curr_image)
 
         self.len = len(self.img_labels)
 

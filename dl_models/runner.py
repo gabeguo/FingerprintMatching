@@ -15,7 +15,7 @@ from siamese_datasets import *
 from fingerprint_dataset import *
 from embedding_models import *
 
-from common_filepaths import DATA_FOLDER, SUBSET_DATA_FOLDER
+from common_filepaths import DATA_FOLDER, SUBSET_DATA_FOLDER, EXTRA_DATA_FOLDER
 
 PRETRAINED_MODEL_PATH = '/data/therealgabeguo/embedding_net_weights_printsgan.pth'
 POSTRAINED_MODEL_PATH = '/data/therealgabeguo/embedding_net_weights.pth'
@@ -23,11 +23,13 @@ POSTRAINED_MODEL_PATH = '/data/therealgabeguo/embedding_net_weights.pth'
 batch_size=64
 test_batch_size=16
 
-training_dataset = TripletDataset(FingerprintDataset(os.path.join(DATA_FOLDER, 'train'), train=True))
+training_dataset = TripletDataset(FingerprintDataset([\
+    os.path.join(DATA_FOLDER, 'train'), os.path.join(EXTRA_DATA_FOLDER, 'train')], train=True))
 #training_dataset = torch.utils.data.Subset(training_dataset, list(range(0, len(training_dataset), 50)))
 train_dataloader = DataLoader(training_dataset, batch_size=batch_size, shuffle=True, num_workers=16)
 
-val_dataset = TripletDataset(FingerprintDataset(os.path.join(DATA_FOLDER, 'val'), train=False))
+val_dataset = TripletDataset(FingerprintDataset([\
+    os.path.join(DATA_FOLDER, 'val'), os.path.join(EXTRA_DATA_FOLDER, 'val')], train=False))
 #val_dataset = torch.utils.data.Subset(val_dataset, list(range(0, len(val_dataset), 5)))
 val_dataloader = DataLoader(val_dataset, batch_size=batch_size, shuffle=True, num_workers=16)
 

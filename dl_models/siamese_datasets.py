@@ -195,8 +195,8 @@ class TripletDataset(Dataset):
                         seen_pairs.update([(anchor_index, pos_index), (pos_index, anchor_index),\
                                             (anchor_index, neg_index), (neg_index, anchor_index)]) 
                         break # move on to next index
-            print(curr_num_finger_pairs[:,:,POS])
-            print(curr_num_finger_pairs[:,:,NEG])
+            #print(curr_num_finger_pairs[:,:,POS])
+            #print(curr_num_finger_pairs[:,:,NEG])
 
             # Deprecated: unbalanced triplets
             # triplets = [[i,
