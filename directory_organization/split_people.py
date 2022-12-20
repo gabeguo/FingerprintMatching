@@ -136,12 +136,12 @@ def main():
     if data_folder is None:
         print('need valid data_folder')
         sys.exit(1)
-    if train_percent is None or train_percent <= 0 or train_percent >= 100:
+    if train_percent is None or train_percent < 0 or train_percent > 100:
         print('need valid train_percent')
-    if val_percent is None or val_percent <= 0 or val_percent >= 100:
+    if val_percent is None or val_percent < 0 or val_percent > 100:
         print('need valid val_percent')
-    if train_percent + val_percent >= 100 or train_percent + val_percent <= 0:
-        print('train_percent + val_percent must be in (0, 100)')
+    if train_percent + val_percent > 100 or train_percent + val_percent < 0:
+        print('train_percent + val_percent must be in [0, 100]')
 
     # calculate test_percent
     test_percent = 100 - (train_percent + val_percent)
