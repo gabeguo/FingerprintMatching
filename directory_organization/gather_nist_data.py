@@ -7,6 +7,13 @@ the source and stores them in the destination organized in folders by person.
 If no destination is given creates a folder named 'train' in the current one to
 use as the destination.
 
+USAGE NOTICE: Make a blank dummy folder to input as test.
+Specify all the desired folders to be training.
+Because for this project, we're doing image matching (Siamese architecture). 
+A separate script will split training people from testing people. 
+This script is a holdover from the proof-of-concept project that proved correlation - 
+in that one, we had same people in train and test. 
+In this one, different people will be in train and test.
 '''
 
 import sys, getopt, os, shutil
