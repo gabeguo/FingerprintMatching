@@ -25,9 +25,10 @@ def renameFile(filepath):
     tokens = filepath.split('/')
     filename = tokens[-1]
     fgrp = get_fgrp(filename)
+    assert int(fgrp) <= 12
     if int(fgrp) > 10:
         old_fgrp = fgrp
-        fgrp = '{:02d}'.format(int(fgrp) % 10)
+        fgrp = '01' if int(fgrp) == '11' else '06' #'{:02d}'.format(int(fgrp) % 10)
         #print(fgrp)
         filename = filename[:-6] + 'MOD' + old_fgrp + '_' + fgrp + filename[-4:]
         #print(filename)
@@ -74,14 +75,14 @@ def copyFiles(TRAIN_NIST_DATA_DIRS:list, TEST_NIST_DATA_DIRS:list, DEEP_LEARNING
 
                         dest = os.path.join(dest_folder, filename)
 
-                        # Get all FGRPs <= 12
-                        if int(fgrp) <= 12:
+                        # Get all FGRPs <= 10
+                        if int(fgrp) <= 10:
                             if os.path.exists(src[:-len(filename)]) and os.path.exists(dest[:-len(filename)]):
                                 shutil.copyfile(src, dest)
                                 num_copied[group] += 1
-                                if int(fgrp) > 10:
-                                    print('renaming:', src)
-                                    renameFile(dest)
+                                # if int(fgrp) > 10:
+                                #     print('renaming:', src)
+                                #     renameFile(dest)
                                 if pid not in id2validCount[group]:
                                     id2validCount[group][pid] = 0
                                 id2validCount[group][pid] += 1
