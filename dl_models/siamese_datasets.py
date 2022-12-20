@@ -16,39 +16,43 @@ from fileProcessingUtil import get_id, get_fgrp
 # Use https://discuss.pytorch.org/t/how-to-resize-and-pad-in-a-torchvision-transforms-compose/71850/10
 # makes images squares by padding
 class SquarePad:
+    def __init__(self, fill_val):
+        assert fill_val <= 255 and fill_val >= 0
+        self.fill_val = fill_val
+        return
     def __call__(self, image):
         max_wh = max(image.size())
         p_left, p_top = [(max_wh - s) // 2 for s in image.size()[1:]] # first channel is just colors
         p_right, p_bottom = [max_wh - (s+pad) for s, pad in zip(image.size()[1:], [p_left, p_top])]
         padding = (p_left, p_top, p_right, p_bottom)
-        return F.pad(image, padding, 255, 'constant')
+        return F.pad(image, padding, self.fill_val, 'constant')
 
 # returns the image as a normalized square with standard size
 def my_transformation(the_image, train=False, target_image_size=(224, 224)):
     #print(target_image_size)
     assert target_image_size[0] == target_image_size[1]
+    fill_val = 255 if the_image[0, 0, 0] > 200 else 0
+    # common transforms - these are the only transforms for test
     transform=transforms.Compose([
-        SquarePad(),
+        SquarePad(fill_val=fill_val),
         transforms.Resize(target_image_size),
         transforms.Grayscale(num_output_channels=3),
         transforms.Normalize([0, 0, 0], [1, 1, 1]),
         #transforms.Normalize([210, 210, 210], [70, 70, 70]),
     ])
-    if train:
+    if train and torch.rand(1).item() < 0.65: # randomly apply the train transforms
         transform = transforms.Compose([
-            transforms.RandomAffine(degrees=10, translate=(0.05, 0.05), scale=(0.95, 1.05), shear=(-5, 5), fill=255),
+            transforms.RandomAffine(degrees=12.5, translate=(0.075, 0.075), scale=(0.925, 1.075), shear=(-7.5, 7.5), fill=fill_val),
             transform,
-            transforms.RandomInvert(p=0.1),
+            transforms.RandomResizedCrop(size=target_image_size, scale=(0.9, 1), ratio=(0.95, 1.05)),
+            transforms.RandomInvert(p=0.3),
             transforms.GaussianBlur(kernel_size=(5, 5), sigma=(0.01, 0.75)),
         ])
+        the_image = transform(the_image.float())
         # add noise
-        shadeScaling = 0.2 * (torch.rand(target_image_size) - 0.5) + torch.ones(target_image_size)
-        the_image = transform(the_image.float()) * shadeScaling
-        """
-        # randomly binarize
-        if torch.rand(1).item() < 1:
-            the_image = (the_image > 0).float()
-        """
+        shadeScaling = 1 + 0.3 * (torch.rand(1).item() - 0.5) # shade scaling between 0.85 and 1.15
+        noise = 0.1 * torch.max(the_image) * (torch.rand(target_image_size) - 0.5)
+        the_image = shadeScaling * (the_image + noise)
         return the_image
     return transform(the_image.float())
 
