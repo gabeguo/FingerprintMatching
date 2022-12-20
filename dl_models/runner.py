@@ -24,12 +24,12 @@ batch_size=64
 test_batch_size=16
 
 training_dataset = TripletDataset(FingerprintDataset([\
-    os.path.join(DATA_FOLDER, 'train'), os.path.join(EXTRA_DATA_FOLDER, 'train')], train=True))
+    os.path.join(DATA_FOLDER, 'train')], train=True))
 #training_dataset = torch.utils.data.Subset(training_dataset, list(range(0, len(training_dataset), 50)))
 train_dataloader = DataLoader(training_dataset, batch_size=batch_size, shuffle=True, num_workers=16)
 
 val_dataset = TripletDataset(FingerprintDataset([\
-    os.path.join(DATA_FOLDER, 'val'), os.path.join(EXTRA_DATA_FOLDER, 'val')], train=False))
+    os.path.join(DATA_FOLDER, 'val')], train=False))
 #val_dataset = torch.utils.data.Subset(val_dataset, list(range(0, len(val_dataset), 5)))
 val_dataloader = DataLoader(val_dataset, batch_size=batch_size, shuffle=True, num_workers=16)
 
@@ -110,7 +110,7 @@ best_val_epoch, best_val_loss = 0, 0
 
 best_val_epoch, best_val_loss = fit(train_loader=train_dataloader, val_loader=val_dataloader, model=triplet_net, \
     loss_fn=nn.TripletMarginLoss(margin=tripletLoss_margin), optimizer=optimizer, scheduler=scheduler, \
-    n_epochs=100, cuda='cuda:1', log_interval=75, metrics=[], start_epoch=0, early_stopping_interval=50)
+    n_epochs=100, cuda='cuda:1', log_interval=75, metrics=[], start_epoch=0, early_stopping_interval=35)
 
 log += 'best_val_epoch = {}\nbest_val_loss = {}\n'.format(best_val_epoch, best_val_loss)
 print('best_val_epoch = {}\nbest_val_loss = {}\n'.format(best_val_epoch, best_val_loss))
