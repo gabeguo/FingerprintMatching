@@ -136,8 +136,9 @@ def main(argv):
                 print(dir, "does not exist")
                 sys.exit(1)
     if not os.path.exists(DEEP_LEARNING_DIR):
-        print(DEEP_LEARNING_DIR, "does not exist")
-        sys.exit(1)
+        os.makedirs(DEEP_LEARNING_DIR, exist_ok=True)
+        print(DEEP_LEARNING_DIR, "does not exist, so we create it")
+        #sys.exit(1)
 
     num_samples, num_copied, num_missed, num_nonFgrp, fgrp2count, id2count, id2validCount = \
     copyFiles(TRAIN_NIST_DATA_DIRS, TEST_NIST_DATA_DIRS, DEEP_LEARNING_DIR)
