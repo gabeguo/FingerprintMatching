@@ -145,6 +145,7 @@ class TripletDataset(Dataset):
             #print(len(self.labels_set), 'labels')
 
         else:
+            # initialize the lookup tables
             self.test_labels = self.fingerprint_dataset.test_labels
             self.test_data = self.fingerprint_dataset.test_data
             # generate fixed triplets for testing
@@ -154,10 +155,15 @@ class TripletDataset(Dataset):
 
             random_state = np.random.RandomState(29)
             
-            # implement balanced number of each fingerprint type pair, e.g., index, pinky
+            # constants
             POS = 0
             NEG = 1
-            count_per_pair = int(2 * len(self.test_labels) // (10 * 10 // 2) * 1.1) // 2 # give a bit of slack (not exactly even)
+
+            # how many times we want to loop through all the items to make triplets
+            SCALE_FACTOR = 2 
+
+            # implement balanced number of each fingerprint type pair, e.g., index, pinky
+            count_per_pair = SCALE_FACTOR * int(len(self.test_labels) // (10 * 10 // 2) * 1.05) # give a bit of slack (not exactly even)
             desired_num_finger_pairs = np.full((11, 11, 2), count_per_pair)
             curr_num_finger_pairs = np.zeros((11, 11, 2))
 
@@ -168,39 +174,41 @@ class TripletDataset(Dataset):
 
             # Create balanced triplets
             triplets = list()
-            for i in range(len(self.test_data)):
-                #print('{} out of {}'.format(i, len(self.test_data)))
-                while True: # do until we find a triplet that doesn't exceed capacity
-                    anchor_index = i
-                    pos_index = random_state.choice(self.label_to_indices[self.test_labels[i]])
-                    neg_index = random_state.choice(self.label_to_indices[
-                        np.random.choice(
-                            list(self.labels_set - set([self.test_labels[i]]))
-                        )
-                    ])
-                    curr_triplet = [anchor_index, pos_index, neg_index]
-                    filepaths = (self.test_data[anchor_index], self.test_data[pos_index], self.test_data[neg_index])
-                    anchor_fname, pos_fname, neg_fname = (the_filepath.split('/')[-1] for the_filepath in filepaths)
-                    anchor_fgrp, pos_fgrp, neg_fgrp = int(get_fgrp(anchor_fname)), int(get_fgrp(pos_fname)), int(get_fgrp(neg_fname))
+            
+            for j in range(SCALE_FACTOR):
+                for i in range(len(self.test_data)):
+                    #print('{} out of {}'.format(i, len(self.test_data)))
+                    while True: # do until we find a triplet that doesn't exceed capacity
+                        anchor_index = i
+                        pos_index = random_state.choice(self.label_to_indices[self.test_labels[i]])
+                        neg_index = random_state.choice(self.label_to_indices[
+                            np.random.choice(
+                                list(self.labels_set - set([self.test_labels[i]]))
+                            )
+                        ])
+                        curr_triplet = [anchor_index, pos_index, neg_index]
+                        filepaths = (self.test_data[anchor_index], self.test_data[pos_index], self.test_data[neg_index])
+                        anchor_fname, pos_fname, neg_fname = (the_filepath.split('/')[-1] for the_filepath in filepaths)
+                        anchor_fgrp, pos_fgrp, neg_fgrp = int(get_fgrp(anchor_fname)), int(get_fgrp(pos_fname)), int(get_fgrp(neg_fname))
 
-                    # we can still add more if:
-                    # 1) it hasn't reached desired number yet
-                    # 2) this sample combo hasn't been seen yet
-                    if curr_num_finger_pairs[anchor_fgrp, pos_fgrp, POS] < desired_num_finger_pairs[anchor_fgrp, pos_fgrp, POS] \
-                            and curr_num_finger_pairs[anchor_fgrp, neg_fgrp, NEG] < desired_num_finger_pairs[anchor_fgrp, neg_fgrp, NEG] \
-                            and (anchor_index, pos_index) not in seen_pairs and (anchor_index, neg_index) not in seen_pairs:
-                        # update counts
-                        curr_num_finger_pairs[anchor_fgrp, pos_fgrp, POS] += 1
-                        curr_num_finger_pairs[pos_fgrp, anchor_fgrp, POS] += 1 # get transpose too
-                        curr_num_finger_pairs[anchor_fgrp, neg_fgrp, NEG] += 1
-                        curr_num_finger_pairs[neg_fgrp, anchor_fgrp, NEG] += 1
-                        
-                        # we can use this triplet
-                        triplets.append(curr_triplet) 
-                        # mark these samples as used
-                        seen_pairs.update([(anchor_index, pos_index), (pos_index, anchor_index),\
-                                            (anchor_index, neg_index), (neg_index, anchor_index)]) 
-                        break # move on to next index
+                        # we can still add more if:
+                        # 1) it hasn't reached desired number yet
+                        # 2) this sample combo hasn't been seen yet
+                        if curr_num_finger_pairs[anchor_fgrp, pos_fgrp, POS] < desired_num_finger_pairs[anchor_fgrp, pos_fgrp, POS] \
+                                and curr_num_finger_pairs[anchor_fgrp, neg_fgrp, NEG] < desired_num_finger_pairs[anchor_fgrp, neg_fgrp, NEG] \
+                                and (anchor_index, pos_index) not in seen_pairs and (anchor_index, neg_index) not in seen_pairs:
+                            # update counts
+                            curr_num_finger_pairs[anchor_fgrp, pos_fgrp, POS] += 1
+                            curr_num_finger_pairs[pos_fgrp, anchor_fgrp, POS] += 1 # get transpose too
+                            curr_num_finger_pairs[anchor_fgrp, neg_fgrp, NEG] += 1
+                            curr_num_finger_pairs[neg_fgrp, anchor_fgrp, NEG] += 1
+                            
+                            # we can use this triplet
+                            triplets.append(curr_triplet) 
+                            # mark these samples as used
+                            seen_pairs.update([(anchor_index, pos_index), (pos_index, anchor_index),\
+                                                (anchor_index, neg_index), (neg_index, anchor_index)]) 
+                            break # move on to next index
             #print(curr_num_finger_pairs[:,:,POS])
             #print(curr_num_finger_pairs[:,:,NEG])
 
@@ -245,6 +253,8 @@ class TripletDataset(Dataset):
         return (img1, img2, img3), [], (filepath1, filepath2, filepath3)
 
     def __len__(self):
+        if not self.train: # we can have multiple testing triplets for each item in the dataset
+            return len(self.test_triplets)
         return len(self.fingerprint_dataset)
 
 
