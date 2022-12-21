@@ -23,8 +23,9 @@ POSTRAINED_MODEL_PATH = '/data/therealgabeguo/embedding_net_weights.pth'
 batch_size=64
 test_batch_size=16
 
-train_dir_paths = os.path.join(BALANCED_DATA_FOLDER, 'train')
-#[os.path.join(x, 'train') for x in (DATA_FOLDER, ENHANCED_DATA_FOLDER)]
+the_data_folders = [BALANCED_DATA_FOLDER]
+
+train_dir_paths = [os.path.join(x, 'train') for x in the_data_folders]
 
 training_dataset = TripletDataset(FingerprintDataset(train_dir_paths, train=True))
 #training_dataset = torch.utils.data.Subset(training_dataset, list(range(0, len(training_dataset), 50)))
