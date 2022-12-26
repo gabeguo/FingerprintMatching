@@ -30,7 +30,7 @@ MODEL_PATH = '/data/therealgabeguo/embedding_net_weights.pth'
 
 # Data loading 
 batch_size=8
-the_data_folder = BALANCED_DATA_FOLDER
+the_data_folder = DATA_FOLDER
 test_dataset = TripletDataset(FingerprintDataset(os.path.join(the_data_folder, 'test'), train=False))
 print('loaded test dataset: {}'.format(the_data_folder))
 # test_dataset = torch.utils.data.ConcatDataset(\
@@ -259,14 +259,14 @@ import seaborn as sns
 
 plt.subplots_adjust(bottom=0.22, left=0.22)
 plt.title('Finger-to-Finger Accuracy')
-sns.heatmap(finger_to_finger_acc.round(3), annot=True, xticklabels=fgrp_names, yticklabels=fgrp_names, cmap='Reds')
+sns.heatmap(finger_to_finger_acc.round(3), annot=True, xticklabels=fgrp_names, yticklabels=fgrp_names, cmap='Reds', vmin=0, vmax=1)
 plt.savefig(os.path.join(output_dir, 'acc.pdf'))
 plt.savefig(os.path.join(output_dir, 'acc.png'))
 plt.clf(); plt.close()
 
 plt.subplots_adjust(bottom=0.22, left=0.22)
 plt.title('Finger-to-Finger ROC AUC')
-sns.heatmap(finger_to_finger_roc.round(3), annot=True, xticklabels=fgrp_names, yticklabels=fgrp_names, cmap='Reds')
+sns.heatmap(finger_to_finger_roc.round(3), annot=True, xticklabels=fgrp_names, yticklabels=fgrp_names, cmap='Reds', vmin=0, vmax=1)
 plt.savefig(os.path.join(output_dir, 'roc_auc.pdf'))
 plt.savefig(os.path.join(output_dir, 'roc_auc.png'))
 plt.clf(); plt.close()
