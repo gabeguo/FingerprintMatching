@@ -152,6 +152,8 @@ def main(argv):
     shortname = '_' + IMAGES_DIR[:-1 if IMAGES_DIR[-1] == '/' else len(IMAGES_DIR)].split('/')[-1]
     FEATURE_EXTRACTION_DIR += shortname # name it with the folder
 
+    print('extracting features to', FEATURE_EXTRACTION_DIR)
+
     ENHANCE_DIR = os.path.abspath(os.path.join(IMAGES_DIR,'{}/enhance'.format(FEATURE_EXTRACTION_DIR)))
     os.makedirs(ENHANCE_DIR, exist_ok = True)
 
