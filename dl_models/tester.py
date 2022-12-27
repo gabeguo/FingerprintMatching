@@ -18,7 +18,7 @@ from embedding_models import *
 from fileProcessingUtil import *
 
 from common_filepaths import DATA_FOLDER, SUBSET_DATA_FOLDER, BALANCED_DATA_FOLDER, UNSEEN_DATA_FOLDER, EXTRA_DATA_FOLDER, \
-    ENHANCED_DATA_FOLDER, ENHANCED_HOLDOUT_FOLDER
+    ENHANCED_DATA_FOLDER, ENHANCED_HOLDOUT_FOLDER, ENHANCED_INK_FOLDER
 
 # Create output directory
 from datetime import datetime
@@ -31,7 +31,7 @@ MODEL_PATH = '/data/therealgabeguo/embedding_net_weights.pth'
 
 # Data loading 
 batch_size=8
-the_data_folder = ENHANCED_HOLDOUT_FOLDER
+the_data_folder = ENHANCED_INK_FOLDER
 test_dataset = TripletDataset(FingerprintDataset(os.path.join(the_data_folder, 'test'), train=False))
 print('loaded test dataset: {}'.format(the_data_folder))
 # test_dataset = torch.utils.data.ConcatDataset(\
