@@ -1,0 +1,6 @@
+
+failed on 00002437_J_1000_palm_10.png
+
+failed on 00002437_J_1000_palm_03.png
+
+failed on 00002437_J_1000_palm_04.png
