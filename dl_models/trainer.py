@@ -31,6 +31,9 @@ def fit(train_loader, val_loader, model, loss_fn, optimizer, scheduler, n_epochs
     past_val_losses = []
     past_train_losses = []
 
+    from datetime import datetime
+    datetime_str = datetime.now().strftime("%Y-%m-%d_%H:%M:%S")
+
     for epoch in range(start_epoch, n_epochs):
         print('current epoch:', epoch)
 
@@ -56,8 +59,6 @@ def fit(train_loader, val_loader, model, loss_fn, optimizer, scheduler, n_epochs
             model.load_state_dict(torch.load(temp_model_path))
             model.eval()
             
-            from datetime import datetime
-            datetime_str = datetime.now().strftime("%d-%m-%Y_%H:%M:%S")
             with open('/data/therealgabeguo/results/train_res_{}.txt'.format(datetime_str), 'w') as fout:
                 fout.write('epoch: ' + str([epoch for epoch in range(start_epoch, epoch + 1)]) + '\n')
                 fout.write('train loss: ' + str(past_train_losses) + '\n')
@@ -76,8 +77,6 @@ def fit(train_loader, val_loader, model, loss_fn, optimizer, scheduler, n_epochs
         if scheduler is not None:
             scheduler.step()
 
-    from datetime import datetime
-    datetime_str = datetime.now().strftime("%Y-%m-%d_%H:%M:%S")
     with open('/data/therealgabeguo/results/train_res_{}.txt'.format(datetime_str), 'w') as fout:
         fout.write('epoch: ' + str([epoch for epoch in range(start_epoch, n_epochs)]) + '\n')
         fout.write('train loss: ' + str(past_train_losses) + '\n')
