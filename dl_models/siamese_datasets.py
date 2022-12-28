@@ -37,6 +37,7 @@ def my_transformation(the_image, train=False, target_image_size=(224, 224)):
         SquarePad(fill_val=fill_val),
         transforms.Resize(target_image_size),
         transforms.Grayscale(num_output_channels=3),
+        # transforms.RandomInvert(p=1.0), # TODO: remove this after the experiment
         transforms.Normalize([0, 0, 0], [1, 1, 1]),
         #transforms.Normalize([210, 210, 210], [70, 70, 70]),
     ])
@@ -45,7 +46,7 @@ def my_transformation(the_image, train=False, target_image_size=(224, 224)):
             transforms.RandomAffine(degrees=12.5, translate=(0.075, 0.075), scale=(0.925, 1.075), shear=(-7.5, 7.5), fill=fill_val),
             transform,
             transforms.RandomResizedCrop(size=target_image_size, scale=(0.9, 1), ratio=(0.95, 1.05)),
-            transforms.RandomInvert(p=0.3),
+            #transforms.RandomInvert(p=0.3),
             transforms.GaussianBlur(kernel_size=(5, 5), sigma=(0.01, 0.75)),
         ])
         the_image = transform(the_image.float())
@@ -160,10 +161,10 @@ class TripletDataset(Dataset):
             NEG = 1
 
             # how many times we want to loop through all the items to make triplets
-            SCALE_FACTOR = 2 
+            SCALE_FACTOR = 2
 
             # implement balanced number of each fingerprint type pair, e.g., index, pinky
-            count_per_pair = SCALE_FACTOR * int(len(self.test_labels) // (10 * 10 // 2) * 1.05) # give a bit of slack (not exactly even)
+            count_per_pair = SCALE_FACTOR * int(len(self.test_labels) // (10 * 10 // 2) * 1.1) # give a bit of slack (not exactly even)
             desired_num_finger_pairs = np.full((11, 11, 2), count_per_pair)
             curr_num_finger_pairs = np.zeros((11, 11, 2))
 
