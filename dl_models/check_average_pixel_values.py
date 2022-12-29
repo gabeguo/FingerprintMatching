@@ -20,8 +20,23 @@ from fileProcessingUtil import *
 from common_filepaths import DATA_FOLDER, SUBSET_DATA_FOLDER, BALANCED_DATA_FOLDER, UNSEEN_DATA_FOLDER, EXTRA_DATA_FOLDER, \
     ENHANCED_DATA_FOLDER, ENHANCED_HOLDOUT_FOLDER, ENHANCED_INK_FOLDER, SYNTHETIC_DATA_FOLDER
 
-# this should do nothing
+# this does nothing - we tested it
 supposedly_useless_normalization = transforms.Normalize([0, 0, 0], [1, 1, 1])
+
+# feature extractor
+embedder = EmbeddingNet(pretrained=False)
+embedder.load_state_dict(torch.load('/data/therealgabeguo/embedding_net_weights.pth'))
+
+# testing euclidean distance
+# Pre: parameters are 2 1D tensors
+def euclideanDist(tensor1, tensor2):
+    return (tensor1 - tensor2).pow(2).sum(0)
+a = torch.rand((512,))
+b = torch.rand((512,))
+a_ = torch.reshape(a, (512,))
+b_ = torch.reshape(b, (512,))
+print(euclideanDist(a, b))
+print(euclideanDist(a_, b_))
 
 # Data loading 
 batch_size=8
@@ -34,12 +49,15 @@ for the_data_folder in [DATA_FOLDER, UNSEEN_DATA_FOLDER, EXTRA_DATA_FOLDER, SYNT
     mins, maxs, avgs, stds = [], [], [], []
     norm_mins, norm_maxs, norm_avgs, norm_stds = [], [], [], []
     it = iter(test_dataloader)
-    for i in range(20):
+    for i in range(50):
         processed_images, labels, filepaths = next(it)
         if i == 0:
             print('\timage batch shape:', processed_images.size())
             print('\tlabels shape:', len(labels))
             print('\tfilepaths shape:', len(filepaths))
+            embedder_output = embedder(processed_images)
+            print('\tembedder output shape:', embedder_output.size())
+            print('\tmagnitudes of embeddings:', [embedder_output[i].pow(2).sum(0) for i in range(embedder_output.size()[0])])
         for item in range(len(labels)):
             raw_image = read_image(filepaths[0], mode=ImageReadMode.RGB).float()
             fake_normalized_image = supposedly_useless_normalization(raw_image) # this should be the same
@@ -64,10 +82,10 @@ for the_data_folder in [DATA_FOLDER, UNSEEN_DATA_FOLDER, EXTRA_DATA_FOLDER, SYNT
         # plt.imshow(next_img.permute(1, 2, 0))
         # plt.show()
     print('\taverage min:', np.mean(mins))
-    print('\t\taverage min:', np.mean(norm_mins))
+    #print('\t\taverage min:', np.mean(norm_mins))
     print('\taverage max:', np.mean(maxs))
-    print('\t\taverage max:', np.mean(norm_maxs))
+    #print('\t\taverage max:', np.mean(norm_maxs))
     print('\taverage avg:', np.mean(avgs))
-    print('\t\taverage avg:', np.mean(norm_avgs))
+    #print('\t\taverage avg:', np.mean(norm_avgs))
     print('\taverage std:', np.mean(stds))
-    print('\t\taverage std:', np.mean(norm_stds))
+    #print('\t\taverage std:', np.mean(norm_stds))
