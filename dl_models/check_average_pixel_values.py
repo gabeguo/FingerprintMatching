@@ -20,6 +20,9 @@ from fileProcessingUtil import *
 from common_filepaths import DATA_FOLDER, SUBSET_DATA_FOLDER, BALANCED_DATA_FOLDER, UNSEEN_DATA_FOLDER, EXTRA_DATA_FOLDER, \
     ENHANCED_DATA_FOLDER, ENHANCED_HOLDOUT_FOLDER, ENHANCED_INK_FOLDER, SYNTHETIC_DATA_FOLDER
 
+# this should do nothing
+supposedly_useless_normalization = transforms.Normalize([0, 0, 0], [1, 1, 1])
+
 # Data loading 
 batch_size=8
 for the_data_folder in [DATA_FOLDER, UNSEEN_DATA_FOLDER, EXTRA_DATA_FOLDER, SYNTHETIC_DATA_FOLDER]:
@@ -29,6 +32,7 @@ for the_data_folder in [DATA_FOLDER, UNSEEN_DATA_FOLDER, EXTRA_DATA_FOLDER, SYNT
 
     # import matplotlib.pyplot as plt
     mins, maxs, avgs, stds = [], [], [], []
+    norm_mins, norm_maxs, norm_avgs, norm_stds = [], [], [], []
     it = iter(test_dataloader)
     for i in range(20):
         processed_images, labels, filepaths = next(it)
@@ -38,6 +42,8 @@ for the_data_folder in [DATA_FOLDER, UNSEEN_DATA_FOLDER, EXTRA_DATA_FOLDER, SYNT
             print('\tfilepaths shape:', len(filepaths))
         for item in range(len(labels)):
             raw_image = read_image(filepaths[0], mode=ImageReadMode.RGB).float()
+            fake_normalized_image = supposedly_useless_normalization(raw_image) # this should be the same
+
             the_min = torch.min(raw_image)
             the_max = torch.max(raw_image)
             the_avg = torch.mean(raw_image)
@@ -48,11 +54,20 @@ for the_data_folder in [DATA_FOLDER, UNSEEN_DATA_FOLDER, EXTRA_DATA_FOLDER, SYNT
             maxs.append(the_max)
             avgs.append(the_avg)
             stds.append(the_std)
+
+            norm_mins.append(torch.min(fake_normalized_image))
+            norm_maxs.append(torch.max(fake_normalized_image))
+            norm_avgs.append(torch.mean(fake_normalized_image))
+            norm_stds.append(torch.std(fake_normalized_image))
         # next_img = (next_img - the_min) / (the_max - the_min)
         # print(next_img[0])
         # plt.imshow(next_img.permute(1, 2, 0))
         # plt.show()
     print('\taverage min:', np.mean(mins))
+    print('\t\taverage min:', np.mean(norm_mins))
     print('\taverage max:', np.mean(maxs))
+    print('\t\taverage max:', np.mean(norm_maxs))
     print('\taverage avg:', np.mean(avgs))
+    print('\t\taverage avg:', np.mean(norm_avgs))
     print('\taverage std:', np.mean(stds))
+    print('\t\taverage std:', np.mean(norm_stds))
