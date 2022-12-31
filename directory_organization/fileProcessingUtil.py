@@ -13,6 +13,6 @@ def get_sensor(filename):
     # SD301 version
     if tokens[1].isnumeric():
         return tokens[1] + '_' + tokens[2] #SUBJECT_ENCOUNTER_DEVICE_CAPTURE_RESOLUTION_FRGP.EXT
-    # SD302 version
-    return tokens[1] #SUBJECT_DEVICE_RESOLUTION_CAPTURE_FRGP.EXT
+    # SD302 (&SD300) version
+    return tokens[1] #SUBJECT_DEVICE_RESOLUTION_CAPTURE_FRGP.EXT for SD302, SUBJECT_IMPRESSION_PPI_FRGP.EXT for SD300
     #return filename.split('_')[1]#'_'.join(filename.split('_')[1:2+1])
