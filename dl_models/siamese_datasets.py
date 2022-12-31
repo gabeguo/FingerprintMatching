@@ -11,7 +11,7 @@ import torchvision.transforms.functional as F
 
 import sys
 sys.path.append('../directory_organization')
-from fileProcessingUtil import get_id, get_fgrp
+from fileProcessingUtil import get_id, get_fgrp, get_sensor
 
 # Use https://discuss.pytorch.org/t/how-to-resize-and-pad-in-a-torchvision-transforms-compose/71850/10
 # makes images squares by padding
@@ -230,7 +230,9 @@ class TripletDataset(Dataset):
         if self.train:
             img1, label1 = self.train_data[index], self.train_labels[index]
             positive_index = index
-            while positive_index == index:
+            while positive_index == index \
+                    and get_sensor(img1) == get_sensor(self.train_data[positive_index]): 
+                    # make sure positive example doesn't come from same sensor, so it doesn't learn background
                 positive_index = np.random.choice(self.label_to_indices[label1])
             negative_label = np.random.choice(list(self.labels_set - set([label1])))
             negative_index = np.random.choice(self.label_to_indices[negative_label])
