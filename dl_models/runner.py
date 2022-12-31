@@ -19,12 +19,14 @@ from common_filepaths import DATA_FOLDER, SUBSET_DATA_FOLDER, EXTRA_DATA_FOLDER,
 
 PRETRAINED_MODEL_PATH = '/data/therealgabeguo/embedding_net_weights_printsgan.pth'
 POSTRAINED_MODEL_PATH = '/data/therealgabeguo/embedding_net_weights.pth'
+MIDTRAINED_MODEL_PATH = '/data/therealgabeguo/embedding_net_weights_sd300a.pth'
 
 batch_size=64
 test_batch_size=16
 
-the_data_folders = [ENHANCED_DATA_FOLDER]
-val_data_folder = ENHANCED_DATA_FOLDER
+PRETRAINED_MODEL_PATH = MIDTRAINED_MODEL_PATH # TODO: remove when we do real training
+the_data_folders = [DATA_FOLDER]
+val_data_folder = DATA_FOLDER
 
 train_dir_paths = [os.path.join(x, 'train') for x in the_data_folders]
 
@@ -82,7 +84,7 @@ log += 'pretrained on image net: {}\n'.format(pretrained)
 print('pretrained on image net:', pretrained)
 
 # load saved weights!
-pretrained_other_data = True
+pretrained_other_data = True # weights from PrintsGAN (or SD300)
 if pretrained_other_data:
     embedder.load_state_dict(torch.load(PRETRAINED_MODEL_PATH))
 
@@ -91,11 +93,11 @@ print(pretrained_other_msg)
 log += pretrained_other_msg
 
 """
-# freeze all layers except the last one
-n_layers = list(embedder.feature_extractor.children())
-print(n_layers)
-print(len(n_layers))
-n_frozen_layers = 4
+# freeze half the layers
+the_layers = list(embedder.feature_extractor.children())
+print(the_layers)
+print('number layers:', len(the_layers))
+n_frozen_layers = 5 # freeze half the layers
 for the_param in list(embedder.feature_extractor.children())[:n_frozen_layers]:
     log += 'freezing{}\n'.format(the_param)
     print('freezing {}'.format(the_param))
