@@ -229,18 +229,20 @@ class TripletDataset(Dataset):
     def __getitem__(self, index):
         if self.train:
             img1, label1 = self.train_data[index], self.train_labels[index]
-            
+            #print(label1)
             # choose positive example, not from same sensor
             positive_index = index
             while positive_index == index \
-                    and get_sensor(img1) == get_sensor(self.train_data[positive_index]): 
+                    or get_sensor(img1.split('/')[-1]) == get_sensor(self.train_data[positive_index].split('/')[-1]): 
                     # make sure positive example doesn't come from same sensor, so it doesn't learn background
+                #print(positive_index, get_sensor(img1.split('/')[-1]), get_sensor(self.train_data[positive_index].split('/')[-1]))
                 positive_index = np.random.choice(self.label_to_indices[label1])
             
             # choose negative example, also not from same sensor (otherwise model could erroneously learn that same sensor means negative sample)
             negative_label = np.random.choice(list(self.labels_set - set([label1])))
             negative_index = np.random.choice(self.label_to_indices[negative_label])
-            while get_sensor(img1) == get_sensor(self.train_data[negative_index]):
+            while get_sensor(img1.split('/')[-1]) == get_sensor(self.train_data[negative_index].split('/')[-1]):
+                #print(negative_index, get_sensor(img1.split('/')[-1]), get_sensor(self.train_data[negative_index].split('/')[-1]))
                 negative_index = np.random.choice(self.label_to_indices[negative_label])
             
             img2 = self.train_data[positive_index]
