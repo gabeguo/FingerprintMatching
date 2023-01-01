@@ -225,30 +225,57 @@ class TripletDataset(Dataset):
             #             for i in range(len(self.test_data))]
             self.test_triplets = triplets
 
+    """
+    only works on the server: assumes that paths have format like:
+    /data/therealgabeguo/fingerprint_data/sd300a_split/train/00001765/00001765_plain_500_08.png
+    """
+    def get_dataset_name(self, filepath):
+        DATASET_NAME_INDEX = 4
+        ret_val = filepath.split('/')[DATASET_NAME_INDEX]
+        assert 'sd30' in ret_val
+        return ret_val
+
     # returns image triplet, class labels of images, filepaths of images
     def __getitem__(self, index):
         if self.train:
             img1, label1 = self.train_data[index], self.train_labels[index]
+            #print(img1)
             #print('anchor example', label1, get_sensor(img1.split('/')[-1]))
             #print(label1)
+
+            anchor_dataset = self.get_dataset_name(img1)
+            #print('anchor example', index, anchor_dataset)
+
             # choose positive example, not from same sensor
             positive_index = index
             while positive_index == index \
+                    or anchor_dataset != self.get_dataset_name(self.train_data[positive_index]) \
                     or get_sensor(img1.split('/')[-1]) == get_sensor(self.train_data[positive_index].split('/')[-1]): 
                     # make sure positive example doesn't come from same sensor, so it doesn't learn background
-                #print(positive_index, get_sensor(img1.split('/')[-1]), get_sensor(self.train_data[positive_index].split('/')[-1]))
+                    # positive example also has to be from same dataset
                 positive_index = np.random.choice(self.label_to_indices[label1])
+            #print('\tpositive example', index, self.get_dataset_name(self.train_data[positive_index]))
             #print('\tpositive example', self.train_labels[positive_index], get_sensor(self.train_data[positive_index].split('/')[-1]))
 
             # choose negative example
             negative_label = np.random.choice(list(self.labels_set - set([label1])))
+            while anchor_dataset != self.get_dataset_name(self.train_data[self.label_to_indices[negative_label][0]]):
+                # the negative class isn't even from same dataset
+                negative_label = np.random.choice(list(self.labels_set - set([label1])))
             negative_index = np.random.choice(self.label_to_indices[negative_label])
+            while anchor_dataset != self.get_dataset_name(self.train_data[negative_index]):
+                print('shouldnt be running')
+                raise ValueError()
+                # negative example has to come from same dataset, so it's not too easy
+                negative_index = np.random.choice(self.label_to_indices[negative_label])
+            #print('\tnegative example', index, self.get_dataset_name(self.train_data[negative_index]))
+            #print('\tnegative example', negative_label, get_sensor(self.train_data[negative_index].split('/')[-1]))
             """
             while get_sensor(img1.split('/')[-1]) == get_sensor(self.train_data[negative_index].split('/')[-1]):
                 #print(negative_index, get_sensor(img1.split('/')[-1]), get_sensor(self.train_data[negative_index].split('/')[-1]))
                 negative_index = np.random.choice(self.label_to_indices[negative_label])
-            """
             #print('\tnegative example', negative_label, get_sensor(self.train_data[negative_index].split('/')[-1]))
+            """
 
             img2 = self.train_data[positive_index]
             img3 = self.train_data[negative_index]

@@ -24,18 +24,17 @@ MIDTRAINED_MODEL_PATH = '/data/therealgabeguo/embedding_net_weights_sd300a.pth'
 batch_size=64
 test_batch_size=16
 
-PRETRAINED_MODEL_PATH = MIDTRAINED_MODEL_PATH # TODO: remove when we do real training
-the_data_folders = [DATA_FOLDER]
-val_data_folder = DATA_FOLDER
+the_data_folders = [DATA_FOLDER, EXTRA_DATA_FOLDER]
+val_data_folders = [DATA_FOLDER]
 
 train_dir_paths = [os.path.join(x, 'train') for x in the_data_folders]
+val_dir_paths = [os.path.join(x, 'val') for x in val_data_folders]
 
 training_dataset = TripletDataset(FingerprintDataset(train_dir_paths, train=True))
 #training_dataset = torch.utils.data.Subset(training_dataset, list(range(0, len(training_dataset), 50)))
 train_dataloader = DataLoader(training_dataset, batch_size=batch_size, shuffle=True, num_workers=16)
 
-val_dataset = TripletDataset(FingerprintDataset([\
-    os.path.join(val_data_folder, 'val')], train=False))
+val_dataset = TripletDataset(FingerprintDataset(val_dir_paths, train=False))
 #val_dataset = torch.utils.data.Subset(val_dataset, list(range(0, len(val_dataset), 5)))
 val_dataloader = DataLoader(val_dataset, batch_size=batch_size, shuffle=True, num_workers=16)
 
