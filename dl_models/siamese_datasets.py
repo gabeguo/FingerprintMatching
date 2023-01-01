@@ -187,6 +187,7 @@ class TripletDataset(Dataset):
                         
                         anchor_dataset = self.get_dataset_name(self.test_data[anchor_index])
                         assert anchor_dataset == self.get_dataset_name(self.test_data[pos_index])
+                        assert self.test_labels[anchor_index] == self.test_labels[pos_index]
                         assert pos_index != anchor_index
 
                         while True:
@@ -198,6 +199,8 @@ class TripletDataset(Dataset):
                             if anchor_dataset == self.get_dataset_name(self.test_data[neg_index]):
                                 break
                         
+                        assert anchor_dataset == self.get_dataset_name(self.test_data[neg_index])
+                        assert self.test_labels[anchor_index] != self.test_labels[neg_index]
                         # print(anchor_dataset, self.get_dataset_name(self.test_data[neg_index]))
                         # print('\t', 'positive index:', pos_index, 'anchor index:', anchor_index)
                         # print('\t', self.test_labels[anchor_index], self.test_labels[pos_index], self.test_labels[neg_index])
