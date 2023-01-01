@@ -181,12 +181,32 @@ class TripletDataset(Dataset):
                     #print('{} out of {}'.format(i, len(self.test_data)))
                     while True: # do until we find a triplet that doesn't exceed capacity
                         anchor_index = i
-                        pos_index = random_state.choice(self.label_to_indices[self.test_labels[i]])
-                        neg_index = random_state.choice(self.label_to_indices[
-                            np.random.choice(
+                        pos_index = anchor_index
+                        while pos_index == anchor_index:
+                            pos_index = random_state.choice(self.label_to_indices[self.test_labels[i]])
+                        
+                        anchor_dataset = self.get_dataset_name(self.test_data[anchor_index])
+                        assert anchor_dataset == self.get_dataset_name(self.test_data[pos_index])
+                        assert pos_index != anchor_index
+
+                        while True:
+                            neg_label = np.random.choice(
                                 list(self.labels_set - set([self.test_labels[i]]))
                             )
-                        ])
+                            neg_index = random_state.choice(self.label_to_indices[neg_label])
+                            # make anchor and negative examples from same dataset, so it's not too easy
+                            if anchor_dataset == self.get_dataset_name(self.test_data[neg_index]):
+                                break
+                        
+                        # print(anchor_dataset, self.get_dataset_name(self.test_data[neg_index]))
+                        # print('\t', 'positive index:', pos_index, 'anchor index:', anchor_index)
+                        # print('\t', self.test_labels[anchor_index], self.test_labels[pos_index], self.test_labels[neg_index])
+
+                        # neg_index = random_state.choice(self.label_to_indices[
+                        #     np.random.choice(
+                        #         list(self.labels_set - set([self.test_labels[i]]))
+                        #     )
+                        # ])
                         curr_triplet = [anchor_index, pos_index, neg_index]
                         filepaths = (self.test_data[anchor_index], self.test_data[pos_index], self.test_data[neg_index])
                         anchor_fname, pos_fname, neg_fname = (the_filepath.split('/')[-1] for the_filepath in filepaths)
