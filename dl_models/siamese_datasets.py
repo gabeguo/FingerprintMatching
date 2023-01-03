@@ -164,7 +164,7 @@ class TripletDataset(Dataset):
             SCALE_FACTOR = 2
 
             # implement balanced number of each fingerprint type pair, e.g., index, pinky
-            count_per_pair = SCALE_FACTOR * int(len(self.test_labels) // (10 * 10 // 2) * 1.1) # give a bit of slack (not exactly even)
+            count_per_pair = SCALE_FACTOR * int(len(self.test_labels) // (10 * 10 // 2) * 1.15) # give a bit of slack (not exactly even)
             desired_num_finger_pairs = np.full((11, 11, 2), count_per_pair)
             curr_num_finger_pairs = np.zeros((11, 11, 2))
 

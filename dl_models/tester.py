@@ -18,7 +18,7 @@ from embedding_models import *
 from fileProcessingUtil import *
 
 from common_filepaths import DATA_FOLDER, SUBSET_DATA_FOLDER, BALANCED_DATA_FOLDER, UNSEEN_DATA_FOLDER, EXTRA_DATA_FOLDER, \
-    ENHANCED_DATA_FOLDER, ENHANCED_HOLDOUT_FOLDER, ENHANCED_INK_FOLDER
+    ENHANCED_DATA_FOLDER, ENHANCED_HOLDOUT_FOLDER, ENHANCED_INK_FOLDER, SYNTHETIC_DATA_FOLDER
 
 # Create output directory
 from datetime import datetime
@@ -29,9 +29,12 @@ os.makedirs(output_dir, exist_ok=True)
 # Model weights
 MODEL_PATH = '/data/therealgabeguo/embedding_net_weights.pth'
 
+MIDTRAINED_MODEL_PATH = '/data/therealgabeguo/embedding_net_weights_sd300a.pth'
+PRETRAINED_MODEL_PATH = '/data/therealgabeguo/embedding_net_weights_printsgan.pth'
+
 # Data loading 
 batch_size=8
-the_data_folder = ENHANCED_INK_FOLDER
+the_data_folder = UNSEEN_DATA_FOLDER
 test_dataset = TripletDataset(FingerprintDataset(os.path.join(the_data_folder, 'test'), train=False))
 print('loaded test dataset: {}'.format(the_data_folder))
 # test_dataset = torch.utils.data.ConcatDataset(\
@@ -113,9 +116,15 @@ def get_metrics(_01_dist, _02_dist):
     return acc, fpr, tpr, auc, threshold
 
 # LOAD MODEL
+
+# if we want to load from triplet net saved state
+# triplet_net.load_state_dict(torch.load(MODEL_PATH))
+# embedder = triplet_net.embedding_net
+
 embedder.load_state_dict(torch.load(MODEL_PATH))
 embedder.eval()
-embedder = embedder.to('cuda:1')
+embedder = embedder.to('cuda:2')
+
 
 # TEST
 
@@ -123,13 +132,15 @@ data_iter = iter(test_dataloader)
 for i in range(len(test_dataloader)):
     test_images, test_labels, test_filepaths = next(data_iter)
 
-    test_images = [item.to('cuda:1') for item in test_images]
+    test_images = [item.to('cuda:2') for item in test_images]
 
     #print(triplet_net(*test_images)[0].size())
     embeddings = [torch.reshape(e, (e.size()[0], e.size()[1])) for e in triplet_net(*test_images)]
     # len(embeddings) == 3 reprenting the following (anchor, pos, neg)
     # Each index in the list contains a tensor of size (batch size, embedding length)
 
+    assert len(embeddings) == 3
+    assert embeddings[0].size()[0] <= batch_size
     for batch_index in range(embeddings[0].size()[0]): # should be equivalent to range(batch_size):
         _01_dist.append(euclideanDist(embeddings[0][batch_index], embeddings[1][batch_index]).item())
         _02_dist.append(euclideanDist(embeddings[0][batch_index], embeddings[2][batch_index]).item())
