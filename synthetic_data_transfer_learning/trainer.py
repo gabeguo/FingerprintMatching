@@ -56,7 +56,7 @@ def fit(train_loader, val_loader, model, loss_fn, optimizer, scheduler, n_epochs
             model.eval()
             
             from datetime import datetime
-            datetime_str = datetime.now().strftime("%d-%m-%Y_%H:%M:%S")
+            datetime_str = datetime.now().strftime("%Y-%m-%d_%H:%M:%S")
             with open('/data/therealgabeguo/pretrain_results/train_res_{}.txt'.format(datetime_str), 'w') as fout:
                 fout.write('epoch: ' + str([epoch for epoch in range(start_epoch, epoch + 1)]) + '\n')
                 fout.write('train loss: ' + str(past_train_losses) + '\n')
@@ -76,7 +76,7 @@ def fit(train_loader, val_loader, model, loss_fn, optimizer, scheduler, n_epochs
             scheduler.step()
 
     from datetime import datetime
-    datetime_str = datetime.now().strftime("%d-%m-%Y_%H:%M:%S")
+    datetime_str = datetime.now().strftime("%Y-%m-%d_%H:%M:%S")
     with open('/data/therealgabeguo/pretrain_results/train_res_{}.txt'.format(datetime_str), 'w') as fout:
         fout.write('epoch: ' + str([epoch for epoch in range(start_epoch, n_epochs)]) + '\n')
         fout.write('train loss: ' + str(past_train_losses) + '\n')
