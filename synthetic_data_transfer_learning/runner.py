@@ -17,9 +17,11 @@ from embedding_models import *
 
 from common_filepaths import DATA_FOLDER, SYNTHETIC_DATA_FOLDER
 
-MODEL_PATH = '/data/therealgabeguo/embedding_net_weights_printsgan.pth'
+print('synthetic data pretraining')
 
-batch_size=64
+MODEL_PATH = '/data/therealgabeguo/embedding_net_weights_printsgan_resnext50.pth'
+
+batch_size=16
 test_batch_size=4
 
 training_dataset = TripletDataset(FingerprintDataset(os.path.join(SYNTHETIC_DATA_FOLDER, 'train'), train=True))
@@ -98,7 +100,7 @@ best_val_epoch, best_val_loss = 0, 0
 
 best_val_epoch, best_val_loss = fit(train_loader=train_dataloader, val_loader=val_dataloader, model=triplet_net, \
     loss_fn=nn.TripletMarginLoss(margin=tripletLoss_margin), optimizer=optimizer, scheduler=scheduler, \
-    n_epochs=25, cuda='cuda:1', log_interval=1000, metrics=[], start_epoch=0, early_stopping_interval=5)
+    n_epochs=25, cuda='cuda:2', log_interval=1000, metrics=[], start_epoch=0, early_stopping_interval=7)
 
 log += 'best_val_epoch = {}\nbest_val_loss = {}\n'.format(best_val_epoch, best_val_loss)
 print('best_val_epoch = {}\nbest_val_loss = {}\n'.format(best_val_epoch, best_val_loss))
@@ -114,14 +116,14 @@ torch.save(embedder.state_dict(), MODEL_PATH)
 # LOAD MODEL
 embedder.load_state_dict(torch.load(MODEL_PATH))
 embedder.eval()
-embedder = embedder.to('cuda:1')
+embedder = embedder.to('cuda:2')
 
 # TEST
 
 for i in range(len(test_dataloader)):
     test_images, test_labels, test_filepaths = next(iter(test_dataloader))
 
-    test_images = [item.to('cuda:1') for item in test_images]
+    test_images = [item.to('cuda:2') for item in test_images]
 
     embeddings = [torch.reshape(e, (test_batch_size, e.size()[1])) for e in triplet_net(*test_images)]
 
@@ -153,7 +155,7 @@ print('average cosine sim between matching pairs:', np.mean(_01_dist))
 print('average cosine sim between non-matching pairs:', np.mean(_02_dist))
 
 from datetime import datetime
-datetime_str = datetime.now().strftime("%d-%m-%Y_%H:%M:%S")
+datetime_str = datetime.now().strftime("%Y-%m-%d_%H:%M:%S")
 with open('/data/therealgabeguo/pretrain_results/results_{}.txt'.format(datetime_str), 'w') as fout:
     fout.write(log + '\n')
 torch.save(embedder.state_dict(), '/data/therealgabeguo/pretrain_results/weights_{}.pth'.format(datetime_str))
