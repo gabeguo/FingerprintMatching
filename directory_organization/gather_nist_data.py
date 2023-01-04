@@ -54,7 +54,7 @@ def copyFiles(TRAIN_NIST_DATA_DIRS:list, TEST_NIST_DATA_DIRS:list, DEEP_LEARNING
         for NIST_DATA_DIR in NIST_DATA_DIRS:
             for (root, dirs, files) in os.walk(NIST_DATA_DIR, topdown=True):
                 for filename in files:
-                    if '.png' in filename:
+                    if '.png' in filename or '.jpg' in filename or '.bmp' in filename:
                         pid = get_id(filename)
                         fgrp = get_fgrp(filename)
                         num_samples[group] += 1
