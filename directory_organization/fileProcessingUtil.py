@@ -25,10 +25,8 @@ def get_sensor(filename):
     #return filename.split('_')[1]#'_'.join(filename.split('_')[1:2+1])
 
 """
-For UB database
+For UB database - successfully tested and debugged
 """
-
-# TODO: test this code
 
 def rename_ridgebase_file(filename):
     assert '/' not in filename # should only be filename, not path
@@ -47,7 +45,7 @@ def rename_ub_contactbased_sample(filename):
     sessionId, identityId, handId, fingerId = filename_without_ext.split('_')
     
     subject = identityId
-    device = sessionId
+    device = sessionId + 'UB'
     resolution = 'NaN'
     capture = 'NaN'
     fgrp = convert_hand_finger_to_fgrp(handId, fingerId)
@@ -56,7 +54,7 @@ def rename_ub_contactbased_sample(filename):
 # Go from <SessionID>_<DeviceName>_<IdentityID>_<BackgroundID>_<HandID>_image_fingerprintRandomseq_(<Confidence>)_<FingerID> (UB format)
 # To SUBJECT_DEVICE_RESOLUTION_CAPTURE_FRGP.EXT (NIST SD302 format)
 def rename_ub_contactless_sample(filename):
-    filename_without_ext, the_ext = filename.split('.')
+    filename_without_ext, the_ext = filename.rsplit('.', 1)
     assert len(the_ext) == 3
     
     tokens = filename_without_ext.split('_')
@@ -66,37 +64,41 @@ def rename_ub_contactless_sample(filename):
     identityId = tokens[2]
     backgroundId = tokens[3]
     handId = tokens[4]
+    imageStr = tokens[5]
+    fingerprintRandomSeq = tokens[6]
     fingerId = tokens[-1]
     assert '.' not in fingerId
 
     subject = identityId
     device = sessionId + deviceName + backgroundId
     resolution = 'NaN'
-    capture = 'NaN'
+    capture = fingerprintRandomSeq
     fgrp = convert_hand_finger_to_fgrp(handId, fingerId)
 
     return '{}_{}_{}_{}_{}.{}'.format(subject, device, resolution, capture, fgrp, the_ext)
 
 def convert_hand_finger_to_fgrp(handId, fingerId):
-    if handId == 'Right':
-        if fingerId == 'Index' or '0':
+    handId = handId.lower()
+    fingerId = fingerId.lower()
+    if handId == 'right':
+        if fingerId in ['index', '0']:
             return '02'
-        elif fingerId == 'Middle' or '1':
+        elif fingerId in ['middle', '1']:
             return '03'
-        elif fingerId == 'Ring' or '2':
+        elif fingerId in ['ring', '2']:
             return '04'
-        elif fingerId == 'Little' or '3':
+        elif fingerId in ['little', '3']:
             return '05'
         else:
             raise ValueError('invalid fingerId in UB database')
-    elif handId == 'Left':
-        if fingerId == 'Index' or '0':
+    elif handId == 'left':
+        if fingerId in ['index', '0']:
             return '07'
-        elif fingerId == 'Middle' or '1':
+        elif fingerId in ['middle', '1']:
             return '08'
-        elif fingerId == 'Ring' or '2':
+        elif fingerId in ['ring', '2']:
             return '09'
-        elif fingerId == 'Little' or '3':
+        elif fingerId in ['little', '3']:
             return '10'
         else:
             raise ValueError('invalid fingerId in UB database')
