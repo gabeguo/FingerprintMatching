@@ -164,7 +164,7 @@ class TripletDataset(Dataset):
             SCALE_FACTOR = 2
 
             # implement balanced number of each fingerprint type pair, e.g., index, pinky
-            count_per_pair = SCALE_FACTOR * int(len(self.test_labels) // (10 * 10 // 2) * 1.15) # give a bit of slack (not exactly even)
+            count_per_pair = SCALE_FACTOR * int(len(self.test_labels) // (10 * 10 // 2) * 1.2) # give a bit of slack (not exactly even)
             desired_num_finger_pairs = np.full((11, 11, 2), count_per_pair)
             curr_num_finger_pairs = np.zeros((11, 11, 2))
 
@@ -198,7 +198,6 @@ class TripletDataset(Dataset):
                             # make anchor and negative examples from same dataset, so it's not too easy
                             if anchor_dataset == self.get_dataset_name(self.test_data[neg_index]):
                                 break
-                        
                         assert anchor_dataset == self.get_dataset_name(self.test_data[neg_index])
                         assert self.test_labels[anchor_index] != self.test_labels[neg_index]
                         # print(anchor_dataset, self.get_dataset_name(self.test_data[neg_index]))
@@ -233,19 +232,7 @@ class TripletDataset(Dataset):
                             seen_pairs.update([(anchor_index, pos_index), (pos_index, anchor_index),\
                                                 (anchor_index, neg_index), (neg_index, anchor_index)]) 
                             break # move on to next index
-            #print(curr_num_finger_pairs[:,:,POS])
-            #print(curr_num_finger_pairs[:,:,NEG])
 
-            # Deprecated: unbalanced triplets
-            # triplets = [[i,
-            #              random_state.choice(self.label_to_indices[self.test_labels[i]]),
-            #              random_state.choice(self.label_to_indices[
-            #                                      np.random.choice(
-            #                                          list(self.labels_set - set([self.test_labels[i]]))
-            #                                      )
-            #                                  ])
-            #              ]
-            #             for i in range(len(self.test_data))]
             self.test_triplets = triplets
 
     """
