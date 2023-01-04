@@ -15,7 +15,7 @@ from siamese_datasets import *
 from fingerprint_dataset import *
 from embedding_models import *
 
-from common_filepaths import DATA_FOLDER, SUBSET_DATA_FOLDER, EXTRA_DATA_FOLDER, UNSEEN_DATA_FOLDER, ENHANCED_DATA_FOLDER, BALANCED_DATA_FOLDER
+from common_filepaths import *
 
 PRETRAINED_MODEL_PATH = '/data/therealgabeguo/embedding_net_weights_printsgan.pth'
 POSTRAINED_MODEL_PATH = '/data/therealgabeguo/embedding_net_weights.pth'
@@ -24,8 +24,8 @@ MIDTRAINED_MODEL_PATH = '/data/therealgabeguo/embedding_net_weights_sd300a.pth'
 batch_size=64
 test_batch_size=16
 
-the_data_folders = [DATA_FOLDER, EXTRA_DATA_FOLDER]
-val_data_folders = [DATA_FOLDER, EXTRA_DATA_FOLDER]
+the_data_folders = [DATA_FOLDER, EXTRA_DATA_FOLDER, UB_DATA_FOLDER]
+val_data_folders = [DATA_FOLDER, EXTRA_DATA_FOLDER, UB_DATA_FOLDER]
 
 train_dir_paths = [os.path.join(x, 'train') for x in the_data_folders]
 val_dir_paths = [os.path.join(x, 'val') for x in val_data_folders]
@@ -119,7 +119,7 @@ best_val_epoch, best_val_loss = 0, 0
 
 best_val_epoch, best_val_loss = fit(train_loader=train_dataloader, val_loader=val_dataloader, model=triplet_net, \
     loss_fn=nn.TripletMarginLoss(margin=tripletLoss_margin), optimizer=optimizer, scheduler=scheduler, \
-    n_epochs=100, cuda='cuda:1', log_interval=75, metrics=[], start_epoch=0, early_stopping_interval=35)
+    n_epochs=100, cuda='cuda:1', log_interval=75, metrics=[], start_epoch=0, early_stopping_interval=65)
 
 log += 'best_val_epoch = {}\nbest_val_loss = {}\n'.format(best_val_epoch, best_val_loss)
 print('best_val_epoch = {}\nbest_val_loss = {}\n'.format(best_val_epoch, best_val_loss))
