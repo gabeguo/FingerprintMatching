@@ -113,6 +113,10 @@ def get_metrics(_01_dist, _02_dist):
     tpr = [0] + [tp[i] / (tp[i] + fn[i]) for i in range(len(tp))] + [1]
     auc = sum([tpr[i] * (fpr[i] - fpr[i - 1]) for i in range(1, len(tpr))])
 
+    for i in range(1, len(fpr)):
+        assert fpr[i] >= fpr[i - 1]
+        assert tpr[i] >= tpr[i - 1]
+
     return acc, fpr, tpr, auc, threshold
 
 # LOAD MODEL
