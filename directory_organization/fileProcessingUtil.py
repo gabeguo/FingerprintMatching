@@ -81,6 +81,8 @@ def convert_hand_finger_to_fgrp(handId, fingerId):
     handId = handId.lower()
     fingerId = fingerId.lower()
     if handId == 'right':
+        if fingerId in ['thumb']:
+            return '01'
         if fingerId in ['index', '0']:
             return '02'
         elif fingerId in ['middle', '1']:
@@ -92,6 +94,8 @@ def convert_hand_finger_to_fgrp(handId, fingerId):
         else:
             raise ValueError('invalid fingerId in UB database')
     elif handId == 'left':
+        if fingerId in ['thumb']:
+            return '06'
         if fingerId in ['index', '0']:
             return '07'
         elif fingerId in ['middle', '1']:
@@ -104,3 +108,56 @@ def convert_hand_finger_to_fgrp(handId, fingerId):
             raise ValueError('invalid fingerId in UB database')
     else:
         raise ValueError('invalid handId in UB database')
+
+"""
+For SOCOFing database
+"""
+
+REAL_SOCOFING = 'Real'
+EASY_SOCOFING = 'Altered-Easy'
+MEDIUM_SOCOFING = 'Altered-Medium'
+HARD_SOCOFING = 'Altered-Hard'
+
+def rename_socofing_file(filename, alterationDifficulty):
+    assert '/' not in filename
+    filename = filename.lower() # convert to lowercase
+    if alterationDifficulty == REAL_SOCOFING:
+        return rename_unaltered_socofing(filename)
+    elif alterationDifficulty in [EASY_SOCOFING, MEDIUM_SOCOFING, HARD_SOCOFING]:
+        return rename_altered_socofing(filename, alterationDifficulty)
+    else:
+        raise ValueError('invalid alteration for socofing: {}'.format(alterationDifficulty))
+
+# converts from SUBJECT_GENDER_HAND_FINGERNAME_finger.BMP
+# to SUBJECT_DEVICE_RESOLUTION_CAPTURE_FRGP.EXT (NIST SD302 format)
+def rename_unaltered_socofing(filename):
+    filename_without_ext, the_ext = filename.rsplit('.', 1)
+    assert len(the_ext) == 3
+    the_ext = the_ext.lower()
+
+    subject, gender, hand, fingername, fingerStr = filename_without_ext.split('_')
+
+    subject = subject
+    device = 'Real'
+    resolution = 'NaN'
+    capture = 'NaN'
+    fgrp = convert_hand_finger_to_fgrp(handId=hand, fingerId=fingername)
+
+    return '{}_{}_{}_{}_{}.{}'.format(subject, device, resolution, capture, fgrp, the_ext)
+
+# converts from SUBJECT_GENDER_HAND_FINGERNAME_finger_ALTERATION.BMP
+# to SUBJECT_DEVICE_RESOLUTION_CAPTURE_FRGP.EXT (NIST SD302 format)
+def rename_altered_socofing(filename, alterationDifficulty):
+    filename_without_ext, the_ext = filename.rsplit('.', 1)
+    assert len(the_ext) == 3
+    the_ext = the_ext.lower()
+
+    subject, gender, hand, fingername, fingerStr, alterationType = filename_without_ext.split('_')
+
+    subject = subject
+    device = alterationDifficulty + alterationType
+    resolution = 'NaN'
+    capture = 'NaN'
+    fgrp = convert_hand_finger_to_fgrp(handId=hand, fingerId=fingername)
+
+    return '{}_{}_{}_{}_{}.{}'.format(subject, device, resolution, capture, fgrp, the_ext)
