@@ -111,6 +111,7 @@ def convert_hand_finger_to_fgrp(handId, fingerId):
 
 """
 For SOCOFing database
+Has been verified to be correct (tests)
 """
 
 REAL_SOCOFING = 'Real'
@@ -128,14 +129,18 @@ def rename_socofing_file(filename, alterationDifficulty):
     else:
         raise ValueError('invalid alteration for socofing: {}'.format(alterationDifficulty))
 
-# converts from SUBJECT_GENDER_HAND_FINGERNAME_finger.BMP
+# converts from SUBJECT__GENDER_HAND_FINGERNAME_finger.BMP
 # to SUBJECT_DEVICE_RESOLUTION_CAPTURE_FRGP.EXT (NIST SD302 format)
 def rename_unaltered_socofing(filename):
     filename_without_ext, the_ext = filename.rsplit('.', 1)
     assert len(the_ext) == 3
     the_ext = the_ext.lower()
 
-    subject, gender, hand, fingername, fingerStr = filename_without_ext.split('_')
+    subject, dummy, gender, hand, fingername, fingerStr = filename_without_ext.split('_')
+
+    assert dummy == ''
+    assert subject != ''
+    assert gender in ['m', 'f']
 
     subject = subject
     device = 'Real'
@@ -145,17 +150,21 @@ def rename_unaltered_socofing(filename):
 
     return '{}_{}_{}_{}_{}.{}'.format(subject, device, resolution, capture, fgrp, the_ext)
 
-# converts from SUBJECT_GENDER_HAND_FINGERNAME_finger_ALTERATION.BMP
+# converts from SUBJECT__GENDER_HAND_FINGERNAME_finger_ALTERATION.BMP
 # to SUBJECT_DEVICE_RESOLUTION_CAPTURE_FRGP.EXT (NIST SD302 format)
 def rename_altered_socofing(filename, alterationDifficulty):
     filename_without_ext, the_ext = filename.rsplit('.', 1)
     assert len(the_ext) == 3
     the_ext = the_ext.lower()
 
-    subject, gender, hand, fingername, fingerStr, alterationType = filename_without_ext.split('_')
+    subject, dummy, gender, hand, fingername, fingerStr, alterationType = filename_without_ext.split('_')
+
+    assert dummy == ''
+    assert subject != ''
+    assert gender in ['m', 'f']
 
     subject = subject
-    device = alterationDifficulty + alterationType
+    device = alterationDifficulty + alterationType.upper()
     resolution = 'NaN'
     capture = 'NaN'
     fgrp = convert_hand_finger_to_fgrp(handId=hand, fingerId=fingername)
