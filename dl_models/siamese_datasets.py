@@ -300,9 +300,24 @@ class TripletDataset(Dataset):
 
         filepath1, filepath2, filepath3 = img1, img2, img3
 
-        img1 = my_transformation(read_image(img1, mode=ImageReadMode.RGB), train=self.train)
-        img2 = my_transformation(read_image(img2, mode=ImageReadMode.RGB), train=self.train)
-        img3 = my_transformation(read_image(img3, mode=ImageReadMode.RGB), train=self.train)
+        pil2tensor = transforms.Compose([
+            transforms.PILToTensor()
+        ]) # for .bmp images
+
+        if '.bmp' not in img1.lower():
+            img1 = my_transformation(read_image(img1, mode=ImageReadMode.RGB), train=self.train)
+        else: # handle bmp file
+            img1 = my_transformation(pil2tensor(Image.open(img1).convert('RGB')), train=self.train)
+        
+        if '.bmp' not in img2.lower():
+            img2 = my_transformation(read_image(img2, mode=ImageReadMode.RGB), train=self.train)
+        else:
+            img2 = my_transformation(pil2tensor(Image.open(img2).convert('RGB')), train=self.train)
+        
+        if '.bmp' not in img3.lower():
+            img3 = my_transformation(read_image(img3, mode=ImageReadMode.RGB), train=self.train)
+        else:
+            img3 = my_transformation(pil2tensor(Image.open(img3).convert('RGB')), train=self.train)
 
         return (img1, img2, img3), [], (filepath1, filepath2, filepath3)
 
