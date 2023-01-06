@@ -242,7 +242,7 @@ class TripletDataset(Dataset):
     def get_dataset_name(self, filepath):
         DATASET_NAME_INDEX = 4
         ret_val = filepath.split('/')[DATASET_NAME_INDEX]
-        assert 'sd30' in ret_val or 'RidgeBase' in ret_val
+        assert 'sd30' in ret_val or 'RidgeBase' in ret_val or 'SOCOFing' in ret_val
         return ret_val
 
     # returns image triplet, class labels of images, filepaths of images
