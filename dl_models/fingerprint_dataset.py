@@ -10,7 +10,8 @@ from siamese_datasets import my_transformation
 class FingerprintDataset(Dataset):
     def is_image_filename(self, filename):
         return any(extension in filename for extension in ['.png', \
-            '.PNG', '.pneg', '.PNEG', '.jpg', '.JPG', '.jpeg', '.JPEG'])
+            '.PNG', '.pneg', '.PNEG', '.jpg', '.JPG', '.jpeg', '.JPEG', \
+            '.bmp', '.BMP'])
 
     """
     Loads the unpaired images from the folder(s)
