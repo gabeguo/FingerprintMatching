@@ -6,6 +6,7 @@ from torchvision.io import read_image, ImageReadMode
 import numpy as np
 import torchvision.transforms.functional as F
 from siamese_datasets import my_transformation
+from PIL import Image
 
 class FingerprintDataset(Dataset):
     def is_image_filename(self, filename):
@@ -66,6 +67,10 @@ class FingerprintDataset(Dataset):
             self.test_labels = self.img_labels
             self.test_data = self.images
 
+        self.pil2tensor = transforms.Compose([
+            transforms.PILToTensor()
+        ]) # for .bmp images
+
         return
 
     def __len__(self):
@@ -75,6 +80,12 @@ class FingerprintDataset(Dataset):
     # returns image, label, filepath
     def __getitem__(self, idx):
         # TODO: Add data augmentation
-        return my_transformation(read_image(self.images[idx], mode=ImageReadMode.RGB), train=self.train), \
+        curr_fname = self.images[idx]
+        if '.bmp' not in curr_fname.lower():
+            the_image = my_transformation(read_image(curr_fname, mode=ImageReadMode.RGB), train=self.train)
+        else: # handle bmp file
+            the_image = my_transformation(self.pil2tensor(Image.open(curr_fname).convert('RGB')), train=self.train)
+
+        return the_image, \
         self.img_labels[idx], \
         self.images[idx]

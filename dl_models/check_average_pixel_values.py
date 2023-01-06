@@ -17,8 +17,7 @@ from fingerprint_dataset import *
 from embedding_models import *
 from fileProcessingUtil import *
 
-from common_filepaths import DATA_FOLDER, SUBSET_DATA_FOLDER, BALANCED_DATA_FOLDER, UNSEEN_DATA_FOLDER, EXTRA_DATA_FOLDER, \
-    ENHANCED_DATA_FOLDER, ENHANCED_HOLDOUT_FOLDER, ENHANCED_INK_FOLDER, SYNTHETIC_DATA_FOLDER
+from common_filepaths import *
 
 # this does nothing - we tested it
 supposedly_useless_normalization = transforms.Normalize([0, 0, 0], [1, 1, 1])
@@ -38,10 +37,17 @@ b_ = torch.reshape(b, (512,))
 print(euclideanDist(a, b))
 print(euclideanDist(a_, b_))
 
+pil2tensor = transforms.Compose([
+    transforms.PILToTensor()
+]) # for .bmp images
+
 # Data loading 
 batch_size=8
-for the_data_folder in [DATA_FOLDER, UNSEEN_DATA_FOLDER, EXTRA_DATA_FOLDER, SYNTHETIC_DATA_FOLDER]:
-    the_dataset = FingerprintDataset(os.path.join(the_data_folder, 'test'), train=False)
+for the_data_folder in [UB_DATA_FOLDER, SOCOFING_DATA_FOLDER, DATA_FOLDER, UNSEEN_DATA_FOLDER, EXTRA_DATA_FOLDER, SYNTHETIC_DATA_FOLDER]:
+    if the_data_folder in [UB_DATA_FOLDER, SOCOFING_DATA_FOLDER]:
+        the_dataset = FingerprintDataset(os.path.join(the_data_folder, 'val'), train=False)
+    else:
+        the_dataset = FingerprintDataset(os.path.join(the_data_folder, 'test'), train=False)
     print('loaded test dataset: {}'.format(the_data_folder))
     test_dataloader = DataLoader(the_dataset, batch_size=batch_size, shuffle=True)
 
@@ -59,7 +65,10 @@ for the_data_folder in [DATA_FOLDER, UNSEEN_DATA_FOLDER, EXTRA_DATA_FOLDER, SYNT
             print('\tembedder output shape:', embedder_output.size())
             print('\tmagnitudes of embeddings:', [embedder_output[i].pow(2).sum(0) for i in range(embedder_output.size()[0])])
         for item in range(len(labels)):
-            raw_image = read_image(filepaths[0], mode=ImageReadMode.RGB).float()
+            if '.bmp' in filepaths[0].lower():
+                raw_image = pil2tensor(Image.open(filepaths[0]).convert('RGB')).float()
+            else:
+                raw_image = read_image(filepaths[0], mode=ImageReadMode.RGB).float()
             fake_normalized_image = supposedly_useless_normalization(raw_image) # this should be the same
 
             the_min = torch.min(raw_image)
