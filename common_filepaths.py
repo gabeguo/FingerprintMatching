@@ -11,3 +11,4 @@ ENHANCED_HOLDOUT_FOLDER = '/data/therealgabeguo/fingerprint_data/img_l2_feature_
 ENHANCED_INK_FOLDER = '/data/therealgabeguo/fingerprint_data/img_l2_feature_extractions_sd300a_split/enhance'
 
 UB_DATA_FOLDER = '/data/therealgabeguo/fingerprint_data/RidgeBase_Split'
+SOCOFING_DATA_FOLDER = '/data/therealgabeguo/fingerprint_data/SOCOFingRenamed_split'

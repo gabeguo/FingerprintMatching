@@ -24,8 +24,8 @@ MIDTRAINED_MODEL_PATH = '/data/therealgabeguo/embedding_net_weights_sd300a.pth'
 batch_size=64
 test_batch_size=16
 
-the_data_folders = [DATA_FOLDER, EXTRA_DATA_FOLDER, UB_DATA_FOLDER]
-val_data_folders = [DATA_FOLDER, EXTRA_DATA_FOLDER, UB_DATA_FOLDER]
+the_data_folders = [DATA_FOLDER, EXTRA_DATA_FOLDER, UB_DATA_FOLDER, SOCOFING_DATA_FOLDER]
+val_data_folders = [DATA_FOLDER, EXTRA_DATA_FOLDER, UB_DATA_FOLDER, SOCOFING_DATA_FOLDER]
 
 train_dir_paths = [os.path.join(x, 'train') for x in the_data_folders]
 val_dir_paths = [os.path.join(x, 'val') for x in val_data_folders]
