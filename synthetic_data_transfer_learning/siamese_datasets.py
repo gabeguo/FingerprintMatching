@@ -28,13 +28,13 @@ def my_transformation(the_image, train=False, target_image_size=(224, 224)):
         transforms.Resize(target_image_size),
         transforms.Normalize([0, 0, 0], [1, 1, 1]),
     ])
-    """
+    
     if train:
         transform = transforms.Compose([
-            #transforms.RandomRotation(15, fill=255),
+            transforms.RandomRotation(15, fill=255),
             transform,
         ])
-    """
+    
     return transform(the_image.float())
 
 class SiameseDataset(Dataset):

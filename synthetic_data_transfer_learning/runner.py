@@ -32,9 +32,11 @@ val_dataset = TripletDataset(FingerprintDataset(os.path.join(SYNTHETIC_DATA_FOLD
 #val_dataset = torch.utils.data.Subset(val_dataset, list(range(0, len(val_dataset), 50)))
 val_dataloader = DataLoader(val_dataset, batch_size=batch_size, shuffle=True, num_workers=16)
 
+"""
 test_dataset = TripletDataset(FingerprintDataset(os.path.join(SYNTHETIC_DATA_FOLDER, 'test'), train=False))
 #test_dataset = torch.utils.data.Subset(test_dataset, list(range(0, len(test_dataset), 50)))
 test_dataloader = DataLoader(test_dataset, batch_size=test_batch_size, shuffle=True, num_workers=16)
+"""
 
 # SHOW IMAGES
 """
@@ -89,7 +91,7 @@ triplet_net = TripletNet(embedder)
 
 # TRAIN
 
-learning_rate = 0.001
+learning_rate = 0.0005
 scheduler=None # not needed for Adam
 optimizer = optim.Adam(triplet_net.parameters(), lr=learning_rate)
 tripletLoss_margin = 0.2
@@ -100,19 +102,22 @@ best_val_epoch, best_val_loss = 0, 0
 
 best_val_epoch, best_val_loss = fit(train_loader=train_dataloader, val_loader=val_dataloader, model=triplet_net, \
     loss_fn=nn.TripletMarginLoss(margin=tripletLoss_margin), optimizer=optimizer, scheduler=scheduler, \
-    n_epochs=25, cuda='cuda:2', log_interval=1000, metrics=[], start_epoch=0, early_stopping_interval=7)
+    n_epochs=25, cuda='cuda:2', log_interval=1000, metrics=[], start_epoch=0, early_stopping_interval=5)
 
 log += 'best_val_epoch = {}\nbest_val_loss = {}\n'.format(best_val_epoch, best_val_loss)
 print('best_val_epoch = {}\nbest_val_loss = {}\n'.format(best_val_epoch, best_val_loss))
 
+"""
 # distances between embedding of positive and negative pair
 _01_dist = []
 _02_dist = []
 dist = torch.nn.CosineSimilarity(dim=0, eps=1e-8)
+"""
 
 # SAVE MODEL
 torch.save(embedder.state_dict(), MODEL_PATH)
 
+"""
 # LOAD MODEL
 embedder.load_state_dict(torch.load(MODEL_PATH))
 embedder.eval()
@@ -153,6 +158,7 @@ print('number of testing negative pairs:', len(_02_dist))
 
 print('average cosine sim between matching pairs:', np.mean(_01_dist))
 print('average cosine sim between non-matching pairs:', np.mean(_02_dist))
+"""
 
 from datetime import datetime
 datetime_str = datetime.now().strftime("%Y-%m-%d_%H:%M:%S")
