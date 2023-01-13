@@ -19,9 +19,9 @@ from common_filepaths import DATA_FOLDER, SYNTHETIC_DATA_FOLDER
 
 print('synthetic data pretraining')
 
-MODEL_PATH = '/data/therealgabeguo/embedding_net_weights_printsgan_resnext50.pth'
+MODEL_PATH = '/data/therealgabeguo/embedding_net_weights_printsgan.pth'
 
-batch_size=16
+batch_size=64
 test_batch_size=4
 
 training_dataset = TripletDataset(FingerprintDataset(os.path.join(SYNTHETIC_DATA_FOLDER, 'train'), train=True))
@@ -31,12 +31,6 @@ train_dataloader = DataLoader(training_dataset, batch_size=batch_size, shuffle=T
 val_dataset = TripletDataset(FingerprintDataset(os.path.join(SYNTHETIC_DATA_FOLDER, 'val'), train=False))
 #val_dataset = torch.utils.data.Subset(val_dataset, list(range(0, len(val_dataset), 50)))
 val_dataloader = DataLoader(val_dataset, batch_size=batch_size, shuffle=True, num_workers=16)
-
-"""
-test_dataset = TripletDataset(FingerprintDataset(os.path.join(SYNTHETIC_DATA_FOLDER, 'test'), train=False))
-#test_dataset = torch.utils.data.Subset(test_dataset, list(range(0, len(test_dataset), 50)))
-test_dataloader = DataLoader(test_dataset, batch_size=test_batch_size, shuffle=True, num_workers=16)
-"""
 
 # SHOW IMAGES
 """
@@ -71,27 +65,12 @@ embedder = EmbeddingNet(pretrained=pretrained)
 log += 'pretrained: {}\n'.format(pretrained)
 print('pretrained:', pretrained)
 
-# load saved weights!
-# embedder.load_state_dict(torch.load(MODEL_PATH))
-
-"""
-# freeze all layers except the last one
-n_layers = list(embedder.feature_extractor.children())
-print(n_layers)
-print(len(n_layers))
-n_frozen_layers = 4
-for the_param in list(embedder.feature_extractor.children())[:n_frozen_layers]:
-    log += 'freezing{}\n'.format(the_param)
-    print('freezing {}'.format(the_param))
-    the_param.requires_grad = False
-"""
-
 # CREATE TRIPLET NET
 triplet_net = TripletNet(embedder)
 
 # TRAIN
 
-learning_rate = 0.0005
+learning_rate = 0.001
 scheduler=None # not needed for Adam
 optimizer = optim.Adam(triplet_net.parameters(), lr=learning_rate)
 tripletLoss_margin = 0.2
@@ -107,58 +86,8 @@ best_val_epoch, best_val_loss = fit(train_loader=train_dataloader, val_loader=va
 log += 'best_val_epoch = {}\nbest_val_loss = {}\n'.format(best_val_epoch, best_val_loss)
 print('best_val_epoch = {}\nbest_val_loss = {}\n'.format(best_val_epoch, best_val_loss))
 
-"""
-# distances between embedding of positive and negative pair
-_01_dist = []
-_02_dist = []
-dist = torch.nn.CosineSimilarity(dim=0, eps=1e-8)
-"""
-
 # SAVE MODEL
 torch.save(embedder.state_dict(), MODEL_PATH)
-
-"""
-# LOAD MODEL
-embedder.load_state_dict(torch.load(MODEL_PATH))
-embedder.eval()
-embedder = embedder.to('cuda:2')
-
-# TEST
-
-for i in range(len(test_dataloader)):
-    test_images, test_labels, test_filepaths = next(iter(test_dataloader))
-
-    test_images = [item.to('cuda:2') for item in test_images]
-
-    embeddings = [torch.reshape(e, (test_batch_size, e.size()[1])) for e in triplet_net(*test_images)]
-
-    for batch_index in range(test_batch_size):
-        _01_dist.append(dist(embeddings[0][batch_index], embeddings[1][batch_index]).item())
-        _02_dist.append(dist(embeddings[0][batch_index], embeddings[2][batch_index]).item())
-        if math.isnan(_01_dist[-1]):
-            print('nan: {}, {}'.format(embeddings[0][batch_index], embeddings[1][batch_index]))
-        if math.isnan(_02_dist[-1]):
-            print('nan: {}, {}'.format(embeddings[0][batch_index], embeddings[2][batch_index]))
-
-    if i % 200 == 0:
-        print('Batch {} out of {}'.format(i, len(test_dataloader)))
-        print('\taverage cosine sim between matching pairs:', np.mean(np.array(_01_dist)))
-        print('\taverage cosine sim between non-matching pairs:', np.mean(np.array(_02_dist)))
-    
-    #print(test_filepaths, test_labels)
-
-_01_dist = np.array(_01_dist)
-_02_dist = np.array(_02_dist)
-
-log += 'average cosine sim b/w matching pairs: {}\n'.format(np.mean(_01_dist))
-log += 'average cosine sim b/w nonmatching pairs: {}\n'.format(np.mean(_02_dist))
-
-print('number of testing positive pairs:', len(_01_dist))
-print('number of testing negative pairs:', len(_02_dist))
-
-print('average cosine sim between matching pairs:', np.mean(_01_dist))
-print('average cosine sim between non-matching pairs:', np.mean(_02_dist))
-"""
 
 from datetime import datetime
 datetime_str = datetime.now().strftime("%Y-%m-%d_%H:%M:%S")
