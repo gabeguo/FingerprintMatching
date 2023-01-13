@@ -6,7 +6,8 @@ import torch.nn as nn
 
 
 def fit(train_loader, val_loader, model, loss_fn, optimizer, scheduler, n_epochs, cuda, log_interval, metrics=[],
-        start_epoch=0, early_stopping_interval=10, temp_model_path='temp.pth'):
+        start_epoch=0, early_stopping_interval=10, temp_model_path='temp.pth', \
+        num_accumulated_batches=1):
     """
     Loaders, model, loss function and metrics should work together for a given task,
     i.e. The model should be able to process data output of loaders,
@@ -38,7 +39,8 @@ def fit(train_loader, val_loader, model, loss_fn, optimizer, scheduler, n_epochs
         print('current epoch:', epoch)
 
         # Train stage
-        train_loss, metrics = train_epoch(train_loader, model, loss_fn, optimizer, cuda, log_interval, metrics)
+        train_loss, metrics = train_epoch(train_loader, model, loss_fn, optimizer, cuda, log_interval, metrics,\
+            accumulation_steps=num_accumulated_batches)
         past_train_losses.append(train_loss)
 
         message = 'Epoch: {}/{}. Train set: Average loss: {:.4f}'.format(epoch + 1, n_epochs, train_loss)
@@ -88,7 +90,8 @@ def fit(train_loader, val_loader, model, loss_fn, optimizer, scheduler, n_epochs
     return best_val_epoch, best_val_loss
 
 
-def train_epoch(train_loader, model, loss_fn, optimizer, cuda, log_interval, metrics):
+def train_epoch(train_loader, model, loss_fn, optimizer, cuda, log_interval, metrics, \
+        accumulation_steps=1):
     for metric in metrics:
         metric.reset()
 
@@ -113,7 +116,7 @@ def train_epoch(train_loader, model, loss_fn, optimizer, cuda, log_interval, met
                 target = torch.tensor([int(item) for item in target]).cuda(device=cuda)
 
 
-        optimizer.zero_grad()
+        #optimizer.zero_grad()
         outputs = model(*data)
 
         if type(outputs) not in (tuple, list):
@@ -142,8 +145,22 @@ def train_epoch(train_loader, model, loss_fn, optimizer, cuda, log_interval, met
         loss = loss_outputs[0] if type(loss_outputs) in (tuple, list) else loss_outputs
         losses.append(loss.item())
         total_loss += loss.item()
+
+        # credit for gradient accumulation:
+        # https://bestasoff.medium.com/how-to-fine-tune-very-large-model-if-it-doesnt-fit-on-your-gpu-3561e50859af
+        # https://kozodoi.me/python/deep%20learning/pytorch/tutorial/2021/02/19/gradient-accumulation.html
+        
+        # normalize loss, since we have gradient accumulation (taking average loss over batches, since GPU too small)
+        # we're doing this to reduce noise
+        loss = loss / accumulation_steps
+
+        # calculate gradients
         loss.backward()
-        optimizer.step()
+
+        # actually update the weights, after desired number of batches
+        if ((batch_idx + 1) % accumulation_steps == 0) or (batch_idx + 1 == len(train_loader)):
+            optimizer.step()
+            optimizer.zero_grad()
 
         for metric in metrics:
             metric(outputs, target, loss_outputs)
