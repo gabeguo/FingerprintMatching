@@ -61,6 +61,8 @@ def get_metrics(_01_dist, _02_dist):
     return acc, fpr, tpr, auc, threshold
 
 def main(the_data_folder, MODEL_PATH, cuda):
+    print('weights used: {}\n\n'.format(MODEL_PATH))
+    
     # Create output directory
     from datetime import datetime
     datetime_str = datetime.now().strftime("%Y-%m-%d_%H:%M:%S")
@@ -284,6 +286,7 @@ def main(the_data_folder, MODEL_PATH, cuda):
 
     results_fname = os.path.join(output_dir, 'test_results.txt')
     with open(results_fname, 'w') as fout:
+        fout.write('weights used: {}\n\n'.format(MODEL_PATH))
         fout.write('data folder: {}\n\n'.format(the_data_folder))
         fout.write('average squared L2 distance between positive pairs: {}\n'.format(np.mean(_01_dist)))
         fout.write('std of  squared L2 distance between positive pairs: {}\n'.format(np.std(_01_dist)))
