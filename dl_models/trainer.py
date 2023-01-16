@@ -21,6 +21,8 @@ def fit(train_loader, val_loader, model, loss_fn, optimizer, scheduler, n_epochs
     Loads the best validation weights into the model
     """
 
+    print('temp model:', temp_model_path)
+
     torch.save(model.state_dict(), temp_model_path)
     best_val_loss = 100
     best_val_epoch = -1

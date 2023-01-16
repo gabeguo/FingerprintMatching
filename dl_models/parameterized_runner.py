@@ -33,7 +33,7 @@ def main(datasets, the_cuda, \
     
     the_name = '_'.join([path[:len(path) if path[-1] != '/' else -1].split('/')[-1] for path in datasets])
     # ResNet-18
-    POSTRAINED_MODEL_PATH = '/data/therealgabeguo/embedding_net_weights_' + the_name + '.pth'
+    POSTRAINED_MODEL_PATH = '/data/therealgabeguo/fingerprint_weights/embedding_net_weights_' + the_name + '.pth'
     print('weights saved to:', POSTRAINED_MODEL_PATH)
 
     train_dir_paths = [os.path.join(x, 'train') for x in datasets]
@@ -89,7 +89,7 @@ def main(datasets, the_cuda, \
     best_val_epoch, best_val_loss = fit(train_loader=train_dataloader, val_loader=val_dataloader, model=triplet_net, \
         loss_fn=nn.TripletMarginLoss(margin=tripletLoss_margin), optimizer=optimizer, scheduler=scheduler, \
         n_epochs=num_epochs, cuda=the_cuda, log_interval=300, metrics=[], start_epoch=0, early_stopping_interval=early_stopping_interval, \
-        num_accumulated_batches=num_accumulated_batches)
+        num_accumulated_batches=num_accumulated_batches, temp_model_path='temp_{}.pth'.format(the_name))
 
     log += 'best_val_epoch = {}\nbest_val_loss = {}\n'.format(best_val_epoch, best_val_loss)
     print('best_val_epoch = {}\nbest_val_loss = {}\n'.format(best_val_epoch, best_val_loss))
