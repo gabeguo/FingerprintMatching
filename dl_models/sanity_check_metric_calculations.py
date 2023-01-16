@@ -20,6 +20,8 @@ def get_metrics(_01_dist, _02_dist):
         fp.append(len(_02_dist) - tn[-1])
 
         acc.append((tp[-1] + tn[-1]) / len(all_distances))
+    # did miss edge case where ideal accuracy threshold is above the maximum distance, 
+    # but that's negligible and would only make our results better
     threshold = all_distances[max(range(len(acc)), key=acc.__getitem__)]
 
     # ROC AUC is FPR = FP / (FP + TN) (x-axis) vs TPR = TP / (TP + FN) (y-axis)
