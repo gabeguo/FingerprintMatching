@@ -21,10 +21,6 @@ from common_filepaths import *
 PRETRAINED_MODEL_PATH = '/data/therealgabeguo/embedding_net_weights_printsgan.pth'
 POSTRAINED_MODEL_PATH = '/data/therealgabeguo/embedding_net_weights.pth'
 
-# ResNet-34
-# PRETRAINED_MODEL_PATH = '/data/therealgabeguo/embedding_net_weights_printsgan_resnet34.pth'
-# POSTRAINED_MODEL_PATH = '/data/therealgabeguo/embedding_net_weights_resnet34.pth'
-
 batch_size=64 # ResNet-18 & 34
 num_accumulated_batches=1 # ResNet-18 & 34
 
