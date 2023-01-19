@@ -57,7 +57,7 @@ def my_transformation(the_image, train=False, target_image_size=(224, 224)):
         return the_image
     return transform(the_image.float())
 
-class N2NDataset(Dataset):
+class MultipleFingerDataset(Dataset):
     """
     Returns triplets of (N_0 anchor fingers, N_1 positive fingers, N_2 negative fingers).
     -> Anchor fingers must be distinct from positive fingers (but can be same as negative).
