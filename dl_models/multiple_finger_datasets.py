@@ -70,6 +70,10 @@ class MultipleFingerDataset(Dataset):
     """
 
     def __init__(self, fingerprint_dataset, num_anchor_fingers, num_pos_fingers, num_neg_fingers):
+        assert num_anchor_fingers + num_pos_fingers <= 10
+        assert num_anchor_fingers + num_neg_fingers <= 10
+        assert num_anchor_fingers > 0 and num_pos_fingers > 0 and num_neg_fingers > 0
+
         self.fingerprint_dataset = fingerprint_dataset
         self.train = self.fingerprint_dataset.train
         
@@ -86,35 +90,33 @@ class MultipleFingerDataset(Dataset):
         self.label_to_indices = {label: np.where(np.array(self.test_labels) == label)[0]
                                     for label in self.labels_set}
 
-        random_state = np.random.RandomState(29)
-        self.random_state = random_state
+        self.random_state = np.random.RandomState(29)
         
         # how many times we want to loop through all the items to make triplets
-        SCALE_FACTOR = 2
+        SCALE_FACTOR = 1
 
-        # implement balanced number of each fingerprint type pair, e.g., index, pinky
-        count_per_pair = SCALE_FACTOR * int(len(self.test_labels) // (10 * 10 // 2) * 1.2) # give a bit of slack (not exactly even)
-        desired_num_finger_pairs = np.full((11, 11, 2), count_per_pair)
-        curr_num_finger_pairs = np.zeros((11, 11, 2))
+        # Don't allow duplicate combos
+        seen_combos = set()
 
-        #print(count_per_pair)
-
-        # Don't allow duplicate pairs
-        seen_pairs = set()
-
-        # Create balanced triplets
+        # Create triplets
         triplets = list()
-        
         for j in range(SCALE_FACTOR):
             for i in range(len(self.test_data)):
                 #print('{} out of {}'.format(i, len(self.test_data)))
+                while True: # need to find original combos
+                    anchor_indices = self.get_anchor_indices(i)
+                    positive_indices = self.get_positive_indices(anchor_indices)
+                    negative_indices = self.get_negative_indices(anchor_indices)
 
-                anchor_indices = self.get_anchor_indices(i)
-                positive_indices = self.get_positive_indices(anchor_indices)
-                negative_indices = self.get_negative_indices(anchor_indices)
+                    curr_anchor_pos_combo = tuple(sorted(anchor_indices + positive_indices))
+                    curr_anchor_neg_combo = tuple(sorted(anchor_indices + negative_indices))
+                    if curr_anchor_pos_combo not in seen_combos \
+                            and curr_anchor_neg_combo not in seen_combos:
+                        seen_combos.add(curr_anchor_pos_combo)
+                        seen_combos.add(curr_anchor_neg_combo)
+                        break # found original combo in both anchor-positive and anchor-negative
 
-            triplets.append((anchor_indices, positive_indices, negative_indices))
-
+                triplets.append((anchor_indices, positive_indices, negative_indices))
         self.test_triplets = triplets
 
         return
@@ -166,7 +168,7 @@ class MultipleFingerDataset(Dataset):
     """
     def get_positive_indices(self, anchor_indices):
         ret_val = []
-        seen_fgrps = set([self.get_fgrp_from_index[i] for i in anchor_indices])
+        seen_fgrps = set([self.get_fgrp_from_index(i) for i in anchor_indices])
 
         # get first positive example
         first_pos_index = anchor_indices[0] # 1) ensure same class as anchor_indices
@@ -192,8 +194,8 @@ class MultipleFingerDataset(Dataset):
             ret_val.append(pos_index)
             seen_fgrps.add(self.get_fgrp_from_index(pos_index)) # track used fingers
         
-        assert len(set([self.get_sensor_from_index[i] for i in ret_val])) == 1 # ensure 5) same sensor as each other
-        assert self.get_sensor_from_index[ret_val[0]] != self.get_sensor_from_index[anchor_indices[0]] # ensure 3) different sensor than anchor
+        assert len(set([self.get_sensor_from_index(i) for i in ret_val])) == 1 # ensure 5) same sensor as each other
+        assert self.get_sensor_from_index(ret_val[0]) != self.get_sensor_from_index(anchor_indices[0]) # ensure 3) different sensor than anchor
         assert len(seen_fgrps) == len(ret_val) + len(anchor_indices) # ensure 2) different fingers than anchor indices, 4) each other
         assert self.test_labels[ret_val[-1]] == self.test_labels[anchor_indices[-1]] # ensure 1) same class as anchor_indices
         assert len(set([self.test_labels[i] for i in ret_val])) == 1 # ensure 1) same class as anchor_indices (and each other)
