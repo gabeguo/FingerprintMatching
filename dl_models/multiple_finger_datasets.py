@@ -60,8 +60,9 @@ def my_transformation(the_image, train=False, target_image_size=(224, 224)):
 class MultipleFingerDataset(Dataset):
     """
     Returns triplets of (N_0 anchor fingers, N_1 positive fingers, N_2 negative fingers).
-    -> Anchor fingers must be distinct from positive fingers (but can be same as negative).
-            Ex: If anchors are right index & right pinky, positive can be left index & left middle
+    -> Anchor fingers must be distinct from positive and negative fingers.
+            Ex: If anchors are right index & right pinky, positive can be left index & left middle, 
+            negative can be left index & left middle.
     -> Anchor sensor must be different from positive sensor (but can be same as negative).
     -> All anchor fingers must be from same sensor, all positive fingers must be from same sensor,
        all negative fingers must be from same sensor.
