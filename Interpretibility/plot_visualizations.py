@@ -5,7 +5,7 @@ import os
 from PIL import Image
 import math
 
-def plot_visualizations(img_directory, num_visualizations=None, desired_iter=30, the_title='Layer Visualizations', \
+def plot_visualizations(img_directory, num_visualizations=(8, 8), desired_iter=30, the_title='Layer Visualizations', \
         zoom_factor=1, the_figsize=(10, 10), save_dir='/data/therealgabeguo/nn_visualizations/'):
     imgs = list()
     zoom_factor = zoom_factor * 2
@@ -19,20 +19,18 @@ def plot_visualizations(img_directory, num_visualizations=None, desired_iter=30,
                 w / 2 + w / zoom_factor, h / 2 + h / zoom_factor))
             curr_img = curr_img.resize((w, h))
             imgs.append(curr_img)
-        if type(num_visualizations) == int and len(imgs) >= num_visualizations:
-            break
 
     fig = plt.figure(figsize=the_figsize)
     side_len = int(math.sqrt(len(imgs)))
     grid = ImageGrid(fig, 111,  # similar to subplot(111)
-                    nrows_ncols=(side_len, side_len),  # creates grid of axes
+                    nrows_ncols=num_visualizations,  # creates grid of axes
                     axes_pad=0.05,  # pad between axes in inch.
                     )
 
     print('num images:', len(imgs))
-    print('num spots in grid:', side_len*side_len)
+    print('num spots in grid:', num_visualizations[0] * num_visualizations[1])
 
-    for ax, im in zip(grid, imgs[:side_len*side_len]):
+    for ax, im in zip(grid, imgs[:num_visualizations[0] * num_visualizations[1]]):
         # Iterating over the grid returns the Axes.
         ax.imshow(im)
         ax.axis('off')
@@ -53,5 +51,9 @@ def plot_visualizations(img_directory, num_visualizations=None, desired_iter=30,
     return
 
 if __name__ == "__main__":
-    plot_visualizations('/data/verifiedanivray/generated2', num_visualizations=64, zoom_factor=4, the_figsize=(12, 12),\
-        save_dir='/data/therealgabeguo/nn_visualizations/')
+    plot_visualizations('/data/verifiedanivray/generated_early', num_visualizations=(8, 8), zoom_factor=4, the_figsize=(8, 8),\
+        save_dir='/data/therealgabeguo/nn_visualizations/', the_title='ResNet-18, Layer 4.1, Conv 2: Visualizations')
+    plot_visualizations('/data/verifiedanivray/generated_middle', num_visualizations=(16, 16), zoom_factor=4, the_figsize=(8, 8),\
+        save_dir='/data/therealgabeguo/nn_visualizations/', the_title='ResNet-18, Layer 6.0, Conv 2: Visualizations')
+    plot_visualizations('/data/verifiedanivray/generated_end', num_visualizations=(16, 32), zoom_factor=4, the_figsize=(16, 8),\
+        save_dir='/data/therealgabeguo/nn_visualizations/', the_title='ResNet-18, Layer 4.1, Conv 2: Visualizations')
