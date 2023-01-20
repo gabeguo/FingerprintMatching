@@ -17,7 +17,6 @@ import getopt, argparse
 sys.path.append('../')
 
 from trainer import *
-from losses import *
 from siamese_datasets import *
 from fingerprint_dataset import *
 from embedding_models import *

@@ -12,7 +12,6 @@ sys.path.append('../')
 sys.path.append('../directory_organization')
 
 from trainer import *
-from losses import *
 from siamese_datasets import *
 from fingerprint_dataset import *
 from embedding_models import *
