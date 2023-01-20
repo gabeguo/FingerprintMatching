@@ -11,7 +11,6 @@ sys.path.append('../')
 sys.path.append('../directory_organization')
 
 from trainer import *
-from losses import *
 from fingerprint_dataset import *
 from multiple_finger_datasets import *
 from embedding_models import *
@@ -77,7 +76,7 @@ num_anchors=4
 num_pos=4
 num_neg=4
 
-the_data_folder = BALANCED_UNSEEN_DATA_FOLDER
+the_data_folder = BALANCED_DATA_FOLDER
 test_dataset = MultipleFingerDataset(FingerprintDataset(os.path.join(the_data_folder, 'test'), train=False), num_anchors, num_pos, num_neg)
 print('loaded test dataset: {}'.format(the_data_folder))
 test_dataloader = DataLoader(test_dataset, batch_size=batch_size, shuffle=True)
