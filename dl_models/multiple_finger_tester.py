@@ -72,105 +72,118 @@ CUDA = 'cuda:2'
 # Data loading 
 batch_size=1 # must be 1
 
-num_anchors=4
-num_pos=4
-num_neg=4
+def main(the_data_folder, num_anchors, num_pos, num_neg):
+    print('Number anchor, pos, neg fingers: {}, {}, {}'.format(num_anchors, num_pos, num_neg))
 
-the_data_folder = BALANCED_DATA_FOLDER
-test_dataset = MultipleFingerDataset(FingerprintDataset(os.path.join(the_data_folder, 'test'), train=False), num_anchors, num_pos, num_neg)
-print('loaded test dataset: {}'.format(the_data_folder))
-test_dataloader = DataLoader(test_dataset, batch_size=batch_size, shuffle=True)
+    test_dataset = MultipleFingerDataset(FingerprintDataset(os.path.join(the_data_folder, 'test'), train=False), num_anchors, num_pos, num_neg)
+    print('loaded test dataset: {}'.format(the_data_folder))
+    test_dataloader = DataLoader(test_dataset, batch_size=batch_size, shuffle=True)
 
-# CREATE EMBEDDER
-embedder = EmbeddingNet()
+    dataset_name = the_data_folder[:-1 if the_data_folder[-1] == '/' else len(the_data_folder)].split('/')[-1]
+    print('dataset name:', dataset_name)
 
-# distances between embedding of positive and negative pair
-_01_dist = []
-_02_dist = []
+    # CREATE EMBEDDER
+    embedder = EmbeddingNet()
 
-# LOAD MODEL
+    # distances between embedding of positive and negative pair
+    _01_dist = []
+    _02_dist = []
 
-embedder.load_state_dict(torch.load(MODEL_PATH))
-embedder.eval()
-embedder.to(CUDA)
+    # LOAD MODEL
 
-# TEST
-assert batch_size == 1
+    embedder.load_state_dict(torch.load(MODEL_PATH))
+    embedder.eval()
+    embedder.to(CUDA)
 
-data_iter = iter(test_dataloader)
-for i in range(len(test_dataloader)):
-    test_images, test_labels, test_filepaths = next(data_iter)
+    # TEST
+    assert batch_size == 1
 
-    # test_images is 3 (anchor, pos, neg) * N (number of sample images) * image_size (1*3*224*224)
+    data_iter = iter(test_dataloader)
+    for i in range(len(test_dataloader)):
+        test_images, test_labels, test_filepaths = next(data_iter)
 
-    curr_anchor_pos_dists = []
-    curr_anchor_neg_dists = []
+        """
+        # sanity check
+        for category in test_filepaths:
+            print('\nmeow')
+            for file in category:
+                print('\t', file)
+        """
 
-    for i_a in range(num_anchors):
-        curr_anchor = test_images[0][i_a].to(CUDA)
-        embedding_anchor = torch.flatten(embedder(curr_anchor))
-        assert len(embedding_anchor.size()) == 1 and embedding_anchor.size(dim=0) == 512
-        for i_p in range(num_pos):
-            curr_pos = test_images[1][i_p].to(CUDA)
-            embedding_pos = torch.flatten(embedder(curr_pos))
-            assert len(embedding_pos.size()) == 1 and embedding_pos.size(dim=0) == 512
-            curr_anchor_pos_dists.append(euclideanDist(embedding_anchor, embedding_pos).item())
-        for i_n in range(num_neg):
-            curr_neg = test_images[2][i_n].to(CUDA)
-            embedding_neg = torch.flatten(embedder(curr_neg))
-            assert len(embedding_neg.size()) == 1 and embedding_neg.size(dim=0) == 512
-            curr_anchor_neg_dists.append(euclideanDist(embedding_anchor, embedding_neg).item())
+        # test_images is 3 (anchor, pos, neg) * N (number of sample images) * image_size (1*3*224*224)
 
-    _01_dist.append(np.mean(curr_anchor_pos_dists))
-    _02_dist.append(np.mean(curr_anchor_neg_dists))
+        curr_anchor_pos_dists = []
+        curr_anchor_neg_dists = []
+
+        for i_a in range(num_anchors):
+            curr_anchor = test_images[0][i_a].to(CUDA)
+            embedding_anchor = torch.flatten(embedder(curr_anchor))
+            assert len(embedding_anchor.size()) == 1 and embedding_anchor.size(dim=0) == 512
+            for i_p in range(num_pos):
+                curr_pos = test_images[1][i_p].to(CUDA)
+                embedding_pos = torch.flatten(embedder(curr_pos))
+                assert len(embedding_pos.size()) == 1 and embedding_pos.size(dim=0) == 512
+                curr_anchor_pos_dists.append(euclideanDist(embedding_anchor, embedding_pos).item())
+            for i_n in range(num_neg):
+                curr_neg = test_images[2][i_n].to(CUDA)
+                embedding_neg = torch.flatten(embedder(curr_neg))
+                assert len(embedding_neg.size()) == 1 and embedding_neg.size(dim=0) == 512
+                curr_anchor_neg_dists.append(euclideanDist(embedding_anchor, embedding_neg).item())
+
+        _01_dist.append(np.mean(curr_anchor_pos_dists))
+        _02_dist.append(np.mean(curr_anchor_neg_dists))
 
 
-    if i % 100 == 0:
-        print('Batch (item) {} out of {}'.format(i, len(test_dataloader)))
-        print('\taverage, std squared L2 distance between positive pairs {:.3f}, {:.3f}'.format(np.mean(_01_dist), np.std(_01_dist)))
-        print('\taverage, std squared L2 distance between negative pairs {:.3f}, {:.3f}'.format(np.mean(_02_dist), np.std(_02_dist)))
+        if i % 100 == 0:
+            print('Batch (item) {} out of {}'.format(i, len(test_dataloader)))
+            print('\taverage, std squared L2 distance between positive pairs {:.3f}, {:.3f}'.format(np.mean(_01_dist), np.std(_01_dist)))
+            print('\taverage, std squared L2 distance between negative pairs {:.3f}, {:.3f}'.format(np.mean(_02_dist), np.std(_02_dist)))
 
-# CALCULATE ACCURACY AND ROC AUC
-accs, fpr, tpr, auc, threshold = get_metrics(_01_dist, _02_dist)
+    # CALCULATE ACCURACY AND ROC AUC
+    accs, fpr, tpr, auc, threshold = get_metrics(_01_dist, _02_dist)
 
-max_acc = max(accs)
-print('best accuracy:', max_acc)
+    max_acc = max(accs)
+    print('best accuracy:', max_acc)
 
-print('auc = {}'.format(auc))
-import matplotlib.pyplot as plt
-plt.plot(fpr, tpr)
-plt.xlabel('FPR')
-plt.ylabel('TPR')
-plt.title('ROC Curve')
-plt.grid()
-plt.savefig(os.path.join(output_dir, 'roc_curve.pdf'))
-plt.savefig(os.path.join(output_dir, 'roc_curve.png'))
-plt.clf(); plt.close()
-assert auc >= 0 and auc <= 1
+    print('auc = {}'.format(auc))
+    import matplotlib.pyplot as plt
+    plt.plot(fpr, tpr)
+    plt.xlabel('FPR')
+    plt.ylabel('TPR')
+    plt.title('ROC Curve')
+    plt.grid()
+    plt.savefig(os.path.join(output_dir, 'roc_curve.pdf'))
+    plt.savefig(os.path.join(output_dir, 'roc_curve.png'))
+    plt.clf(); plt.close()
+    assert auc >= 0 and auc <= 1
 
-# PRINT DISTANCES
-_01_dist = np.array(_01_dist)
-_02_dist = np.array(_02_dist)
+    # PRINT DISTANCES
+    _01_dist = np.array(_01_dist)
+    _02_dist = np.array(_02_dist)
 
-print('Number anchor, pos, neg fingers: {}, {}, {}'.format(num_anchors, num_pos, num_neg))
+    print('number of testing positive pairs:', len(_01_dist))
+    print('number of testing negative pairs:', len(_02_dist))
 
-print('number of testing positive pairs:', len(_01_dist))
-print('number of testing negative pairs:', len(_02_dist))
+    print('average squared L2 distance between positive pairs:', np.mean(_01_dist))
+    print('std of  squared L2 distance between positive pairs:', np.std(_01_dist))
+    print('average squared L2 distance between negative pairs:', np.mean(_02_dist))
+    print('std of  squared L2 distance between negative pairs:', np.std(_02_dist))
 
-print('average squared L2 distance between positive pairs:', np.mean(_01_dist))
-print('std of  squared L2 distance between positive pairs:', np.std(_01_dist))
-print('average squared L2 distance between negative pairs:', np.mean(_02_dist))
-print('std of  squared L2 distance between negative pairs:', np.std(_02_dist))
+    # do the output
 
-# do the output
+    results_fname = os.path.join(output_dir, \
+        'test_results_multi_finger_{}_{}_{}_{}.txt'.format(dataset_name, num_anchors, num_pos, num_neg))
+    with open(results_fname, 'w') as fout:
+        fout.write('data folder: {}\n\n'.format(the_data_folder))
+        fout.write('Number anchor, pos, neg fingers: {}, {}, {}\n\n'.format(num_anchors, num_pos, num_neg))
+        fout.write('average squared L2 distance between positive pairs: {}\n'.format(np.mean(_01_dist)))
+        fout.write('std of  squared L2 distance between positive pairs: {}\n'.format(np.std(_01_dist)))
+        fout.write('average squared L2 distance between negative pairs: {}\n'.format(np.mean(_02_dist)))
+        fout.write('std of  squared L2 distance between negative pairs: {}\n'.format(np.std(_02_dist)))
+        fout.write('best accuracy: {}\n'.format(str(max_acc)))
+        fout.write('ROC AUC: {}\n\n'.format(auc))
 
-results_fname = os.path.join(output_dir, 'test_results_multi_finger.txt')
-with open(results_fname, 'w') as fout:
-    fout.write('data folder: {}\n\n'.format(the_data_folder))
-    fout.write('Number anchor, pos, neg fingers: {}, {}, {}\n\n'.format(num_anchors, num_pos, num_neg))
-    fout.write('average squared L2 distance between positive pairs: {}\n'.format(np.mean(_01_dist)))
-    fout.write('std of  squared L2 distance between positive pairs: {}\n'.format(np.std(_01_dist)))
-    fout.write('average squared L2 distance between negative pairs: {}\n'.format(np.mean(_02_dist)))
-    fout.write('std of  squared L2 distance between negative pairs: {}\n'.format(np.std(_02_dist)))
-    fout.write('best accuracy: {}\n'.format(str(max_acc)))
-    fout.write('ROC AUC: {}\n\n'.format(auc))
+if __name__ == "__main__":
+    for the_data_folder in [BALANCED_UNSEEN_DATA_FOLDER, BALANCED_DATA_FOLDER]:
+        for n in range(1, 5+1):
+            main(the_data_folder, n, n, n)
