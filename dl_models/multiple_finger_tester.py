@@ -152,8 +152,8 @@ def main(the_data_folder, num_anchors, num_pos, num_neg):
     plt.ylabel('TPR')
     plt.title('ROC Curve')
     plt.grid()
-    plt.savefig(os.path.join(output_dir, 'roc_curve.pdf'))
-    plt.savefig(os.path.join(output_dir, 'roc_curve.png'))
+    plt.savefig(os.path.join(output_dir, 'roc_curve_{}_{}_{}_{}.pdf'.format(dataset_name, num_anchors, num_pos, num_neg)))
+    plt.savefig(os.path.join(output_dir, 'roc_curve_{}_{}_{}_{}.png'.format(dataset_name, num_anchors, num_pos, num_neg)))
     plt.clf(); plt.close()
     assert auc >= 0 and auc <= 1
 
