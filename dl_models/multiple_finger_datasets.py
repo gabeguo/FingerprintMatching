@@ -208,25 +208,29 @@ class MultipleFingerDataset(Dataset):
     2) from different fingers than each other
     3) from same sensor as each other
     4) from same class as each other
+    5) from different fingers than anchor_indices
     """
     def get_negative_indices(self, anchor_indices):
         ret_val = []
-        seen_fgrps = set()
+        seen_fgrps = set([self.get_fgrp_from_index(i) for i in anchor_indices])
         seen_sensors = set()
-
+        
         # ensures 1) different class than anchor_indices
         neg_label = np.random.choice(
             list(self.labels_set - set([self.test_labels[anchor_indices[0]]]))
         )
         
         first_neg_index = self.random_state.choice(self.label_to_indices[neg_label])
+        # ensures 5) from different fingers than anchor_indices
+        while self.get_fgrp_from_index(first_neg_index) in seen_fgrps:
+            first_neg_index = self.random_state.choice(self.label_to_indices[neg_label])
         ret_val.append(first_neg_index)
         seen_fgrps.add(self.get_fgrp_from_index(first_neg_index))
         seen_sensors.add(self.get_sensor_from_index(first_neg_index))
 
         while len(ret_val) < self.num_neg_fingers:
             neg_index = first_neg_index
-            # ensures 2) different fingers than each other, 3) same sensor as each other
+            # ensures 2) different fingers than each other, 3) same sensor as each other, 5) different than anchor_indices
             while neg_index in ret_val \
                     or self.get_fgrp_from_index(neg_index) in seen_fgrps \
                     or self.get_sensor_from_index(neg_index) not in seen_sensors:
@@ -240,7 +244,7 @@ class MultipleFingerDataset(Dataset):
         assert len(set([self.test_labels[i] for i in ret_val])) == 1 # ensure 4) same class as each other
         assert self.test_labels[ret_val[0]] != self.test_labels[anchor_indices[0]] # ensure 1) different class as anchor
         assert len(seen_sensors) == 1 # ensure 3) same sensor as each other
-        assert len(seen_fgrps) == len(ret_val)  # ensure 2) different fgrps from each other
+        assert len(seen_fgrps) == len(ret_val) + len(anchor_indices)  # ensure 2) different fgrps from each other, 5) from anchor_indices
         
         return tuple(ret_val)
     """
