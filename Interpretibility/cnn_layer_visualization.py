@@ -7,9 +7,10 @@ import sys
 import numpy as np
 
 import torch
+from torch import nn
 from torch.optim import Adam
 
-sys.path.append("../")
+sys.path.append("/home/aniv/FingerprintMatching")
 from dl_models.embedding_models import EmbeddingNet
 
 from misc_functions import preprocess_image, recreate_image, save_image
@@ -19,13 +20,15 @@ class CNNLayerVisualization():
         Produces an image that minimizes the loss of a convolution
         operation for a specific layer and filter
     """
-    def __init__(self, model, selected_layer, selected_filter):
+    def __init__(self, model, selected_layer, selected_filter, layer_id, stop_index):
         self.model = model
         self.model.eval()
         self.selected_layer = selected_layer
+        self.layer_id = layer_id
         self.selected_filter = selected_filter
+        self.stop_index = stop_index
         self.conv_output = 0
-        self.out_folder = "/data/verifiedanivray/generated"
+        self.out_folder = "/data/verifiedanivray/generated_end"
         # Create the folder to export images if not exists
         #if not os.path.exists('../generated'):
         #    os.makedirs('../generated')
@@ -35,7 +38,7 @@ class CNNLayerVisualization():
             # Gets the conv output of the selected filter (from selected layer)
             self.conv_output = grad_out[0, self.selected_filter]
         # Hook the selected layer
-        self.model[self.selected_layer].register_forward_hook(hook_function)
+        self.selected_layer.register_forward_hook(hook_function)
 
     def visualise_layer_with_hooks(self):
         # Hook the selected layer
@@ -57,7 +60,7 @@ class CNNLayerVisualization():
                 # the forward hook function
                 x = layer(x)
                 # Only need to forward until the selected layer is reached
-                if index == self.selected_layer:
+                if index == self.stop_index:
                     # (forward hook function triggered)
                     break
             # Loss function is the mean of the output of the selected layer/filter
@@ -72,7 +75,7 @@ class CNNLayerVisualization():
             self.created_image = recreate_image(processed_image)
             # Save image
             if i % 5 == 0:
-                im_path = self.out_folder + '/layer_vis_l' + str(self.selected_layer) + \
+                im_path = self.out_folder + '/layer_vis_l' + str(self.layer_id) + \
                     '_f' + str(self.selected_filter) + '_iter' + str(i) + '.jpg'
                 save_image(self.created_image, im_path)
 
@@ -120,16 +123,33 @@ class CNNLayerVisualization():
 
 if __name__ == '__main__':
     for filter_pos in range(0, 512):
-        cnn_layer = 8
-        # Fully connected layer is not needed
+        stop_index = 7
+        # Perform network surgery to "flatten" the layer heirarchy of the model
         pretrained_model = EmbeddingNet()
         pretrained_model.load_state_dict(torch.load('/data/therealgabeguo/most_recent_experiment_reports/jan_08_resnet18Final/weights_2023-01-07_11:06:28.pth'))
         print(pretrained_model)
+        cnn_layer = pretrained_model.feature_extractor[7][1].conv2
+        print(cnn_layer)
         pretrained_model = pretrained_model.feature_extractor
-        layer_vis = CNNLayerVisualization(pretrained_model, cnn_layer, filter_pos)
+        '''
+        pretrained_model = pretrained_model.feature_extractor
+        modules = []
+        for layer in pretrained_model:
+            if isinstance(layer, nn.Sequential):
+                layer = list(layer)
+                for sublayer in layer[0]:
+                    # nodes
+                for sublayer in layer[1]:
+                    # nodes
+                modules = modules + list(layer[0].children()) + list(layer[1].children())
+            elif isinstance(layer, ):
+                modules.append(layer)
+        print(modules)
+        '''
+        layer_vis = CNNLayerVisualization(pretrained_model, cnn_layer, filter_pos, "7.1.conv2", stop_index)
 
         # Layer visualization with pytorch hooks
         layer_vis.visualise_layer_with_hooks()
-
+        
         # Layer visualization without pytorch hooks
         # layer_vis.visualise_layer_without_hooks()
