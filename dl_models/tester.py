@@ -11,7 +11,6 @@ sys.path.append('../')
 sys.path.append('../directory_organization')
 
 from trainer import *
-from losses import *
 from siamese_datasets import *
 from fingerprint_dataset import *
 from embedding_models import *
@@ -34,7 +33,7 @@ PRETRAINED_MODEL_PATH = '/data/therealgabeguo/embedding_net_weights_printsgan.pt
 
 # Data loading 
 batch_size=8
-the_data_folder = UNSEEN_DATA_FOLDER
+the_data_folder = EXTRA_DATA_FOLDER
 test_dataset = TripletDataset(FingerprintDataset(os.path.join(the_data_folder, 'test'), train=False))
 print('loaded test dataset: {}'.format(the_data_folder))
 # test_dataset = torch.utils.data.ConcatDataset(\

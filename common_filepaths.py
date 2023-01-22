@@ -12,3 +12,5 @@ ENHANCED_INK_FOLDER = '/data/therealgabeguo/fingerprint_data/img_l2_feature_extr
 
 UB_DATA_FOLDER = '/data/therealgabeguo/fingerprint_data/RidgeBase_Split'
 SOCOFING_DATA_FOLDER = '/data/therealgabeguo/fingerprint_data/SOCOFingRenamed_split'
+
+BALANCED_UNSEEN_DATA_FOLDER = '/data/therealgabeguo/fingerprint_data/sd301_split_balanced'
