@@ -17,7 +17,9 @@ for filename in os.listdir(DATA_FOLDER):
 
         test_folder = os.path.join(lines[0].split()[-1].strip(), 'test')
 
-        n_files = sum([len(files) for r, d, files in os.walk(test_folder)])
+        n_files = sum([len([the_file for the_file in files \
+            if '_1000_' not in the_file and '_2000_' not in the_file]) \
+            for r, d, files in os.walk(test_folder)])
         n_classes = len(os.listdir(test_folder))
 
         roc_auc = float(lines[9].split()[-1])
