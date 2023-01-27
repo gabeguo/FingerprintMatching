@@ -1,7 +1,7 @@
 import os
 import argparse
 
-# counts number of fingerprint images, excluding duplicates
+# counts number of fingerprint images
 def main(data_folder, count_high_res=False):
     n_files = sum([len([the_file for the_file in files \
         if ('.png' in the_file or '.jpg' in the_file or '.bmp' in the_file) \
