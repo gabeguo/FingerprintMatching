@@ -7,9 +7,13 @@ import sys
 import os
 import math
 import argparse
+from scipy.stats import ttest_ind
 
 sys.path.append('../')
 sys.path.append('../directory_organization')
+
+import matplotlib
+matplotlib.use("Agg")
 
 from trainer import *
 from siamese_datasets import *
@@ -25,12 +29,14 @@ def euclideanDist(tensor1, tensor2):
     return (tensor1 - tensor2).pow(2).sum(0)
 
 # Inputs: (_01_dist, _02_dist) are distance between anchor and (positive, negative), repsectively
-# Returns: (accuracies, fpr, tpr, roc_auc, threshold)
+# Returns: (accuracies, fpr, tpr, roc_auc, threshold, welch_t, p-val)
 # - accuracies are at every possible threshold
 # - fpr is false positive rate at every possible threshold (padded with 0 and 1 at end)
 # - tpr is true positive rate at every possible threshold (padded with 0 and 1 at end)
 # - roc_auc is scalar: area under fpr (x-axis) vs tpr (y-axis) curve
 # - threshold is scalar: below this distance, fingerpritnts match; above, they don't match
+# - welch_t is value of Welch's two-sample t-test between same-person and diff-person pairs
+# - p-val is statistical significance
 def get_metrics(_01_dist, _02_dist):
     all_distances = _01_dist +_02_dist
     all_distances.sort()
@@ -56,8 +62,11 @@ def get_metrics(_01_dist, _02_dist):
     for i in range(1, len(fpr)):
         assert fpr[i] >= fpr[i - 1]
         assert tpr[i] >= tpr[i - 1]
+    
+    # Welch's t-test
+    welch_t, p_val = ttest_ind(_01_dist, _02_dist, equal_var=False)
 
-    return acc, fpr, tpr, auc, threshold
+    return acc, fpr, tpr, auc, threshold, welch_t, p_val
 
 def main(the_data_folder, MODEL_PATH, cuda):
     print('weights used: {}\n\n'.format(MODEL_PATH))
@@ -161,8 +170,11 @@ def main(the_data_folder, MODEL_PATH, cuda):
             print('\taverage squared L2 distance between positive pairs:', np.mean(np.array(_01_dist)))
             print('\taverage squared L2 distance between negative pairs:', np.mean(np.array(_02_dist)))
 
-    # CALCULATE ACCURACY AND ROC AUC
-    accs, fpr, tpr, auc, threshold = get_metrics(_01_dist, _02_dist)
+    # CALCULATE ACCURACY AND ROC AUC AND P-VAL
+    accs, fpr, tpr, auc, threshold, welch_t, p_val = get_metrics(_01_dist, _02_dist)
+
+    print('t-statistic = {:e}'.format(welch_t))
+    print('p-value = {:e}'.format(p_val))
 
     max_acc = max(accs)
     print('best accuracy:', max_acc)
@@ -194,10 +206,13 @@ def main(the_data_folder, MODEL_PATH, cuda):
 
     acc_by_trait = dict()
     roc_by_trait = dict()
+    p_val_by_trait = dict()
+
     finger_to_finger_num_people = np.zeros((10, 10))
     finger_to_finger_percent_samePerson = np.zeros((10, 10))
     finger_to_finger_acc = np.zeros((10, 10))
     finger_to_finger_roc = np.zeros((10, 10))
+    finger_to_finger_p_val = np.zeros((10, 10))
     f2f_meanDist_samePerson = np.zeros((10, 10))
     f2f_meanDist_diffPerson = np.zeros((10, 10))
     f2f_stdDist_samePerson = np.zeros((10, 10))
@@ -211,7 +226,8 @@ def main(the_data_folder, MODEL_PATH, cuda):
             same_person_dists = finger_to_finger_dist[i][j][SAME_PERSON]
             diff_person_dists = finger_to_finger_dist[i][j][DIFF_PERSON]
 
-            curr_accs, curr_fpr, curr_tpr, curr_roc_auc, curr_threshold = get_metrics(same_person_dists, diff_person_dists)
+            curr_accs, curr_fpr, curr_tpr, curr_roc_auc, curr_threshold, curr_welch_t, curr_p_val = \
+                get_metrics(same_person_dists, diff_person_dists)
             
             _i, _j = i - 1, j - 1
             finger_to_finger_acc[_i][_j] = max(curr_accs)
@@ -225,6 +241,8 @@ def main(the_data_folder, MODEL_PATH, cuda):
             f2f_stdDist_samePerson[_i][_j] = np.std(same_person_dists)
             f2f_stdDist_diffPerson[_i][_j] = np.std(diff_person_dists)
 
+            finger_to_finger_p_val[_i][_j] = curr_p_val
+
     print('Accuracy finger by finger:')
     print(np.array_str(finger_to_finger_acc, precision=3, suppress_small=True))
     print('ROC AUC finger by finger:')
@@ -233,6 +251,8 @@ def main(the_data_folder, MODEL_PATH, cuda):
     print(np.array_str(finger_to_finger_num_people, suppress_small=True))
     print('Proportion of same-person samples by finger combo:')
     print(np.array_str(finger_to_finger_percent_samePerson, precision=3, suppress_small=True))
+    print('P-values by finger combo:')
+    print(np.array_str(finger_to_finger_p_val, precision=3, suppress_small=True))
 
     import seaborn as sns
 
@@ -264,6 +284,13 @@ def main(the_data_folder, MODEL_PATH, cuda):
     plt.savefig(os.path.join(output_dir, 'sample_dist.png'))
     plt.clf(); plt.close()
 
+    plt.subplots_adjust(bottom=0.22, left=0.22)
+    plt.title('P-Values Finger-by-Finger')
+    sns.heatmap(finger_to_finger_p_val, annot=True, xticklabels=fgrp_names, yticklabels=fgrp_names, cmap='Purples', annot_kws={"fontsize":5})
+    plt.savefig(os.path.join(output_dir, 'p_val.pdf'))
+    plt.savefig(os.path.join(output_dir, 'p_val.png'))
+    plt.clf(); plt.close()
+
     # stats by sample trait (sensor type, finger)
     for trait_name, the_dists in zip(['same sensor encounter', 'diff sensor encounter', 'same finger', 'diff finger'], \
                                 [same_sensor_dist, diff_sensor_dist, same_finger_dist, diff_finger_dist]):
@@ -274,15 +301,19 @@ def main(the_data_folder, MODEL_PATH, cuda):
             print('\t\taverage squared L2 distance between {} person: {}'.format(person_str, np.mean(the_dists[person])))
             print('\t\tstd of  squared L2 distance between {} person: {}'.format(person_str, np.std(the_dists[person])))
 
-        curr_accs, curr_fpr, curr_tpr, curr_roc_auc, curr_threshold = get_metrics(the_dists[SAME_PERSON], the_dists[DIFF_PERSON])
+        curr_accs, curr_fpr, curr_tpr, curr_roc_auc, curr_threshold, curr_welchT, curr_p_val \
+             = get_metrics(the_dists[SAME_PERSON], the_dists[DIFF_PERSON])
         acc_by_trait[trait_name] = max(curr_accs)
         roc_by_trait[trait_name] = curr_roc_auc
+        p_val_by_trait[trait_name] = curr_p_val
 
         print('\tacc:', max(curr_accs))
         print('\troc auc:', curr_roc_auc)
+        print('\tp-value:', curr_p_val)
 
     # do the output
 
+    np.set_printoptions(precision=3)
     results_fname = os.path.join(output_dir, 'test_results.txt')
     with open(results_fname, 'w') as fout:
         fout.write('weights used: {}\n\n'.format(MODEL_PATH))
@@ -293,6 +324,10 @@ def main(the_data_folder, MODEL_PATH, cuda):
         fout.write('std of  squared L2 distance between negative pairs: {}\n'.format(np.std(_02_dist)))
         fout.write('best accuracy: {}\n'.format(str(max_acc)))
         fout.write('ROC AUC: {}\n\n'.format(auc))
+        fout.write('p-value of two-sample t-test between same and diff person: {:e}\n'.format(p_val))
+
+        fout.write('number of testing positive pairs: {}\n'.format(len(_01_dist)))
+        fout.write('number of testing negative pairs: {}\n'.format(len(_02_dist)))
 
         fout.write('Accuracy finger by finger:\n')
         fout.write(np.array_str(finger_to_finger_acc, precision=3, suppress_small=True) + '\n')
@@ -301,7 +336,9 @@ def main(the_data_folder, MODEL_PATH, cuda):
         fout.write('Number of finger-to-finger pairs:\n')
         fout.write(np.array_str(finger_to_finger_num_people, suppress_small=True) + '\n')
         fout.write('Proportion of same-person pairs by finger combo:\n')
-        fout.write(np.array_str(finger_to_finger_percent_samePerson, precision=3, suppress_small=True) + '\n\n')
+        fout.write(np.array_str(finger_to_finger_percent_samePerson, precision=3, suppress_small=True) + '\n')
+        fout.write('P-values by finger combo:\n')
+        fout.write(np.array_str(finger_to_finger_p_val, precision=10) + '\n\n')
 
         # distance by sample trait (sensor type, finger)
         for trait_name, the_dists in zip(['same sensor encounter', 'diff sensor encounter', 'same finger', 'diff finger'], \
@@ -312,6 +349,7 @@ def main(the_data_folder, MODEL_PATH, cuda):
                 fout.write('\tnum people in category - {} person, {}: {}\n'.format(person_str, trait_name, len(the_dists[person])))
                 fout.write('\t\taverage squared L2 distance between {} person: {}\n'.format(person_str, np.mean(the_dists[person])))
                 fout.write('\t\tstd of  squared L2 distance between {} person: {}\n'.format(person_str, np.std(the_dists[person])))
+            fout.write('\tp-value of Welch\'s two-sample t-test between same and diff person: {:e}\n'.format(p_val_by_trait[trait_name]))
             fout.write('\taccuracy: {}\n'.format(str(acc_by_trait[trait_name])))
             fout.write('\troc auc: {}\n\n'.format(str(roc_by_trait[trait_name])))
 
