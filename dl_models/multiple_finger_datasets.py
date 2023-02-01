@@ -63,14 +63,14 @@ class MultipleFingerDataset(Dataset):
     -> Anchor fingers must be distinct from positive and negative fingers.
             Ex: If anchors are right index & right pinky, positive can be left index & left middle, 
             negative can be left index & left middle.
-    -> Anchor sensor must be different from positive sensor (but can be same as negative).
+    -> Anchor sensor must be different from positive sensor.
     -> All anchor fingers must be from same sensor, all positive fingers must be from same sensor,
        all negative fingers must be from same sensor.
     -> All anchor fingers must be distinct fingers, all positive fingers must be distinct fingers,
        all negative fingers must be distinct fingers
     """
 
-    def __init__(self, fingerprint_dataset, num_anchor_fingers, num_pos_fingers, num_neg_fingers):
+    def __init__(self, fingerprint_dataset, num_anchor_fingers, num_pos_fingers, num_neg_fingers, SCALE_FACTOR=1):
         assert num_anchor_fingers + num_pos_fingers <= 10
         assert num_anchor_fingers + num_neg_fingers <= 10
         assert num_anchor_fingers > 0 and num_pos_fingers > 0 and num_neg_fingers > 0
@@ -92,9 +92,6 @@ class MultipleFingerDataset(Dataset):
                                     for label in self.labels_set}
 
         self.random_state = np.random.RandomState(29)
-        
-        # how many times we want to loop through all the items to make triplets
-        SCALE_FACTOR = 1
 
         # Don't allow duplicate combos
         seen_combos = set()
@@ -210,6 +207,7 @@ class MultipleFingerDataset(Dataset):
     3) from same sensor as each other
     4) from same class as each other
     5) from different fingers than anchor_indices
+    6) from different sensor than anchor_indices
     """
     def get_negative_indices(self, anchor_indices):
         ret_val = []
@@ -222,8 +220,9 @@ class MultipleFingerDataset(Dataset):
         )
         
         first_neg_index = self.random_state.choice(self.label_to_indices[neg_label])
-        # ensures 5) from different fingers than anchor_indices
-        while self.get_fgrp_from_index(first_neg_index) in seen_fgrps:
+        # ensures 5) from different fingers than anchor_indices, 6) from different sensor than anchor_indices
+        while self.get_fgrp_from_index(first_neg_index) in seen_fgrps \
+                or self.get_sensor_from_index(first_neg_index) == self.get_sensor_from_index(anchor_indices[0]):
             first_neg_index = self.random_state.choice(self.label_to_indices[neg_label])
         ret_val.append(first_neg_index)
         seen_fgrps.add(self.get_fgrp_from_index(first_neg_index))
@@ -246,7 +245,8 @@ class MultipleFingerDataset(Dataset):
         assert self.test_labels[ret_val[0]] != self.test_labels[anchor_indices[0]] # ensure 1) different class as anchor
         assert len(seen_sensors) == 1 # ensure 3) same sensor as each other
         assert len(seen_fgrps) == len(ret_val) + len(anchor_indices)  # ensure 2) different fgrps from each other, 5) from anchor_indices
-        
+        assert self.get_sensor_from_index(ret_val[0]) != self.get_sensor_from_index(anchor_indices[0]) # ensure 6) different sensor than anchor
+
         return tuple(ret_val)
     """
     only works on the server: assumes that paths have format like:
