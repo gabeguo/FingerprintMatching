@@ -1,3 +1,9 @@
+"""
+-> Tests the performance of any given model on any given dataset.
+-> Can customize number of fingers in each testing set (e.g., anchor set, positive set, negative set).
+-> Forces different sensor and different finger.
+"""
+
 import torch
 import torch.nn as nn
 from torch.utils.data import Dataset
@@ -6,6 +12,7 @@ import torch.optim as optim
 import sys
 import os
 import math
+import matplotlib.pyplot as plt
 import argparse
 from scipy.stats import ttest_ind
 
@@ -29,15 +36,20 @@ from common_filepaths import *
 DEFAULT_OUTPUT_ROOT = '/data/therealgabeguo/results'
 DEFAULT_CUDA = 'cuda:2'
 
+# Batch Size constant
+batch_size=1 # must be 1
+assert batch_size == 1
+
 # JSON Keys
 DATASET_KEY = 'dataset'
 WEIGHTS_KEY = 'weights'
 CUDA_KEY = 'cuda'
 OUTPUT_DIR_KEY = 'output dir'
 NUM_ANCHOR_KEY = 'number anchor fingers per set'
-SCALE_FACTOR_KEY = 'number of times looped through dataset'
 NUM_POS_KEY = 'number positive fingers per set'
 NUM_NEG_KEY = 'number negative fingers per set'
+SCALE_FACTOR_KEY = 'number of times looped through dataset'
+EXCLUDE_SAME_FINGER_KEY = 'exclude overlapping fingers'
 NUM_SAMPLES_KEY = 'number of distinct samples in dataset'
 NUM_POS_PAIRS_KEY = 'number of positive pairs'
 NUM_NEG_PAIRS_KEY = 'number of negative pairs'
@@ -101,39 +113,11 @@ def create_output_dir(output_root):
     os.makedirs(output_dir, exist_ok=True)
     return output_dir
 
-# Data loading 
-batch_size=1 # must be 1
-
-def main(the_data_folder, weights_path, cuda, output_dir, num_anchors, num_pos, num_neg, scale_factor=1):
-    print('Number anchor, pos, neg fingers: {}, {}, {}'.format(num_anchors, num_pos, num_neg))
-
-    fingerprint_dataset = FingerprintDataset(os.path.join(the_data_folder, 'test'), train=False)
-    test_dataset = MultipleFingerDataset(fingerprint_dataset, num_anchors, num_pos, num_neg, SCALE_FACTOR=scale_factor)
-    print('loaded test dataset: {}'.format(the_data_folder))
-    test_dataloader = DataLoader(test_dataset, batch_size=batch_size, shuffle=True)
-
-    dataset_name = the_data_folder[:-1 if the_data_folder[-1] == '/' else len(the_data_folder)].split('/')[-1]
-    print('dataset name:', dataset_name)
-
-    weights_name = (weights_path.split('/')[-1])[:-4]
-    print('weights name:', weights_name)
-
-    # CREATE EMBEDDER
-    embedder = EmbeddingNet()
-
-    # distances between embedding of positive and negative pair
-    _01_dist = []
-    _02_dist = []
-
-    # LOAD MODEL
-
-    embedder.load_state_dict(torch.load(weights_path))
-    embedder.eval()
-    embedder.to(cuda)
-
-    # TEST
-    assert batch_size == 1
-
+"""
+-> Populates _01_dist with distances between anchor and positive examples (from test_dataloader, using embedder)
+-> Populates _02_dist with distances between anchor and negative examples
+"""
+def run_test_loop(test_dataloader, embedder, cuda, _01_dist, _02_dist, num_anchors, num_pos, num_neg):
     data_iter = iter(test_dataloader)
     for i in range(len(test_dataloader)):
         test_images, test_labels, test_filepaths = next(data_iter)
@@ -165,17 +149,10 @@ def main(the_data_folder, weights_path, cuda, output_dir, num_anchors, num_pos, 
             print('Batch (item) {} out of {}'.format(i, len(test_dataloader)))
             print('\taverage, std squared L2 distance between positive pairs {:.3f}, {:.3f}'.format(np.mean(_01_dist), np.std(_01_dist)))
             print('\taverage, std squared L2 distance between negative pairs {:.3f}, {:.3f}'.format(np.mean(_02_dist), np.std(_02_dist)))
+    
+    return
 
-        # TODO: update finger-by-finger
-
-    # CALCULATE ACCURACY AND ROC AUC
-    accs, fpr, tpr, auc, threshold, welch_t, p_val = get_metrics(_01_dist, _02_dist)
-
-    max_acc = max(accs)
-    print('best accuracy:', max_acc)
-
-    print('auc = {}'.format(auc))
-    import matplotlib.pyplot as plt
+def plot_roc_auc(fpr, tpr, dataset_name, weights_name, num_anchors, num_pos, num_neg):
     plt.plot(fpr, tpr)
     plt.xlabel('FPR')
     plt.ylabel('TPR')
@@ -186,30 +163,75 @@ def main(the_data_folder, weights_path, cuda, output_dir, num_anchors, num_pos, 
     plt.savefig(os.path.join(output_dir, 'roc_curve_{}_{}_{}_{}_{}.png'.format(\
         dataset_name, weights_name, num_anchors, num_pos, num_neg)))
     plt.clf(); plt.close()
+
+    return
+
+def main(the_data_folder, weights_path, cuda, output_dir, num_anchors, num_pos, num_neg, \
+        scale_factor=1, exclude_same_finger=True):
+    print('Number anchor, pos, neg fingers: {}, {}, {}'.format(num_anchors, num_pos, num_neg))
+
+    fingerprint_dataset = FingerprintDataset(os.path.join(the_data_folder, 'test'), train=False)
+    test_dataset = MultipleFingerDataset(fingerprint_dataset, num_anchors, num_pos, num_neg, \
+        SCALE_FACTOR=scale_factor, exclude_same_finger=exclude_same_finger)
+    print('loaded test dataset: {}'.format(the_data_folder))
+    test_dataloader = DataLoader(test_dataset, batch_size=batch_size, shuffle=True)
+
+    dataset_name = the_data_folder[:-1 if the_data_folder[-1] == '/' else len(the_data_folder)].split('/')[-1]
+    print('dataset name:', dataset_name)
+
+    weights_name = (weights_path.split('/')[-1])[:-4]
+    print('weights name:', weights_name)
+
+    # CREATE EMBEDDER
+    embedder = EmbeddingNet()
+
+    # distances between embedding of positive and negative pair
+    _01_dist = []
+    _02_dist = []
+
+    # LOAD MODEL
+
+    embedder.load_state_dict(torch.load(weights_path))
+    embedder.eval()
+    embedder.to(cuda)
+
+    # TEST
+    assert batch_size == 1
+
+    run_test_loop(test_dataloader=test_dataloader, embedder=embedder, cuda=cuda, \
+        _01_dist=_01_dist, _02_dist=_02_dist, \
+        num_anchors=num_anchors, num_pos=num_pos, num_neg=num_neg)
+
+    # TODO: update finger-by-finger
+
+    # CALCULATE ACCURACY AND ROC AUC
+    accs, fpr, tpr, auc, threshold, welch_t, p_val = get_metrics(_01_dist, _02_dist)
+
+    max_acc = max(accs)
+    print('best accuracy:', max_acc)
+
+    print('auc = {}'.format(auc))
+
+    plot_roc_auc(fpr=fpr, tpr=tpr, \
+        dataset_name=dataset_name, weights_name=weights_name, \
+        num_anchors=num_anchors, num_pos=num_pos, num_neg=num_neg)
+    
     assert auc >= 0 and auc <= 1
 
     # do the output
 
     final_results = {
-        DATASET_KEY: the_data_folder,
-        WEIGHTS_KEY: weights_path,
-        CUDA_KEY: cuda,
+        DATASET_KEY: the_data_folder, WEIGHTS_KEY: weights_path, CUDA_KEY: cuda,
         OUTPUT_DIR_KEY: output_dir,
-        NUM_ANCHOR_KEY: num_anchors,
+        NUM_ANCHOR_KEY: num_anchors, NUM_POS_KEY: num_pos, NUM_NEG_KEY: num_neg,
         SCALE_FACTOR_KEY: scale_factor,
-        NUM_POS_KEY: num_pos,
-        NUM_NEG_KEY: num_neg,
+        EXCLUDE_SAME_FINGER_KEY: exclude_same_finger,
         NUM_SAMPLES_KEY: len(fingerprint_dataset),
-        NUM_POS_PAIRS_KEY: len(_01_dist),
-        NUM_NEG_PAIRS_KEY: len(_02_dist),
-        MEAN_POS_DIST_KEY: np.mean(_01_dist),
-        STD_POS_DIST_KEY: np.std(_01_dist),
-        MEAN_NEG_DIST_KEY: np.mean(_02_dist),
-        STD_NEG_DIST_KEY: np.std(_02_dist),
-        ACC_KEY: max_acc,
-        ROC_AUC_KEY: auc,
-        T_VAL_KEY: welch_t,
-        P_VAL_KEY: p_val
+        NUM_POS_PAIRS_KEY: len(_01_dist), NUM_NEG_PAIRS_KEY: len(_02_dist), 
+        MEAN_POS_DIST_KEY: np.mean(_01_dist), STD_POS_DIST_KEY: np.std(_01_dist),
+        MEAN_NEG_DIST_KEY: np.mean(_02_dist), STD_NEG_DIST_KEY: np.std(_02_dist),
+        ACC_KEY: max_acc, ROC_AUC_KEY: auc,
+        T_VAL_KEY: welch_t, P_VAL_KEY: p_val
     }
 
     results_fname = os.path.join(output_dir, \
@@ -236,6 +258,9 @@ if __name__ == "__main__":
         const=DEFAULT_OUTPUT_ROOT, default=DEFAULT_OUTPUT_ROOT, type=str)
     parser.add_argument('--scale_factor', '-s', nargs='?', help='Number of times to loop through the dataset to create triplets', \
         const=1, default=1, type=int)
+    parser.add_argument('--exclude_same_finger', '-e', nargs='?', \
+        help='True (by default) if we ban pairs with overlapping fingers, can be False iff we do 1-1 correlation experiment',
+        const=True, default=True, type=bool)
 
     args = parser.parse_args()
 
@@ -245,9 +270,14 @@ if __name__ == "__main__":
     num_fingers = args.num_fingers
     output_dir = create_output_dir(args.output_root)
     scale_factor = args.scale_factor
+    exclude_same_finger = args.exclude_same_finger
 
     assert num_fingers > 0
     assert scale_factor >= 1
 
     main(the_data_folder=dataset, weights_path=weights, cuda=cuda, output_dir=output_dir, \
-        num_anchors=num_fingers, num_pos=num_fingers, num_neg=num_fingers, scale_factor=scale_factor)
+        num_anchors=num_fingers, num_pos=num_fingers, num_neg=num_fingers, \
+        scale_factor=scale_factor, exclude_same_finger=exclude_same_finger)
+
+    # TODO: finger-by-finger option
+    # TODO: test this, make sure it's doing what I want
