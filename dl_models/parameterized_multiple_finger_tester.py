@@ -35,6 +35,7 @@ WEIGHTS_KEY = 'weights'
 CUDA_KEY = 'cuda'
 OUTPUT_DIR_KEY = 'output dir'
 NUM_ANCHOR_KEY = 'number anchor fingers per set'
+SCALE_FACTOR_KEY = 'number of times looped through dataset'
 NUM_POS_KEY = 'number positive fingers per set'
 NUM_NEG_KEY = 'number negative fingers per set'
 NUM_SAMPLES_KEY = 'number of distinct samples in dataset'
@@ -103,11 +104,11 @@ def create_output_dir(output_root):
 # Data loading 
 batch_size=1 # must be 1
 
-def main(the_data_folder, weights_path, cuda, output_dir, num_anchors, num_pos, num_neg):
+def main(the_data_folder, weights_path, cuda, output_dir, num_anchors, num_pos, num_neg, scale_factor=1):
     print('Number anchor, pos, neg fingers: {}, {}, {}'.format(num_anchors, num_pos, num_neg))
 
     fingerprint_dataset = FingerprintDataset(os.path.join(the_data_folder, 'test'), train=False)
-    test_dataset = MultipleFingerDataset(fingerprint_dataset, num_anchors, num_pos, num_neg)
+    test_dataset = MultipleFingerDataset(fingerprint_dataset, num_anchors, num_pos, num_neg, SCALE_FACTOR=scale_factor)
     print('loaded test dataset: {}'.format(the_data_folder))
     test_dataloader = DataLoader(test_dataset, batch_size=batch_size, shuffle=True)
 
@@ -137,14 +138,6 @@ def main(the_data_folder, weights_path, cuda, output_dir, num_anchors, num_pos, 
     for i in range(len(test_dataloader)):
         test_images, test_labels, test_filepaths = next(data_iter)
 
-        """
-        # sanity check
-        for category in test_filepaths:
-            print('\nmeow')
-            for file in category:
-                print('\t', file)
-        """
-
         # test_images is 3 (anchor, pos, neg) * N (number of sample images) * image_size (1*3*224*224)
 
         curr_anchor_pos_dists = []
@@ -172,6 +165,8 @@ def main(the_data_folder, weights_path, cuda, output_dir, num_anchors, num_pos, 
             print('Batch (item) {} out of {}'.format(i, len(test_dataloader)))
             print('\taverage, std squared L2 distance between positive pairs {:.3f}, {:.3f}'.format(np.mean(_01_dist), np.std(_01_dist)))
             print('\taverage, std squared L2 distance between negative pairs {:.3f}, {:.3f}'.format(np.mean(_02_dist), np.std(_02_dist)))
+
+        # TODO: update finger-by-finger
 
     # CALCULATE ACCURACY AND ROC AUC
     accs, fpr, tpr, auc, threshold, welch_t, p_val = get_metrics(_01_dist, _02_dist)
@@ -201,6 +196,7 @@ def main(the_data_folder, weights_path, cuda, output_dir, num_anchors, num_pos, 
         CUDA_KEY: cuda,
         OUTPUT_DIR_KEY: output_dir,
         NUM_ANCHOR_KEY: num_anchors,
+        SCALE_FACTOR_KEY: scale_factor,
         NUM_POS_KEY: num_pos,
         NUM_NEG_KEY: num_neg,
         NUM_SAMPLES_KEY: len(fingerprint_dataset),
@@ -236,8 +232,10 @@ if __name__ == "__main__":
         const=DEFAULT_CUDA, default=DEFAULT_CUDA, help='Name of GPU we want to use', type=str)
     parser.add_argument('--num_fingers', '-n', nargs='?', help='Number of fingers to test', \
         const=1, default=1, type=int)
-    parser.add_argument('--output_root', nargs='?', help='Root directory for output', \
+    parser.add_argument('--output_root', '-o', nargs='?', help='Root directory for output', \
         const=DEFAULT_OUTPUT_ROOT, default=DEFAULT_OUTPUT_ROOT, type=str)
+    parser.add_argument('--scale_factor', '-s', nargs='?', help='Number of times to loop through the dataset to create triplets', \
+        const=1, default=1, type=int)
 
     args = parser.parse_args()
 
@@ -246,6 +244,10 @@ if __name__ == "__main__":
     cuda = args.cuda
     num_fingers = args.num_fingers
     output_dir = create_output_dir(args.output_root)
+    scale_factor = args.scale_factor
+
+    assert num_fingers > 0
+    assert scale_factor >= 1
 
     main(the_data_folder=dataset, weights_path=weights, cuda=cuda, output_dir=output_dir, \
-        num_anchors=num_fingers, num_pos=num_fingers, num_neg=num_fingers)
+        num_anchors=num_fingers, num_pos=num_fingers, num_neg=num_fingers, scale_factor=scale_factor)
