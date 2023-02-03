@@ -365,9 +365,9 @@ if __name__ == "__main__":
         const=DEFAULT_OUTPUT_ROOT, default=DEFAULT_OUTPUT_ROOT, type=str)
     parser.add_argument('--scale_factor', '-s', nargs='?', help='Number of times to loop through the dataset to create triplets', \
         const=1, default=1, type=int)
-    parser.add_argument('--exclude_same_finger', '-e', nargs='?', \
-        help='True (by default) if we ban pairs with overlapping fingers, can be False iff we do 1-1 correlation experiment',
-        const=True, default=True, type=bool)
+    parser.add_argument('--exclude_same_finger', '-e', \
+        help='True if we ban pairs with overlapping fingers, can be False if we do 1-1 correlation experiment',
+        action='store_true')
 
     args = parser.parse_args()
 
@@ -378,6 +378,8 @@ if __name__ == "__main__":
     output_dir = create_output_dir(args.output_root)
     scale_factor = args.scale_factor
     exclude_same_finger = args.exclude_same_finger
+
+    print(args)
 
     assert num_fingers > 0
     assert scale_factor >= 1
