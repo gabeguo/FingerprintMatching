@@ -199,11 +199,10 @@ def run_test_loop(test_dataloader, embedder, cuda, num_anchors, num_pos, num_neg
 
     # loop through all the data
     for i in range(len(test_dataloader)):
+        # test_images is 3 (anchor, pos, neg) * N (number of sample images) * image_size (1*3*224*224)
         test_images, test_labels, test_filepaths = next(data_iter)
         assert len(test_images) == 3
         assert len(test_images[0]) == num_anchors and len(test_images[1]) == num_pos and len(test_images[2]) == num_neg
-
-        # test_images is 3 (anchor, pos, neg) * N (number of sample images) * image_size (1*3*224*224)
 
         curr_anchor_pos_dists = []
         curr_anchor_neg_dists = []
@@ -215,36 +214,25 @@ def run_test_loop(test_dataloader, embedder, cuda, num_anchors, num_pos, num_neg
             anchor_filepath = test_filepaths[0][i_a]
             anchor_finger = get_int_fgrp_from_filepath(anchor_filepath)
 
-            # TODO: refactor
-            for i_p in range(num_pos):
-                curr_pos = test_images[1][i_p].to(cuda)
-                embedding_pos = torch.flatten(embedder(curr_pos))
-                assert len(embedding_pos.size()) == 1 and embedding_pos.size(dim=0) == 512
-                curr_anchor_pos_dists.append(euclideanDist(embedding_anchor, embedding_pos).item())
-                # finger-by-finger
-                pos_filepath = test_filepaths[1][i_p]
-                pos_finger = get_int_fgrp_from_filepath(pos_filepath)
-                if (anchor_filepath, pos_filepath) in seen_pairs or (pos_filepath, anchor_filepath) in seen_pairs:
-                    continue # don't double-count for finger-by-finger
-                seen_pairs.add((anchor_filepath, pos_filepath)); seen_pairs.add((pos_filepath, anchor_filepath))
-                finger_to_finger_dist[anchor_finger][pos_finger][SAME_PERSON].append(curr_anchor_pos_dists[-1])
-                if anchor_finger != pos_finger:
-                    finger_to_finger_dist[pos_finger][anchor_finger][SAME_PERSON].append(curr_anchor_pos_dists[-1])
-            for i_n in range(num_neg):
-                curr_neg = test_images[2][i_n].to(cuda)
-                embedding_neg = torch.flatten(embedder(curr_neg))
-                assert len(embedding_neg.size()) == 1 and embedding_neg.size(dim=0) == 512
-                curr_anchor_neg_dists.append(euclideanDist(embedding_anchor, embedding_neg).item())
-                # finger-by-finger
-                neg_filepath = test_filepaths[2][i_n]
-                neg_finger = get_int_fgrp_from_filepath(neg_filepath)
-                if (anchor_filepath, neg_filepath) in seen_pairs or (neg_filepath, anchor_filepath) in seen_pairs:
-                    continue # don't double-count for finger-by-finger
-                seen_pairs.add((anchor_filepath, neg_filepath)); seen_pairs.add((neg_filepath, anchor_filepath))
-                finger_to_finger_dist[anchor_finger][neg_finger][DIFF_PERSON].append(curr_anchor_neg_dists[-1])
-                if anchor_finger != neg_finger:
-                    finger_to_finger_dist[neg_finger][anchor_finger][DIFF_PERSON].append(curr_anchor_neg_dists[-1])
-        
+            for triplet_sameness_idx, sameness_code, num_samples, curr_dists \
+                    in zip([1, 2], [SAME_PERSON, DIFF_PERSON], [num_pos, num_neg], [curr_anchor_pos_dists, curr_anchor_neg_dists]):
+                for i_curr in range(num_samples):
+                    curr_sample = test_images[triplet_sameness_idx][i_curr].to(cuda)
+                    embedding_curr = torch.flatten(embedder(curr_sample))
+                    assert len(embedding_curr.size()) == 1 and embedding_curr.size(dim=0) == 512
+                    curr_dists.append(euclideanDist(embedding_anchor, embedding_curr).item())
+                    
+                    # finger-by-finger
+                    curr_filepath = test_filepaths[triplet_sameness_idx][i_curr]
+                    curr_finger = get_int_fgrp_from_filepath(curr_filepath)
+                    if (anchor_filepath, curr_filepath) in seen_pairs or (curr_filepath, anchor_filepath) in seen_pairs:
+                        continue # don't double-count for finger-by-finger
+                    seen_pairs.add((anchor_filepath, curr_filepath))
+                    seen_pairs.add((curr_filepath, anchor_filepath))
+                    finger_to_finger_dist[anchor_finger][curr_finger][sameness_code].append(curr_dists[-1])
+                    if anchor_finger != curr_finger: # don't double-count same-finger pair
+                        finger_to_finger_dist[curr_finger][anchor_finger][sameness_code].append(curr_dists[-1])
+
         _01_dist.append(np.mean(curr_anchor_pos_dists))
         _02_dist.append(np.mean(curr_anchor_neg_dists))
 
