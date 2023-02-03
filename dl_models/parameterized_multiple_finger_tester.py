@@ -50,7 +50,10 @@ NUM_ANCHOR_KEY = 'number anchor fingers per set'
 NUM_POS_KEY = 'number positive fingers per set'
 NUM_NEG_KEY = 'number negative fingers per set'
 SCALE_FACTOR_KEY = 'number of times looped through dataset'
-EXCLUDE_SAME_FINGER_KEY = 'exclude overlapping fingers'
+DIFF_FINGER_CROSS_SET_KEY = 'different fingers across sets'
+DIFF_FINGER_WITHIN_SET_KEY = 'different fingers within sets'
+DIFF_SENSOR_CROSS_SET_KEY = 'different sensors across sets'
+SAME_SENSOR_WITHIN_SET_KEY = 'same sensor within set'
 NUM_SAMPLES_KEY = 'number of distinct samples in dataset'
 NUM_POS_PAIRS_KEY = 'number of positive pairs'
 NUM_NEG_PAIRS_KEY = 'number of negative pairs'
@@ -71,15 +74,17 @@ DIFF_PERSON = 1
 def euclideanDist(tensor1, tensor2):
     return (tensor1 - tensor2).pow(2).sum(0)
 
-# Inputs: (_01_dist, _02_dist) are distance between anchor and (positive, negative), repsectively
-# Returns: (acccuracies, fpr, tpr, ROC AUC, threshold, welch_t, p_val)
-# - accuracies are at every possible threshold
-# - fpr is false positive rate at every possible threshold (padded with 0 and 1 at end)
-# - tpr is true positive rate at every possible threshold (padded with 0 and 1 at end)
-# - roc_auc is scalar: area under fpr (x-axis) vs tpr (y-axis) curve
-# - threshold is scalar: below this distance, fingerpritnts match; above, they don't match
-# - welch_t is value of Welch's two-sample t-test between same-person and diff-person pairs
-# - p-val is statistical significance
+"""
+Inputs: (_01_dist, _02_dist) are distance between anchor and (positive, negative), repsectively
+Returns: (acccuracies, fpr, tpr, ROC AUC, threshold, welch_t, p_val)
+- accuracies are at every possible threshold
+- fpr is false positive rate at every possible threshold (padded with 0 and 1 at end)
+- tpr is true positive rate at every possible threshold (padded with 0 and 1 at end)
+- roc_auc is scalar: area under fpr (x-axis) vs tpr (y-axis) curve
+- threshold is scalar: below this distance, fingerpritnts match; above, they don't match
+- welch_t is value of Welch's two-sample t-test between same-person and diff-person pairs
+- p-val is statistical significance
+"""
 def get_metrics(_01_dist, _02_dist):
     all_distances = _01_dist +_02_dist
     all_distances.sort()
@@ -188,6 +193,11 @@ def run_test_loop(test_dataloader, embedder, cuda, num_anchors, num_pos, num_neg
 
     data_iter = iter(test_dataloader)
     assert batch_size == 1
+
+    # tracks which pairs of fingerprint samples have been seen
+    seen_pairs = set()
+
+    # loop through all the data
     for i in range(len(test_dataloader)):
         test_images, test_labels, test_filepaths = next(data_iter)
         assert len(test_images) == 3
@@ -205,6 +215,7 @@ def run_test_loop(test_dataloader, embedder, cuda, num_anchors, num_pos, num_neg
             anchor_filepath = test_filepaths[0][i_a]
             anchor_finger = get_int_fgrp_from_filepath(anchor_filepath)
 
+            # TODO: refactor
             for i_p in range(num_pos):
                 curr_pos = test_images[1][i_p].to(cuda)
                 embedding_pos = torch.flatten(embedder(curr_pos))
@@ -213,6 +224,9 @@ def run_test_loop(test_dataloader, embedder, cuda, num_anchors, num_pos, num_neg
                 # finger-by-finger
                 pos_filepath = test_filepaths[1][i_p]
                 pos_finger = get_int_fgrp_from_filepath(pos_filepath)
+                if (anchor_filepath, pos_filepath) in seen_pairs or (pos_filepath, anchor_filepath) in seen_pairs:
+                    continue # don't double-count for finger-by-finger
+                seen_pairs.add((anchor_filepath, pos_filepath)); seen_pairs.add((pos_filepath, anchor_filepath))
                 finger_to_finger_dist[anchor_finger][pos_finger][SAME_PERSON].append(curr_anchor_pos_dists[-1])
                 if anchor_finger != pos_finger:
                     finger_to_finger_dist[pos_finger][anchor_finger][SAME_PERSON].append(curr_anchor_pos_dists[-1])
@@ -224,6 +238,9 @@ def run_test_loop(test_dataloader, embedder, cuda, num_anchors, num_pos, num_neg
                 # finger-by-finger
                 neg_filepath = test_filepaths[2][i_n]
                 neg_finger = get_int_fgrp_from_filepath(neg_filepath)
+                if (anchor_filepath, neg_filepath) in seen_pairs or (neg_filepath, anchor_filepath) in seen_pairs:
+                    continue # don't double-count for finger-by-finger
+                seen_pairs.add((anchor_filepath, neg_filepath)); seen_pairs.add((neg_filepath, anchor_filepath))
                 finger_to_finger_dist[anchor_finger][neg_finger][DIFF_PERSON].append(curr_anchor_neg_dists[-1])
                 if anchor_finger != neg_finger:
                     finger_to_finger_dist[neg_finger][anchor_finger][DIFF_PERSON].append(curr_anchor_neg_dists[-1])
@@ -262,10 +279,14 @@ Returns:
     number according to scale_factor, size fo triplets according to (num_anchors, num_pos, num_neg)
 -> DataLoader with batch size 1 for MultipleFingerDataset 
 """
-def load_data(the_data_folder, num_anchors, num_pos, num_neg, scale_factor, exclude_same_finger):
+def load_data(the_data_folder, num_anchors, num_pos, num_neg, scale_factor, \
+        diff_fingers_across_sets=True, diff_fingers_within_set=True, \
+        diff_sensors_across_sets=True, same_sensor_within_set=True):
     fingerprint_dataset = FingerprintDataset(os.path.join(the_data_folder, 'test'), train=False)
     test_dataset = MultipleFingerDataset(fingerprint_dataset, num_anchors, num_pos, num_neg, \
-        SCALE_FACTOR=scale_factor, exclude_same_finger=exclude_same_finger)
+        SCALE_FACTOR=scale_factor, \
+        diff_fingers_across_sets=diff_fingers_across_sets, diff_fingers_within_set=diff_fingers_within_set, \
+        diff_sensors_across_sets=diff_sensors_across_sets, same_sensor_within_set=same_sensor_within_set)
     print('loaded test dataset: {}'.format(the_data_folder))
     assert batch_size == 1
     test_dataloader = DataLoader(test_dataset, batch_size=batch_size, shuffle=True)
@@ -284,13 +305,17 @@ def create_finger_by_finger_plot(f2f_data, the_title, the_cmap, the_fontsize, th
     return
 
 def main(the_data_folder, weights_path, cuda, output_dir, num_anchors, num_pos, num_neg, \
-        scale_factor=1, exclude_same_finger=True):
+        scale_factor=1, \
+        diff_fingers_across_sets=True, diff_fingers_within_set=True, \
+        diff_sensors_across_sets=True, same_sensor_within_set=True):
     print('Number anchor, pos, neg fingers: {}, {}, {}'.format(num_anchors, num_pos, num_neg))
 
     fingerprint_dataset, test_dataset, test_dataloader = \
         load_data(the_data_folder=the_data_folder, \
         num_anchors=num_anchors, num_pos=num_pos, num_neg=num_neg, \
-        scale_factor=scale_factor, exclude_same_finger=exclude_same_finger)
+        scale_factor=scale_factor, \
+        diff_fingers_across_sets=diff_fingers_across_sets, diff_fingers_within_set=diff_fingers_within_set, \
+        diff_sensors_across_sets=diff_sensors_across_sets, same_sensor_within_set=same_sensor_within_set)
 
     dataset_name = the_data_folder[:-1 if the_data_folder[-1] == '/' else len(the_data_folder)].split('/')[-1]
     print('dataset name:', dataset_name)
@@ -332,7 +357,8 @@ def main(the_data_folder, weights_path, cuda, output_dir, num_anchors, num_pos, 
         OUTPUT_DIR_KEY: output_dir,
         NUM_ANCHOR_KEY: num_anchors, NUM_POS_KEY: num_pos, NUM_NEG_KEY: num_neg,
         SCALE_FACTOR_KEY: scale_factor,
-        EXCLUDE_SAME_FINGER_KEY: exclude_same_finger,
+        DIFF_FINGER_CROSS_SET_KEY: diff_fingers_across_sets, DIFF_FINGER_WITHIN_SET_KEY: diff_fingers_within_set,
+        DIFF_SENSOR_CROSS_SET_KEY: diff_sensors_across_sets, SAME_SENSOR_WITHIN_SET_KEY: same_sensor_within_set,
         NUM_SAMPLES_KEY: len(fingerprint_dataset),
         NUM_POS_PAIRS_KEY: len(_01_dist), NUM_NEG_PAIRS_KEY: len(_02_dist), 
         MEAN_POS_DIST_KEY: np.mean(_01_dist), STD_POS_DIST_KEY: np.std(_01_dist),
@@ -365,8 +391,17 @@ if __name__ == "__main__":
         const=DEFAULT_OUTPUT_ROOT, default=DEFAULT_OUTPUT_ROOT, type=str)
     parser.add_argument('--scale_factor', '-s', nargs='?', help='Number of times to loop through the dataset to create triplets', \
         const=1, default=1, type=int)
-    parser.add_argument('--exclude_same_finger', '-e', \
-        help='True if we ban pairs with overlapping fingers, can be False if we do 1-1 correlation experiment',
+    parser.add_argument('--diff_fingers_across_sets', '-dfs', \
+        help='Force fingers in different sets to be from fingers (e.g., can\'t have pair of two right index fingers)', \
+        action='store_true')
+    parser.add_argument('--diff_fingers_within_set', '-dws', \
+        help='Force fingers within set to be from distinct fingers', \
+        action='store_true')
+    parser.add_argument('--diff_sensors_across_sets', '-dss', \
+        help='Force fingerprints in different sets to come from different sensors', \
+        action='store_true')
+    parser.add_argument('--same_sensor_within_set', '-sss', \
+        help='Force all fingerprints in a set to come from the same sensor', \
         action='store_true')
 
     args = parser.parse_args()
@@ -377,7 +412,11 @@ if __name__ == "__main__":
     num_fingers = args.num_fingers
     output_dir = create_output_dir(args.output_root)
     scale_factor = args.scale_factor
-    exclude_same_finger = args.exclude_same_finger
+
+    diff_fingers_across_sets = args.diff_fingers_across_sets
+    diff_fingers_within_set = args.diff_fingers_within_set
+    diff_sensors_across_sets = args.diff_sensors_across_sets
+    same_sensor_within_set = args.same_sensor_within_set
 
     print(args)
 
@@ -386,7 +425,8 @@ if __name__ == "__main__":
 
     main(the_data_folder=dataset, weights_path=weights, cuda=cuda, output_dir=output_dir, \
         num_anchors=num_fingers, num_pos=num_fingers, num_neg=num_fingers, \
-        scale_factor=scale_factor, exclude_same_finger=exclude_same_finger)
+        scale_factor=scale_factor, \
+        diff_fingers_across_sets=diff_fingers_across_sets, diff_fingers_within_set=diff_fingers_within_set, \
+        diff_sensors_across_sets=diff_sensors_across_sets, same_sensor_within_set=same_sensor_within_set)
 
     # TODO: test this, make sure it's doing what I want
-    # TODO: have option to have same fingers in the set in multiple_finger_datasets.py

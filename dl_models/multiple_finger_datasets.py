@@ -78,13 +78,6 @@ class MultipleFingerDataset(Dataset):
         assert num_anchor_fingers + num_neg_fingers <= 10
         assert num_anchor_fingers > 0 and num_pos_fingers > 0 and num_neg_fingers > 0
 
-        # if we're allowed to have same fingers in comparison pairs, we can only be doing 1-1, 
-        # for the finger-to-finger correlation experiment
-        if not exclude_same_finger:
-            assert num_anchor_fingers == 1
-            assert num_pos_fingers == 1
-            assert num_neg_fingers == 1
-
         self.fingerprint_dataset = fingerprint_dataset
         self.train = self.fingerprint_dataset.train
         
@@ -225,13 +218,13 @@ class MultipleFingerDataset(Dataset):
             curr_fgrp = self.get_fgrp_from_index(curr_index)
             curr_sensor = self.get_sensor_from_index(curr_index)
             # satisfy (5) - different fingers than anchor, if needed
-            if different_fingers_across_sets and curr_fgrp in anchor_fgrps:
+            if diff_fingers_across_sets and curr_fgrp in anchor_fgrps:
                 continue
             # satisfy (6) - different fingers than each other, if needed
-            if different_fingers_within_set and curr_fgrp in retVal_fgrps:
+            if diff_fingers_within_set and curr_fgrp in retVal_fgrps:
                 continue
             # satisfy (7) - different sensors than anchor, if needed
-            if different_sensors_across_sets and curr_sensor in anchor_sensors:
+            if diff_sensors_across_sets and curr_sensor in anchor_sensors:
                 continue
             # satisfy (8) - same sensor as each other, if needed
             if same_sensor_within_set and len(retVal_sensors) >= 1 and curr_sensor not in retVal_sensors:
@@ -256,13 +249,13 @@ class MultipleFingerDataset(Dataset):
         # (4) definitely distinct samples from each other
         assert len(set(ret_val)) == len(ret_val)
         # (5) (optionally) from different fingers than anchor_indices
-        if different_fingers_across_sets:
+        if diff_fingers_across_sets:
             assert len(anchor_fgrps + retVal_fgrps) == len(anchor_fgrps) + len(retVal_fgrps)
         # (6) (optionally) from different fingers than each other
-        if different_fingers_within_set:
+        if diff_fingers_within_set:
             assert len(retVal_fgrps) == len(set(retVal_fgrps))
         # (7) (optionally) from different sensor than anchor_indices
-        if different_sensors_across_sets:
+        if diff_sensors_across_sets:
             assert len(anchor_sensors + retVal_sensors) == len(anchor_sensors) + len(retVal_sensors)
         # (8) (optionally) from same sensor as each other
         if same_sensor_within_set:
