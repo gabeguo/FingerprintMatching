@@ -71,7 +71,9 @@ class MultipleFingerDataset(Dataset):
     """
 
     def __init__(self, fingerprint_dataset, num_anchor_fingers, num_pos_fingers, num_neg_fingers, \
-            SCALE_FACTOR=1, exclude_same_finger=True):
+            SCALE_FACTOR=1, \
+            diff_fingers_across_sets=True, diff_fingers_within_set=True, \
+            diff_sensors_across_sets=True, same_sensor_within_set=True):
         assert num_anchor_fingers + num_pos_fingers <= 10
         assert num_anchor_fingers + num_neg_fingers <= 10
         assert num_anchor_fingers > 0 and num_pos_fingers > 0 and num_neg_fingers > 0
@@ -110,9 +112,14 @@ class MultipleFingerDataset(Dataset):
             for i in range(len(self.test_data)):
                 #print('{} out of {}'.format(i, len(self.test_data)))
                 while True: # need to find original combos
-                    anchor_indices = self.get_anchor_indices(i)
-                    positive_indices = self.get_positive_indices(anchor_indices, exclude_same_finger=exclude_same_finger)
-                    negative_indices = self.get_negative_indices(anchor_indices, exclude_same_finger=exclude_same_finger)
+                    anchor_indices = self.get_anchor_indices(i, \
+                        diff_fingers_within_set=diff_fingers_within_set, same_sensor_within_set=same_sensor_within_set)
+                    positive_indices = self.get_indices(anchor_indices, same_class_as_anchor=True, \
+                        diff_fingers_across_sets=diff_fingers_across_sets, diff_fingers_within_set=diff_fingers_within_set, \
+                        diff_sensors_across_sets=diff_sensors_across_sets, same_sensor_within_set=same_sensor_within_set)
+                    negative_indices = self.get_indices(anchor_indices, same_class_as_anchor=False, \
+                        diff_fingers_across_sets=diff_fingers_across_sets, diff_fingers_within_set=diff_fingers_within_set, \
+                        diff_sensors_across_sets=diff_sensors_across_sets, same_sensor_within_set=same_sensor_within_set)
 
                     curr_anchor_pos_combo = tuple(sorted(anchor_indices + positive_indices))
                     curr_anchor_neg_combo = tuple(sorted(anchor_indices + negative_indices))
@@ -131,12 +138,13 @@ class MultipleFingerDataset(Dataset):
     Returns a tuple of size self.num_fingers, containing:
     -> base_index
     -> (self.num_fingers - 1) indices that are:
-        1) from the same class
-        2) from different fingers
-        3) from the same sensor
+        1) different samples from each other
+        2) from the same class
+        3) (optionally) from different fingers
+        4) (optionally) from the same sensor
        as base_index
     """
-    def get_anchor_indices(self, base_index):
+    def get_anchor_indices(self, base_index, diff_fingers_within_set=True, same_sensor_within_set=True):
         ret_val = [base_index]
 
         seen_fgrps = set()
@@ -146,130 +154,122 @@ class MultipleFingerDataset(Dataset):
         seen_sensors.add(self.get_sensor_from_index(base_index))
 
         while len(ret_val) < self.num_anchor_fingers:
-            next_index = base_index
-            # guarantees distinct fingers
-            while next_index in ret_val or \
-                    self.get_fgrp_from_index(next_index) in seen_fgrps or \
-                    self.get_sensor_from_index(base_index) != self.get_sensor_from_index(next_index): # guarantees same sensor
-                next_index = self.random_state.choice(self.label_to_indices[self.test_labels[base_index]]) # guarantees same class
-            
-            ret_val.append(next_index)
-            seen_fgrps.add(self.get_fgrp_from_index(next_index))
-            seen_sensors.add(self.get_sensor_from_index(next_index))
+            # guarantees (2) same class
+            next_index = self.random_state.choice(self.label_to_indices[self.test_labels[base_index]]) # guarantees same class
+            # guarantees (1) distinct samples
+            if next_index in ret_val:
+                continue
+            # guarantees (3) different fingers (optional)
+            if diff_fingers_within_set and (self.get_fgrp_from_index(next_index) in seen_fgrps):
+                continue
+            # guarantees (4) same sensor (optional)
+            if same_sensor_within_set and (self.get_sensor_from_index(base_index) != self.get_sensor_from_index(next_index)):
+                continue
+                
+            ret_val.append(next_index) # ensure (1) different samples
+            seen_fgrps.add(self.get_fgrp_from_index(next_index)) # ensure (3) different fingers (optional)
+            seen_sensors.add(self.get_sensor_from_index(next_index)) # ensure (4) same sensor (optional)
         
-        assert list(seen_sensors)[0] == self.get_sensor_from_index(base_index) # ensure 3) same sensor as base_index
-        assert len(seen_sensors) == 1 # ensure 3) same sensor (as each other)
-        assert len(seen_fgrps) == len(ret_val) # ensure 2) different fingers
-        assert len(set([self.test_labels[i] for i in ret_val])) == 1 # ensure 1) same class
+        if same_sensor_within_set:
+            assert list(seen_sensors)[0] == self.get_sensor_from_index(base_index) # ensure 4) same sensor as base_index
+        if same_sensor_within_set:
+            assert len(seen_sensors) == 1 # ensure 4) same sensor (as each other) (optional)
+        if diff_fingers_within_set:
+            assert len(seen_fgrps) == len(ret_val) # ensure 3) different fingers (optional)
+        assert len(set([self.test_labels[i] for i in ret_val])) == 1 # ensure 2) same class
+        assert len(set(ret_val)) == len(ret_val) # ensure 1) distinct samples
         
         return tuple(ret_val)
 
     """
-    Returns a tuple of size self.num_pos_fingers that are:
-    1) from same class as anchor_indices
-    2) from different fingers than anchor_indices (unless doing finger-by-finger test)
-    3) from different sensor than anchor_indices
-    4) from different fingers than each other
-    5) from same sensor as each other
+    Returns a tuple that:
+    (0) definitely same class as each other
+    (1) from same (a) / diff (b) class as anchor_indices, depending on same_class_as_anchor
+    (2) size self.num_pos_fingers (a) or self.num_neg_fingers (b), depending on same_class_as_anchor
+    (3) definitely distinct samples from anchor_indices
+    (4) definitely distinct samples from each other
+    (5) (optionally) from different fingers than anchor_indices
+    (6) (optionally) from different fingers than each other
+    (7) (optionally) from different sensor than anchor_indices
+    (8) (optionally) from same sensor as each other
     """
-    def get_positive_indices(self, anchor_indices, exclude_same_finger=True):
+    def get_indices(self, anchor_indices, same_class_as_anchor, \
+            diff_fingers_across_sets=True, diff_fingers_within_set=True, \
+            diff_sensors_across_sets=True, same_sensor_within_set=True):
         ret_val = []
-        seen_fgrps = set([self.get_fgrp_from_index(i) for i in anchor_indices])
 
-        # same finger allowed, only if we do 1-1 matching for finger-to-finger correlation experiment
-        if not exclude_same_finger: 
-            assert self.num_pos_fingers == 1
-            assert self.num_anchor_fingers == 1
-            assert self.num_neg_fingers == 1
+        # satisfy (5) - different fingers than anchor (possibly)
+        anchor_fgrps = set([self.get_fgrp_from_index(i) for i in anchor_indices])
+        retVal_fgrps = set()
+        # satisfy (7) - different sensors than anchor (possibly)
+        anchor_sensors = set([self.get_sensor_from_index(i) for i in anchor_indices])
+        retVal_sensors = set()
 
-        # get first positive example
-        first_pos_index = anchor_indices[0] # 1) ensure same class as anchor_indices
-        # 2) ensure different finger than anchor (unless doing finger-by-finger test), 3) different sensor than anchor
-        while first_pos_index in anchor_indices \
-                or (exclude_same_finger and self.get_fgrp_from_index(first_pos_index) in seen_fgrps) \
-                or self.get_sensor_from_index(first_pos_index) == self.get_sensor_from_index(anchor_indices[0]):
-            # 1) ensure same class as anchor_indices
-            first_pos_index = self.random_state.choice(self.label_to_indices[self.test_labels[first_pos_index]])
-        ret_val.append(first_pos_index)
-        seen_fgrps.add(self.get_fgrp_from_index(first_pos_index))
-        the_sensor = self.get_sensor_from_index(first_pos_index)
-
-        while len(ret_val) < self.num_pos_fingers:
-            pos_index = first_pos_index
-            # 2) ensure different fingers than anchor_indices (unless doing finger-by-finger), 4) than each other, 5) same sensor as each other
-            while pos_index in ret_val \
-                    or pos_index in anchor_indices \
-                    or (exclude_same_finger and self.get_fgrp_from_index(pos_index) in seen_fgrps) \
-                    or self.get_sensor_from_index(pos_index) != the_sensor:
-                # 1) ensure same class as anchor_indices
-                pos_index = self.random_state.choice(self.label_to_indices[self.test_labels[first_pos_index]])
-            ret_val.append(pos_index)
-            seen_fgrps.add(self.get_fgrp_from_index(pos_index)) # track used fingers
+        # satisfy (1)(a), (2)(a) - same class as anchor
+        if same_class_as_anchor:
+            the_label = self.test_labels[anchor_indices[0]]
+            the_size = self.num_pos_fingers
+        # satisfy (1)(b), (2)(b) - diff class than anchor
+        else:
+            the_label = np.random.choice(
+                list(self.labels_set - set([self.test_labels[anchor_indices[0]]]))
+            )
+            the_size = self.num_neg_fingers
         
-        assert len(set([self.get_sensor_from_index(i) for i in ret_val])) == 1 # ensure 5) same sensor as each other
-        assert self.get_sensor_from_index(ret_val[0]) != self.get_sensor_from_index(anchor_indices[0]) # ensure 3) different sensor than anchor
-        if exclude_same_finger: # ensure 2) different fingers than anchor indices
-            assert len(seen_fgrps) == len(ret_val) + len(anchor_indices) # ensure 2) different fingers than anchor indices, 4) each other
-        assert self.test_labels[ret_val[-1]] == self.test_labels[anchor_indices[-1]] # ensure 1) same class as anchor_indices
-        assert len(set([self.test_labels[i] for i in ret_val])) == 1 # ensure 1) same class as anchor_indices (and each other)
-        
-        return tuple(ret_val)
-
-    """
-    Returns a tuple of size self.num_neg_fingers that are:
-    1) from different class than anchor_indices
-    2) from different fingers than each other
-    3) from same sensor as each other
-    4) from same class as each other
-    5) from different fingers than anchor_indices (unless specified otherwise, only acceptable in 1-1 correlation)
-    6) from different sensor than anchor_indices
-    """
-    def get_negative_indices(self, anchor_indices, exclude_same_finger=True):
-        ret_val = []
-        seen_fgrps = set([self.get_fgrp_from_index(i) for i in anchor_indices])
-        seen_sensors = set()
-        
-        # can only do same-to-same matching if it's 1-1 matching in finger-by-finger correlation experiment
-        if not exclude_same_finger:
-            assert self.num_anchor_fingers == 1
-            assert self.num_pos_fingers == 1
-            assert self.num_neg_fingers == 1
-
-        # ensures 1) different class than anchor_indices
-        neg_label = np.random.choice(
-            list(self.labels_set - set([self.test_labels[anchor_indices[0]]]))
-        )
-        
-        first_neg_index = self.random_state.choice(self.label_to_indices[neg_label])
-        # ensures 5) from different fingers than anchor_indices (unless 1-1 correlation experiment), 6) from different sensor than anchor_indices
-        while (exclude_same_finger and self.get_fgrp_from_index(first_neg_index) in seen_fgrps) \
-                or self.get_sensor_from_index(first_neg_index) == self.get_sensor_from_index(anchor_indices[0]):
-            first_neg_index = self.random_state.choice(self.label_to_indices[neg_label])
-        ret_val.append(first_neg_index)
-        seen_fgrps.add(self.get_fgrp_from_index(first_neg_index))
-        seen_sensors.add(self.get_sensor_from_index(first_neg_index))
-
-        while len(ret_val) < self.num_neg_fingers:
-            neg_index = first_neg_index
-            # ensures 2) different fingers than each other, 3) same sensor as each other, 5) different than anchor_indices (unless 1-1 correlation experiment)
-            while neg_index in ret_val \
-                    or (exclude_same_finger and self.get_fgrp_from_index(neg_index) in seen_fgrps) \
-                    or self.get_sensor_from_index(neg_index) not in seen_sensors:
-                # ensures 4) same class as each other
-                neg_index = self.random_state.choice(self.label_to_indices[neg_label])
+        while len(ret_val) < the_size:
+            # satisfy (0) - same class as each other
+            curr_index = self.random_state.choice(self.label_to_indices[the_label])
+            # satisfy (3), (4) - try again until we get previously unseen samples
+            if curr_index in anchor_indices or curr_index in ret_val:
+                continue
+            curr_fgrp = self.get_fgrp_from_index(curr_index)
+            curr_sensor = self.get_sensor_from_index(curr_index)
+            # satisfy (5) - different fingers than anchor, if needed
+            if different_fingers_across_sets and curr_fgrp in anchor_fgrps:
+                continue
+            # satisfy (6) - different fingers than each other, if needed
+            if different_fingers_within_set and curr_fgrp in retVal_fgrps:
+                continue
+            # satisfy (7) - different sensors than anchor, if needed
+            if different_sensors_across_sets and curr_sensor in anchor_sensors:
+                continue
+            # satisfy (8) - same sensor as each other, if needed
+            if same_sensor_within_set and len(retVal_sensors) >= 1 and curr_sensor not in retVal_sensors:
+                continue
             
-            ret_val.append(neg_index)
-            seen_fgrps.add(self.get_fgrp_from_index(neg_index))
-            seen_sensors.add(self.get_sensor_from_index(neg_index))
-        
-        assert len(set([self.test_labels[i] for i in ret_val])) == 1 # ensure 4) same class as each other
-        assert self.test_labels[ret_val[0]] != self.test_labels[anchor_indices[0]] # ensure 1) different class as anchor
-        assert len(seen_sensors) == 1 # ensure 3) same sensor as each other
-        if exclude_same_finger: # ensure 5) different fgrp from anchor indices (unless 1-1 correlation experiment)
-            assert len(seen_fgrps) == len(ret_val) + len(anchor_indices)  # ensure 2) different fgrps from each other, 5) from anchor_indices
-        assert self.get_sensor_from_index(ret_val[0]) != self.get_sensor_from_index(anchor_indices[0]) # ensure 6) different sensor than anchor
+            # satisfy (4) - distinct samples than each other
+            ret_val.append(curr_index)
+            # satisfy (6) - different fingers than each other (optionally)
+            retVal_fgrps.add(curr_fgrp)
+            # satisfy (8) - same sensor as each other (optionally)
+            retVal_sensors.add(curr_sensor)
 
+        # (0) definitely same class as each other
+        assert len(set([self.test_labels[x] for x in ret_val])) == 1
+        # (1) from same (a) / diff (b) class as anchor_indices, depending on same_class_as_anchor
+        assert same_class_as_anchor == (self.test_labels[anchor_indices[0]] == self.test_labels[ret_val[0]])
+        # (2) size self.num_pos_fingers (a) or self.num_neg_fingers (b), depending on same_class_as_anchor
+        assert (same_class_as_anchor and len(ret_val) == self.num_pos_fingers) \
+            or (not same_class_as_anchor and len(ret_val) == self.num_neg_fingers)
+        # (3) definitely distinct samples from anchor_indices
+        assert len(set(anchor_indices) + set(ret_val)) == len(anchor_indices) + len(ret_val)
+        # (4) definitely distinct samples from each other
+        assert len(set(ret_val)) == len(ret_val)
+        # (5) (optionally) from different fingers than anchor_indices
+        if different_fingers_across_sets:
+            assert len(anchor_fgrps + retVal_fgrps) == len(anchor_fgrps) + len(retVal_fgrps)
+        # (6) (optionally) from different fingers than each other
+        if different_fingers_within_set:
+            assert len(retVal_fgrps) == len(set(retVal_fgrps))
+        # (7) (optionally) from different sensor than anchor_indices
+        if different_sensors_across_sets:
+            assert len(anchor_sensors + retVal_sensors) == len(anchor_sensors) + len(retVal_sensors)
+        # (8) (optionally) from same sensor as each other
+        if same_sensor_within_set:
+            assert len(retVal_sensors) == 1
+        
         return tuple(ret_val)
+    
     """
     only works on the server: assumes that paths have format like:
     /data/therealgabeguo/fingerprint_data/sd300a_split/train/00001765/00001765_plain_500_08.png
