@@ -204,6 +204,12 @@ def run_test_loop(test_dataloader, embedder, cuda, num_anchors, num_pos, num_neg
         assert len(test_images) == 3
         assert len(test_images[0]) == num_anchors and len(test_images[1]) == num_pos and len(test_images[2]) == num_neg
 
+        """ TEST CODE
+        print(i)
+        for j, name in zip([0, 1, 2], ['anchor', 'pos', 'neg']):
+            print('\t{}:'.format(name), [get_filename(file) for file in test_filepaths[j]])
+        TEST CODE """
+
         curr_anchor_pos_dists = []
         curr_anchor_neg_dists = []
 
