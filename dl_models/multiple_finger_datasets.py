@@ -245,18 +245,18 @@ class MultipleFingerDataset(Dataset):
         assert (same_class_as_anchor and len(ret_val) == self.num_pos_fingers) \
             or (not same_class_as_anchor and len(ret_val) == self.num_neg_fingers)
         # (3) definitely distinct samples from anchor_indices
-        assert len(set(anchor_indices) + set(ret_val)) == len(anchor_indices) + len(ret_val)
+        assert len(set(anchor_indices).union(set(ret_val))) == len(anchor_indices) + len(ret_val)
         # (4) definitely distinct samples from each other
         assert len(set(ret_val)) == len(ret_val)
         # (5) (optionally) from different fingers than anchor_indices
         if diff_fingers_across_sets:
-            assert len(anchor_fgrps + retVal_fgrps) == len(anchor_fgrps) + len(retVal_fgrps)
+            assert len(anchor_fgrps.union(retVal_fgrps)) == len(anchor_fgrps) + len(retVal_fgrps)
         # (6) (optionally) from different fingers than each other
         if diff_fingers_within_set:
             assert len(retVal_fgrps) == len(set(retVal_fgrps))
         # (7) (optionally) from different sensor than anchor_indices
         if diff_sensors_across_sets:
-            assert len(anchor_sensors + retVal_sensors) == len(anchor_sensors) + len(retVal_sensors)
+            assert len(anchor_sensors.union(retVal_sensors)) == len(anchor_sensors) + len(retVal_sensors)
         # (8) (optionally) from same sensor as each other
         if same_sensor_within_set:
             assert len(retVal_sensors) == 1
