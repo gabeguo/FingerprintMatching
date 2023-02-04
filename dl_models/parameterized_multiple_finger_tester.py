@@ -242,7 +242,7 @@ def run_test_loop(test_dataloader, embedder, cuda, num_anchors, num_pos, num_neg
         _01_dist.append(np.mean(curr_anchor_pos_dists))
         _02_dist.append(np.mean(curr_anchor_neg_dists))
 
-        if i % 100 == 0:
+        if i % 500 == 0:
             print('Batch (item) {} out of {}'.format(i, len(test_dataloader)))
             print('\taverage, std squared L2 distance between positive pairs {:.3f}, {:.3f}'.format(np.mean(_01_dist), np.std(_01_dist)))
             print('\taverage, std squared L2 distance between negative pairs {:.3f}, {:.3f}'.format(np.mean(_02_dist), np.std(_02_dist)))
