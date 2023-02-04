@@ -74,8 +74,9 @@ class MultipleFingerDataset(Dataset):
             SCALE_FACTOR=1, \
             diff_fingers_across_sets=True, diff_fingers_within_set=True, \
             diff_sensors_across_sets=True, same_sensor_within_set=True):
-        assert num_anchor_fingers + num_pos_fingers <= 10
-        assert num_anchor_fingers + num_neg_fingers <= 10
+        if diff_fingers_across_sets and diff_fingers_within_set:
+            assert num_anchor_fingers + num_pos_fingers <= 10
+            assert num_anchor_fingers + num_neg_fingers <= 10
         assert num_anchor_fingers > 0 and num_pos_fingers > 0 and num_neg_fingers > 0
 
         self.fingerprint_dataset = fingerprint_dataset
