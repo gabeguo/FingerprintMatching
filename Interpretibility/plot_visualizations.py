@@ -19,7 +19,7 @@ def plot_visualizations(img_directory, num_visualizations=(8, 8), desired_iter=3
                 w / 2 + w / zoom_factor, h / 2 + h / zoom_factor))
             curr_img = curr_img.resize((w, h))
             imgs.append(curr_img)
-
+    plt.rcParams.update({'font.size': 24})
     fig = plt.figure(figsize=the_figsize)
     side_len = int(math.sqrt(len(imgs)))
     grid = ImageGrid(fig, 111,  # similar to subplot(111)
@@ -34,7 +34,6 @@ def plot_visualizations(img_directory, num_visualizations=(8, 8), desired_iter=3
         # Iterating over the grid returns the Axes.
         ax.imshow(im)
         ax.axis('off')
-    
     fig.suptitle(the_title)
 
     # save image
@@ -42,8 +41,8 @@ def plot_visualizations(img_directory, num_visualizations=(8, 8), desired_iter=3
     print('save file name:', src_name)
     print('save dir:', save_dir)
     os.makedirs(save_dir, exist_ok=True)
-    plt.savefig(os.path.join(save_dir, '{}.pdf'.format(src_name)))
-    plt.savefig(os.path.join(save_dir, '{}.png'.format(src_name)))
+    plt.savefig(os.path.join(save_dir, '{}.pdf'.format(src_name + "4x4")))
+    plt.savefig(os.path.join(save_dir, '{}.png'.format(src_name + "4x4")))
     
     # show image
     plt.show()
@@ -51,9 +50,9 @@ def plot_visualizations(img_directory, num_visualizations=(8, 8), desired_iter=3
     return
 
 if __name__ == "__main__":
-    plot_visualizations('/data/verifiedanivray/generated_early', num_visualizations=(8, 8), zoom_factor=4, the_figsize=(8, 8),\
-        save_dir='/data/therealgabeguo/nn_visualizations/', the_title='ResNet-18, Layer 4.1, Conv 2: Visualizations')
-    plot_visualizations('/data/verifiedanivray/generated_middle', num_visualizations=(16, 16), zoom_factor=4, the_figsize=(8, 8),\
-        save_dir='/data/therealgabeguo/nn_visualizations/', the_title='ResNet-18, Layer 6.0, Conv 2: Visualizations')
-    plot_visualizations('/data/verifiedanivray/generated_end', num_visualizations=(16, 32), zoom_factor=4, the_figsize=(16, 8),\
-        save_dir='/data/therealgabeguo/nn_visualizations/', the_title='ResNet-18, Layer 4.1, Conv 2: Visualizations')
+    plot_visualizations('/data/verifiedanivray/generated_early', num_visualizations=(4, 4), zoom_factor=4, the_figsize=(8, 8),\
+        save_dir='/data/verifiedanivray/', the_title='ResNet-18, Layer 5: Visualizations')
+    plot_visualizations('/data/verifiedanivray/generated_middle', num_visualizations=(4, 4), zoom_factor=4, the_figsize=(8, 8),\
+        save_dir='/data/verifiedanivray/', the_title='ResNet-18, Layer 11: Visualizations')
+    plot_visualizations('/data/verifiedanivray/generated_end', num_visualizations=(4, 4), zoom_factor=4, the_figsize=(8, 8),\
+        save_dir='/data/verifiedanivray/', the_title='ResNet-18, Layer 17: Visualizations')
