@@ -328,7 +328,7 @@ def main(the_data_folder, weights_path, cuda, output_dir, num_anchors, num_pos, 
     # TODO: update finger-by-finger
     f2f_roc, f2f_p_val, f2f_num_samples, f2f_percent_samePerson = get_finger_by_finger_metrics(finger_to_finger_dist)
     create_finger_by_finger_plot(f2f_roc, 'Finger-to-Finger ROC AUC', the_cmap='Reds', the_fontsize=9, the_fmt='.2f')
-    create_finger_by_finger_plot(f2f_p_val, 'Finger-to-Finger P-Value (Welch\'s T-Test', the_cmap='Purples', the_fontsize=6, the_fmt='.2g')
+    create_finger_by_finger_plot(f2f_p_val, 'Finger-to-Finger P-Value (Welch\'s T-Test)', the_cmap='Purples', the_fontsize=6, the_fmt='.2g')
     create_finger_by_finger_plot(f2f_num_samples, 'Number of Finger-to-Finger Pairs', the_cmap='Blues', the_fontsize=9, the_fmt='g')
     create_finger_by_finger_plot(f2f_percent_samePerson, 'Proportion of Same-Person Samples', the_cmap='Greens', the_fontsize=9, the_fmt='.2f')
 
