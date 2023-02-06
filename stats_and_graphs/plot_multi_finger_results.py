@@ -1,45 +1,62 @@
 import os
+import json
+import sys; sys.path.append('../dl_models')
+from parameterized_multiple_finger_tester import *
 
-DATA_FOLDER = '/data/therealgabeguo/most_recent_experiment_reports/jan_20_2023_multiFinger_diffFinger'
-line_by_dataset = dict()
+DATA_FOLDER = '/data/therealgabeguo/paper_results/multi_finger'
+SD301_KEY = 'SD 301'
+SD302_KEY = 'SD 302'
 
-for filename in os.listdir(DATA_FOLDER):
-    if '.txt' not in filename:
-        continue
-    
-    # get info about the testing dataset
-    n_fingers = int(filename[:-4].split('_')[-1])
-    the_dataset = filename.split('_')[4]
+dataset_to_roc = {SD301_KEY: list(), SD302_KEY: list()}
+dataset_to_num_samples = {SD301_KEY: list(), SD302_KEY: list()}
+dataset_to_num_tuples = {SD301_KEY: list(), SD302_KEY: list()}
 
-    # read experiment-specific info
-    with open(os.path.join(DATA_FOLDER, filename), 'r') as fin:
-        lines = fin.readlines()
+# find all the files and create ROC dict of lists
+for root, dirs, files in os.walk(DATA_FOLDER, topdown=False):
+    for the_file in files:
+        if '.json' not in the_file:
+            continue
+        the_filepath = os.path.join(root, the_file)
+        with open(the_filepath, 'r') as fin:
+            the_info = json.load(fin)
+            #print(json.dumps(the_info, indent=4))
+            
+            curr_roc = the_info[ROC_AUC_KEY]
+            curr_num_samples = the_info[NUM_SAMPLES_KEY]
+            curr_n = the_info[NUM_ANCHOR_KEY]
+            curr_num_tuples = the_info[NUM_POS_PAIRS_KEY] + the_info[NUM_NEG_PAIRS_KEY] + \
+                the_info[NUM_POS_PAIRS_KEY] # anchor combo (plus pos & neg)
+            assert the_info[NUM_POS_PAIRS_KEY] == the_info[NUM_NEG_PAIRS_KEY]
 
-        test_folder = os.path.join(lines[0].split()[-1].strip(), 'test')
+            dataset_key = SD301_KEY if 'sd301' in the_filepath.lower() else SD302_KEY
+            dataset_to_roc[dataset_key].append((curr_n, curr_roc))
 
-        n_files = sum([len([the_file for the_file in files \
-            if '_1000_' not in the_file and '_2000_' not in the_file]) \
-            for r, d, files in os.walk(test_folder)])
-        n_classes = len(os.listdir(test_folder))
+            dataset_to_num_samples[dataset_key].append(curr_num_samples)
+            dataset_to_num_tuples[dataset_key].append(curr_num_tuples)
 
-        roc_auc = float(lines[9].split()[-1])
-
-    # create key
-    dataset_key = "{} ({} samples from {} people)".format(the_dataset.upper(), n_files, n_classes)
-
-    # create data storage
-    if dataset_key not in line_by_dataset:
-        line_by_dataset[dataset_key] = list()
-    line_by_dataset[dataset_key].append((n_fingers, roc_auc))
+#print(dataset_to_roc)
 
 import matplotlib.pyplot as plt
 
-line_markers = ['o', '*']
-for key in line_by_dataset:
-    curr_data = line_by_dataset[key]
+line_markers = ['o', 'X']
+print(dataset_to_num_samples)
+for key in dataset_to_roc:
+    curr_data = dataset_to_roc[key]
+    curr_num_distinct_fingerprints = set(dataset_to_num_samples[key])
+    assert len(curr_num_distinct_fingerprints) == 1
+    (curr_num_distinct_fingerprints,) = curr_num_distinct_fingerprints
+    #print(curr_num_distinct_fingerprints)
+    curr_num_tuples = set(dataset_to_num_tuples[key])
+    assert len(curr_num_tuples) == 1
+    (curr_num_tuples,) = curr_num_tuples
+    #print(curr_num_tuples)
+
     curr_x = [item[0] for item in curr_data]
     curr_y = [item[1] for item in curr_data]
-    plt.plot(curr_x, curr_y, line_markers.pop(0) + '-', label=key)
+    plt.plot(curr_x, curr_y, line_markers.pop(0) + '-', \
+        label='{} ({} samples, {} combos)'.format(key, curr_num_distinct_fingerprints, curr_num_tuples))
+    for num_fingers, roc_auc in curr_data:
+        plt.text(num_fingers - 0.15, roc_auc + 0.005, str(round(roc_auc, 3)))
 
 plt.legend()
 plt.xlim(0.75, 5.25)
@@ -52,5 +69,3 @@ plt.grid()
 
 plt.savefig(os.path.join('output', 'multi_finger_results.pdf'))
 plt.savefig(os.path.join('output', 'multi_finger_results.png'))
-
-plt.show()
