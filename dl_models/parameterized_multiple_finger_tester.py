@@ -69,6 +69,10 @@ TP_NAMES_KEY = 'some true positives'
 FN_NAMES_KEY = 'some false negatives'
 TN_NAMES_KEY = 'some true negatives'
 FP_NAMES_KEY = 'some false positives'
+TP_NUM_KEY = 'num true positives'
+FN_NUM_KEY = 'num false negatives'
+TN_NUM_KEY = 'num true negatives'
+FP_NUM_KEY = 'num false positives'
 BEST_ACC_THRESHOLD_KEY = 'best accuracy threshold'
 
 # More constants
@@ -192,10 +196,6 @@ Returns: (_01_dist, _02_dist, f2f_dist)
 -> matrix f2f_dist of finger by finger distances where f2f_dist[i][j][k] = 
     list of distances between FGRP (i, j) for matching status k (SAME_PERSON or DIFF_PERSON)
 -> tp_names, fp_names, tn_names, fn_names (iff threshold is given)
-
-Note that this will terminate after getting NUM_EXAMPLES_NEEDED of 
-    true positives, false positives, true negatives, false negatives;
-    if threshold is NOT None (to save computation time)
 """
 def run_test_loop(test_dataloader, embedder, cuda, num_anchors, num_pos, num_neg, threshold=None):
     # distances between embedding of positive and negative pair
@@ -264,11 +264,11 @@ def run_test_loop(test_dataloader, embedder, cuda, num_anchors, num_pos, num_neg
                                 fp_names.append(curr_pair)
                         else:
                             raise ValueError('invalid sameness code')
-                        # early stopping, if we're just looking for some examples where model got confused
-                        if len(tp_names) >= NUM_EXAMPLES_NEEDED and len(fn_names) >= NUM_EXAMPLES_NEEDED \
-                                and len(tn_names) >= NUM_EXAMPLES_NEEDED and len(fp_names) >= NUM_EXAMPLES_NEEDED:
-                            return _01_dist, _02_dist, finger_to_finger_dist, \
-                                tp_names, fp_names, tn_names, fn_names
+                        # # early stopping, if we're just looking for some examples where model got confused
+                        # if len(tp_names) >= NUM_EXAMPLES_NEEDED and len(fn_names) >= NUM_EXAMPLES_NEEDED \
+                        #         and len(tn_names) >= NUM_EXAMPLES_NEEDED and len(fp_names) >= NUM_EXAMPLES_NEEDED:
+                        #     return _01_dist, _02_dist, finger_to_finger_dist, \
+                        #         tp_names, fp_names, tn_names, fn_names
                     
                     # finger-by-finger
                     curr_filepath = test_filepaths[triplet_sameness_idx][i_curr]
@@ -392,9 +392,6 @@ def main(the_data_folder, weights_path, cuda, output_dir, num_anchors, num_pos, 
     _, _, _, tp_names, fp_names, tn_names, fn_names = run_test_loop(\
         test_dataloader=test_dataloader, embedder=embedder, cuda=cuda, \
         num_anchors=num_anchors, num_pos=num_pos, num_neg=num_neg, threshold=threshold)
-    tp_names, fp_names, tn_names, fn_names = \
-        tp_names[:NUM_EXAMPLES_NEEDED], fp_names[:NUM_EXAMPLES_NEEDED], \
-        tn_names[:NUM_EXAMPLES_NEEDED], fn_names[:NUM_EXAMPLES_NEEDED]
 
     # do the output
     final_results = {
@@ -410,7 +407,9 @@ def main(the_data_folder, weights_path, cuda, output_dir, num_anchors, num_pos, 
         MEAN_NEG_DIST_KEY: np.mean(_02_dist), STD_NEG_DIST_KEY: np.std(_02_dist),
         ACC_KEY: max(accs), ROC_AUC_KEY: auc,
         T_VAL_KEY: welch_t, P_VAL_KEY: p_val,
-        TP_NAMES_KEY: tp_names, FP_NAMES_KEY: fp_names, TN_NAMES_KEY: tn_names, FN_NAMES_KEY: fn_names,
+        TP_NAMES_KEY: tp_names[:NUM_EXAMPLES_NEEDED], FP_NAMES_KEY: fp_names[:NUM_EXAMPLES_NEEDED], \
+        TN_NAMES_KEY: tn_names[:NUM_EXAMPLES_NEEDED], FN_NAMES_KEY: fn_names[:NUM_EXAMPLES_NEEDED],
+        TP_NUM_KEY: len(tp_names), FP_NUM_KEY: len(fp_names), TN_NUM_KEY: len(tn_names), FN_NUM_KEY: len(fn_names),
         BEST_ACC_THRESHOLD_KEY: threshold
     }
 
