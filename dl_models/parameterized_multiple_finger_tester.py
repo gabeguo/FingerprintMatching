@@ -65,10 +65,18 @@ ACC_KEY = 'best accuracy'
 ROC_AUC_KEY = 'ROC AUC'
 T_VAL_KEY = 'Welch\'s t'
 P_VAL_KEY = 'p-value'
+TP_NAMES_KEY = 'some true positives'
+FN_NAMES_KEY = 'some false negatives'
+TN_NAMES_KEY = 'some true negatives'
+FP_NAMES_KEY = 'some false positives'
+BEST_ACC_THRESHOLD_KEY = 'best accuracy threshold'
 
 # More constants
 SAME_PERSON = 0
 DIFF_PERSON = 1
+
+# examples needed constant (for confusion diagram)
+NUM_EXAMPLES_NEEDED = 4
 
 # Pre: parameters are 2 1D tensors
 def euclideanDist(tensor1, tensor2):
@@ -183,8 +191,13 @@ Returns: (_01_dist, _02_dist, f2f_dist)
 -> _02_dist containing distances between anchor and negative examples
 -> matrix f2f_dist of finger by finger distances where f2f_dist[i][j][k] = 
     list of distances between FGRP (i, j) for matching status k (SAME_PERSON or DIFF_PERSON)
+-> tp_names, fp_names, tn_names, fn_names (iff threshold is given)
+
+Note that this will terminate after getting NUM_EXAMPLES_NEEDED of 
+    true positives, false positives, true negatives, false negatives;
+    if threshold is NOT None (to save computation time)
 """
-def run_test_loop(test_dataloader, embedder, cuda, num_anchors, num_pos, num_neg):
+def run_test_loop(test_dataloader, embedder, cuda, num_anchors, num_pos, num_neg, threshold=None):
     # distances between embedding of positive and negative pair
     _01_dist = []
     _02_dist = []
@@ -196,6 +209,12 @@ def run_test_loop(test_dataloader, embedder, cuda, num_anchors, num_pos, num_neg
 
     # tracks which pairs of fingerprint samples have been seen
     seen_pairs = set()
+
+    # tracks true positive, false positive, true negative, false negative (iff threshold is given)
+    tp_names = list()
+    fp_names = list()
+    tn_names = list()
+    fn_names = list()
 
     # loop through all the data
     for i in range(len(test_dataloader)):
@@ -219,6 +238,7 @@ def run_test_loop(test_dataloader, embedder, cuda, num_anchors, num_pos, num_neg
             assert len(embedding_anchor.size()) == 1 and embedding_anchor.size(dim=0) == 512      
             anchor_filepath = test_filepaths[0][i_a]
             anchor_finger = get_int_fgrp_from_filepath(anchor_filepath)
+            curr_anchor_name = test_filepaths[0][i_a]
 
             for triplet_sameness_idx, sameness_code, num_samples, curr_dists \
                     in zip([1, 2], [SAME_PERSON, DIFF_PERSON], [num_pos, num_neg], [curr_anchor_pos_dists, curr_anchor_neg_dists]):
@@ -227,6 +247,28 @@ def run_test_loop(test_dataloader, embedder, cuda, num_anchors, num_pos, num_neg
                     embedding_curr = torch.flatten(embedder(curr_sample))
                     assert len(embedding_curr.size()) == 1 and embedding_curr.size(dim=0) == 512
                     curr_dists.append(euclideanDist(embedding_anchor, embedding_curr).item())
+                    curr_name = test_filepaths[triplet_sameness_idx][i_curr]
+
+                    # get names for confusion diagram
+                    if threshold is not None:
+                        curr_pair = (curr_anchor_name[0].split('/')[-1], curr_name[0].split('/')[-1])
+                        if sameness_code == SAME_PERSON:
+                            if curr_dists[-1] < threshold: # tp
+                                tp_names.append(curr_pair)
+                            else: # fn
+                                fn_names.append(curr_pair)
+                        elif sameness_code == DIFF_PERSON:
+                            if curr_dists[-1] >= threshold: # tn
+                                tn_names.append(curr_pair)
+                            else: # fp
+                                fp_names.append(curr_pair)
+                        else:
+                            raise ValueError('invalid sameness code')
+                        # early stopping, if we're just looking for some examples where model got confused
+                        if len(tp_names) >= NUM_EXAMPLES_NEEDED and len(fn_names) >= NUM_EXAMPLES_NEEDED \
+                                and len(tn_names) >= NUM_EXAMPLES_NEEDED and len(fp_names) >= NUM_EXAMPLES_NEEDED:
+                            return _01_dist, _02_dist, finger_to_finger_dist, \
+                                tp_names, fp_names, tn_names, fn_names
                     
                     # finger-by-finger
                     curr_filepath = test_filepaths[triplet_sameness_idx][i_curr]
@@ -247,7 +289,8 @@ def run_test_loop(test_dataloader, embedder, cuda, num_anchors, num_pos, num_neg
             print('\taverage, std squared L2 distance between positive pairs {:.3f}, {:.3f}'.format(np.mean(_01_dist), np.std(_01_dist)))
             print('\taverage, std squared L2 distance between negative pairs {:.3f}, {:.3f}'.format(np.mean(_02_dist), np.std(_02_dist)))
     
-    return _01_dist, _02_dist, finger_to_finger_dist
+    return _01_dist, _02_dist, finger_to_finger_dist, \
+        tp_names, fp_names, tn_names, fn_names
 
 """
 Saves a ROC curve
@@ -328,8 +371,9 @@ def main(the_data_folder, weights_path, cuda, output_dir, num_anchors, num_pos, 
     # TEST
     assert batch_size == 1
 
-    _01_dist, _02_dist, finger_to_finger_dist = run_test_loop(test_dataloader=test_dataloader, embedder=embedder, cuda=cuda, \
-        num_anchors=num_anchors, num_pos=num_pos, num_neg=num_neg)
+    _01_dist, _02_dist, finger_to_finger_dist, _, _, _, _ = \
+        run_test_loop(test_dataloader=test_dataloader, embedder=embedder, cuda=cuda, \
+        num_anchors=num_anchors, num_pos=num_pos, num_neg=num_neg, threshold=None)
 
     # TODO: update finger-by-finger
     f2f_roc, f2f_p_val, f2f_num_samples, f2f_percent_samePerson = get_finger_by_finger_metrics(finger_to_finger_dist)
@@ -345,6 +389,13 @@ def main(the_data_folder, weights_path, cuda, output_dir, num_anchors, num_pos, 
         dataset_name=dataset_name, weights_name=weights_name, \
         num_anchors=num_anchors, num_pos=num_pos, num_neg=num_neg)
 
+    _, _, _, tp_names, fp_names, tn_names, fn_names = run_test_loop(\
+        test_dataloader=test_dataloader, embedder=embedder, cuda=cuda, \
+        num_anchors=num_anchors, num_pos=num_pos, num_neg=num_neg, threshold=threshold)
+    tp_names, fp_names, tn_names, fn_names = \
+        tp_names[:NUM_EXAMPLES_NEEDED], fp_names[:NUM_EXAMPLES_NEEDED], \
+        tn_names[:NUM_EXAMPLES_NEEDED], fn_names[:NUM_EXAMPLES_NEEDED]
+
     # do the output
     final_results = {
         DATASET_KEY: the_data_folder, WEIGHTS_KEY: weights_path, CUDA_KEY: cuda,
@@ -358,7 +409,9 @@ def main(the_data_folder, weights_path, cuda, output_dir, num_anchors, num_pos, 
         MEAN_POS_DIST_KEY: np.mean(_01_dist), STD_POS_DIST_KEY: np.std(_01_dist),
         MEAN_NEG_DIST_KEY: np.mean(_02_dist), STD_NEG_DIST_KEY: np.std(_02_dist),
         ACC_KEY: max(accs), ROC_AUC_KEY: auc,
-        T_VAL_KEY: welch_t, P_VAL_KEY: p_val
+        T_VAL_KEY: welch_t, P_VAL_KEY: p_val,
+        TP_NAMES_KEY: tp_names, FP_NAMES_KEY: fp_names, TN_NAMES_KEY: tn_names, FN_NAMES_KEY: fn_names,
+        BEST_ACC_THRESHOLD_KEY: threshold
     }
 
     results_fname = os.path.join(output_dir, \
