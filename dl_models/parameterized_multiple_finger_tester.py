@@ -65,6 +65,7 @@ ACC_KEY = 'best accuracy'
 ROC_AUC_KEY = 'ROC AUC'
 T_VAL_KEY = 'Welch\'s t'
 P_VAL_KEY = 'p-value'
+DF_KEY = 'degrees of freedom (Welch)'
 TP_NAMES_KEY = 'some true positives'
 FN_NAMES_KEY = 'some false negatives'
 TN_NAMES_KEY = 'some true negatives'
@@ -437,6 +438,7 @@ def main(the_data_folder, weights_path, cuda, output_dir, num_anchors, num_pos, 
         MEAN_NEG_DIST_KEY: np.mean(_02_dist), STD_NEG_DIST_KEY: np.std(_02_dist),
         ACC_KEY: max(accs), ROC_AUC_KEY: auc,
         T_VAL_KEY: welch_t, P_VAL_KEY: p_val,
+        DF_KEY: calc_dof_welch(s1=np.std(_01_dist), n1=len(_01_dist), s2=np.std(_02_dist), n2=len(_02_dist)),
         TP_NAMES_KEY: tp_names[:NUM_EXAMPLES_NEEDED], FP_NAMES_KEY: fp_names[:NUM_EXAMPLES_NEEDED], \
         TN_NAMES_KEY: tn_names[:NUM_EXAMPLES_NEEDED], FN_NAMES_KEY: fn_names[:NUM_EXAMPLES_NEEDED],
         TP_NUM_KEY: len(tp_names), FP_NUM_KEY: len(fp_names), TN_NUM_KEY: len(tn_names), FN_NUM_KEY: len(fn_names),
