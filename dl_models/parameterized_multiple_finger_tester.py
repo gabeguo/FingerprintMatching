@@ -80,7 +80,7 @@ SAME_PERSON = 0
 DIFF_PERSON = 1
 
 # examples needed constant (for confusion diagram)
-NUM_EXAMPLES_NEEDED = 4
+NUM_EXAMPLES_NEEDED = 10
 
 # Pre: parameters are 2 1D tensors
 def euclideanDist(tensor1, tensor2):
@@ -130,21 +130,34 @@ def get_metrics(_01_dist, _02_dist):
 
     return acc, fpr, tpr, auc, threshold, welch_t, p_val
 
+def calc_dof_welch(s1, n1, s2, n2):
+    a = (s1 ** 2) / n1 
+    b = (s2 ** 2) / n2
+    numerator = (a + b) ** 2
+    denominator = ( (a ** 2) / (n1 - 1) ) + ( (b ** 2) / (n2 - 1) )
+    return numerator / denominator
+
 """
 Input: 
 -> matrix f2f_dist of finger by finger distances where f2f_dist[i][j][k] = 
     list of distances between FGRP (i, j) for matching status k (SAME_PERSON or DIFF_PERSON)
 Returns:
--> Matrix of ROC AUC per finger pair
--> Matrix of p-value per finger pair
--> Matrix of number of samples per finger pair
--> Matrix of percent of samples that were same-person per finger pair
+-> Matrix of ROC AUC by finger pair
+-> Matrix of p-value by finger pair
+-> Matrix of Welch's t-value by finger pair
+-> Matrix of number of same-person samples by finger pair
+-> Matrix of number of different-person samples by finger pair
+-> Matrix of number of degrees of freedom by finger pair
 """
 def get_finger_by_finger_metrics(finger_to_finger_dist):
-    finger_to_finger_num_samples = np.zeros((10, 10))
-    finger_to_finger_percent_samePerson = np.zeros((10, 10))
     finger_to_finger_roc = np.zeros((10, 10))
     finger_to_finger_p_val = np.zeros((10, 10))
+    finger_to_finger_t_val = np.zeros((10, 10))
+
+    finger_to_finger_num_samePerson_samples = np.zeros((10, 10))
+    finger_to_finger_num_diffPerson_samples = np.zeros((10, 10))
+    finger_to_finger_dof = np.zeros((10, 10))
+
     for i in range(1, 10+1):
         for j in range(1, 10+1):
             same_person_dists = finger_to_finger_dist[i][j][SAME_PERSON]
@@ -155,19 +168,28 @@ def get_finger_by_finger_metrics(finger_to_finger_dist):
             if len(same_person_dists) == 0 or len(diff_person_dists) == 0:
                 finger_to_finger_roc[_i][_j] = np.NaN
                 finger_to_finger_p_val[_i][_j] = np.NaN
-                finger_to_finger_num_samples[_i][_j] = np.NaN
-                finger_to_finger_percent_samePerson[_i][_j] = np.NaN
+                finger_to_finger_t_val[_i][_j] = np.NaN
+
+                finger_to_finger_num_samePerson_samples[_i][_j] = np.NaN
+                finger_to_finger_num_diffPerson_samples[_i][_j] = np.NaN
+                finger_to_finger_dof[_i][_j] = np.NaN
                 continue
 
             accuracies, fpr, tpr, roc_auc, threshold, welch_t, p_val = get_metrics(same_person_dists, diff_person_dists)
             
             finger_to_finger_roc[_i][_j] = roc_auc
             finger_to_finger_p_val[_i][_j] = p_val
+            finger_to_finger_t_val[_i][_j] = welch_t
 
-            finger_to_finger_num_samples[_i][_j] = len(same_person_dists) + len(diff_person_dists)
-            finger_to_finger_percent_samePerson[_i][_j] = len(same_person_dists) / finger_to_finger_num_samples[_i][_j]
+            n_same = len(same_person_dists)
+            n_diff = len(diff_person_dists)
+            finger_to_finger_num_samePerson_samples[_i][_j] = n_same
+            finger_to_finger_num_diffPerson_samples[_i][_j] = n_diff
+            finger_to_finger_dof[_i][_j] = calc_dof_welch(s1=np.std(same_person_dists), n1=n_same,\
+                                                        s2=np.std(diff_person_dists), n2=n_diff)
 
-    return finger_to_finger_roc, finger_to_finger_p_val, finger_to_finger_num_samples, finger_to_finger_percent_samePerson
+    return finger_to_finger_roc, finger_to_finger_p_val, finger_to_finger_t_val, \
+        finger_to_finger_num_samePerson_samples, finger_to_finger_num_diffPerson_samples, finger_to_finger_dof
 
 def create_output_dir(output_root):
     from datetime import datetime
@@ -264,11 +286,6 @@ def run_test_loop(test_dataloader, embedder, cuda, num_anchors, num_pos, num_neg
                                 fp_names.append(curr_pair)
                         else:
                             raise ValueError('invalid sameness code')
-                        # # early stopping, if we're just looking for some examples where model got confused
-                        # if len(tp_names) >= NUM_EXAMPLES_NEEDED and len(fn_names) >= NUM_EXAMPLES_NEEDED \
-                        #         and len(tn_names) >= NUM_EXAMPLES_NEEDED and len(fp_names) >= NUM_EXAMPLES_NEEDED:
-                        #     return _01_dist, _02_dist, finger_to_finger_dist, \
-                        #         tp_names, fp_names, tn_names, fn_names
                     
                     # finger-by-finger
                     curr_filepath = test_filepaths[triplet_sameness_idx][i_curr]
@@ -341,6 +358,16 @@ def create_finger_by_finger_plot(f2f_data, the_title, the_cmap, the_fontsize, th
     plt.clf(); plt.close()
     return
 
+def create_shorthand_dataset_name(dataset_name):
+    if '300' in dataset_name:
+        return 'SD300'
+    elif '301' in dataset_name:
+        return 'SD301'
+    elif '302' in dataset_name:
+        return 'SD302'
+    else:
+        return 'Unknown'
+
 def main(the_data_folder, weights_path, cuda, output_dir, num_anchors, num_pos, num_neg, \
         scale_factor=1, \
         diff_fingers_across_sets=True, diff_fingers_within_set=True, \
@@ -375,12 +402,15 @@ def main(the_data_folder, weights_path, cuda, output_dir, num_anchors, num_pos, 
         run_test_loop(test_dataloader=test_dataloader, embedder=embedder, cuda=cuda, \
         num_anchors=num_anchors, num_pos=num_pos, num_neg=num_neg, threshold=None)
 
-    # TODO: update finger-by-finger
-    f2f_roc, f2f_p_val, f2f_num_samples, f2f_percent_samePerson = get_finger_by_finger_metrics(finger_to_finger_dist)
-    create_finger_by_finger_plot(f2f_roc, 'Finger-to-Finger ROC AUC', the_cmap='Reds', the_fontsize=9, the_fmt='.2f')
-    create_finger_by_finger_plot(f2f_p_val, 'Finger-to-Finger P-Value (Welch\'s T-Test)', the_cmap='Purples', the_fontsize=6, the_fmt='.2g')
-    create_finger_by_finger_plot(f2f_num_samples, 'Number of Finger-to-Finger Pairs', the_cmap='Blues', the_fontsize=9, the_fmt='g')
-    create_finger_by_finger_plot(f2f_percent_samePerson, 'Proportion of Same-Person Samples', the_cmap='Greens', the_fontsize=9, the_fmt='.2f')
+    f2f_roc, f2f_p_val, f2f_t_val, f2f_num_samePerson_samples, f2f_num_diffPerson_samples, f2f_dof = \
+        get_finger_by_finger_metrics(finger_to_finger_dist)
+    short_dataset_name = create_shorthand_dataset_name(dataset_name)
+    create_finger_by_finger_plot(f2f_roc, '{} Finger-to-Finger ROC AUC'.format(short_dataset_name), the_cmap='Reds', the_fontsize=9, the_fmt='.2f')
+    create_finger_by_finger_plot(f2f_p_val, '{} Finger-to-Finger P-Value'.format(short_dataset_name), the_cmap='Blues', the_fontsize=6, the_fmt='.2g')
+    create_finger_by_finger_plot(f2f_t_val, '{} Finger-to-Finger T-Value'.format(short_dataset_name), the_cmap='Purples', the_fontsize=7, the_fmt='.1g')
+    create_finger_by_finger_plot(f2f_num_samePerson_samples, '{} Number of Same-Person\nFinger-to-Finger Pairs'.format(short_dataset_name), the_cmap='Greens', the_fontsize=7, the_fmt='g')
+    create_finger_by_finger_plot(f2f_num_diffPerson_samples, '{} Number of Different-Person\nFinger-to-Finger Pairs'.format(short_dataset_name), the_cmap='Oranges', the_fontsize=7, the_fmt='g')
+    create_finger_by_finger_plot(f2f_dof, '{} Finger-to-Finger\nDegrees of Freedom'.format(short_dataset_name), the_cmap='Greys', the_fontsize=7, the_fmt='.1g')
 
     # CALCULATE ACCURACY AND ROC AUC
     accs, fpr, tpr, auc, threshold, welch_t, p_val = get_metrics(_01_dist, _02_dist)
