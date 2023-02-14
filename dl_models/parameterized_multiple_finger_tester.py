@@ -354,8 +354,8 @@ def create_finger_by_finger_plot(f2f_data, the_title, the_cmap, the_fontsize, th
     plt.title(the_title.replace('\n', ' '))
     sns.heatmap(f2f_data, annot=True, xticklabels=fgrp_names, yticklabels=fgrp_names, \
         cmap=the_cmap, fmt=the_fmt, annot_kws={"fontsize":the_fontsize})
-    plt.savefig(os.path.join(output_dir, '{}.pdf'.format(the_title)))
-    plt.savefig(os.path.join(output_dir, '{}.png'.format(the_title)))
+    plt.savefig(os.path.join(output_dir, '{}.pdf'.format(the_title.replace('\n', ' '))))
+    plt.savefig(os.path.join(output_dir, '{}.png'.format(the_title.replace('\n', ' '))))
     plt.clf(); plt.close()
     return
 
