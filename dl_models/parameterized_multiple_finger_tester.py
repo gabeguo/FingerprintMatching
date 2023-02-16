@@ -65,10 +65,23 @@ ACC_KEY = 'best accuracy'
 ROC_AUC_KEY = 'ROC AUC'
 T_VAL_KEY = 'Welch\'s t'
 P_VAL_KEY = 'p-value'
+DF_KEY = 'degrees of freedom (Welch)'
+TP_NAMES_KEY = 'some true positives'
+FN_NAMES_KEY = 'some false negatives'
+TN_NAMES_KEY = 'some true negatives'
+FP_NAMES_KEY = 'some false positives'
+TP_NUM_KEY = 'num true positives'
+FN_NUM_KEY = 'num false negatives'
+TN_NUM_KEY = 'num true negatives'
+FP_NUM_KEY = 'num false positives'
+BEST_ACC_THRESHOLD_KEY = 'best accuracy threshold'
 
 # More constants
 SAME_PERSON = 0
 DIFF_PERSON = 1
+
+# examples needed constant (for confusion diagram)
+NUM_EXAMPLES_NEEDED = 10
 
 # Pre: parameters are 2 1D tensors
 def euclideanDist(tensor1, tensor2):
@@ -118,21 +131,34 @@ def get_metrics(_01_dist, _02_dist):
 
     return acc, fpr, tpr, auc, threshold, welch_t, p_val
 
+def calc_dof_welch(s1, n1, s2, n2):
+    a = (s1 ** 2) / n1 
+    b = (s2 ** 2) / n2
+    numerator = (a + b) ** 2
+    denominator = ( (a ** 2) / (n1 - 1) ) + ( (b ** 2) / (n2 - 1) )
+    return numerator / denominator
+
 """
 Input: 
 -> matrix f2f_dist of finger by finger distances where f2f_dist[i][j][k] = 
     list of distances between FGRP (i, j) for matching status k (SAME_PERSON or DIFF_PERSON)
 Returns:
--> Matrix of ROC AUC per finger pair
--> Matrix of p-value per finger pair
--> Matrix of number of samples per finger pair
--> Matrix of percent of samples that were same-person per finger pair
+-> Matrix of ROC AUC by finger pair
+-> Matrix of p-value by finger pair
+-> Matrix of Welch's t-value by finger pair
+-> Matrix of number of same-person samples by finger pair
+-> Matrix of number of different-person samples by finger pair
+-> Matrix of number of degrees of freedom by finger pair
 """
 def get_finger_by_finger_metrics(finger_to_finger_dist):
-    finger_to_finger_num_samples = np.zeros((10, 10))
-    finger_to_finger_percent_samePerson = np.zeros((10, 10))
     finger_to_finger_roc = np.zeros((10, 10))
     finger_to_finger_p_val = np.zeros((10, 10))
+    finger_to_finger_t_val = np.zeros((10, 10))
+
+    finger_to_finger_num_samePerson_samples = np.zeros((10, 10))
+    finger_to_finger_num_diffPerson_samples = np.zeros((10, 10))
+    finger_to_finger_dof = np.zeros((10, 10))
+
     for i in range(1, 10+1):
         for j in range(1, 10+1):
             same_person_dists = finger_to_finger_dist[i][j][SAME_PERSON]
@@ -143,19 +169,28 @@ def get_finger_by_finger_metrics(finger_to_finger_dist):
             if len(same_person_dists) == 0 or len(diff_person_dists) == 0:
                 finger_to_finger_roc[_i][_j] = np.NaN
                 finger_to_finger_p_val[_i][_j] = np.NaN
-                finger_to_finger_num_samples[_i][_j] = np.NaN
-                finger_to_finger_percent_samePerson[_i][_j] = np.NaN
+                finger_to_finger_t_val[_i][_j] = np.NaN
+
+                finger_to_finger_num_samePerson_samples[_i][_j] = np.NaN
+                finger_to_finger_num_diffPerson_samples[_i][_j] = np.NaN
+                finger_to_finger_dof[_i][_j] = np.NaN
                 continue
 
             accuracies, fpr, tpr, roc_auc, threshold, welch_t, p_val = get_metrics(same_person_dists, diff_person_dists)
             
             finger_to_finger_roc[_i][_j] = roc_auc
             finger_to_finger_p_val[_i][_j] = p_val
+            finger_to_finger_t_val[_i][_j] = welch_t
 
-            finger_to_finger_num_samples[_i][_j] = len(same_person_dists) + len(diff_person_dists)
-            finger_to_finger_percent_samePerson[_i][_j] = len(same_person_dists) / finger_to_finger_num_samples[_i][_j]
+            n_same = len(same_person_dists)
+            n_diff = len(diff_person_dists)
+            finger_to_finger_num_samePerson_samples[_i][_j] = n_same
+            finger_to_finger_num_diffPerson_samples[_i][_j] = n_diff
+            finger_to_finger_dof[_i][_j] = calc_dof_welch(s1=np.std(same_person_dists), n1=n_same,\
+                                                        s2=np.std(diff_person_dists), n2=n_diff)
 
-    return finger_to_finger_roc, finger_to_finger_p_val, finger_to_finger_num_samples, finger_to_finger_percent_samePerson
+    return finger_to_finger_roc, finger_to_finger_p_val, finger_to_finger_t_val, \
+        finger_to_finger_num_samePerson_samples, finger_to_finger_num_diffPerson_samples, finger_to_finger_dof
 
 def create_output_dir(output_root):
     from datetime import datetime
@@ -183,8 +218,9 @@ Returns: (_01_dist, _02_dist, f2f_dist)
 -> _02_dist containing distances between anchor and negative examples
 -> matrix f2f_dist of finger by finger distances where f2f_dist[i][j][k] = 
     list of distances between FGRP (i, j) for matching status k (SAME_PERSON or DIFF_PERSON)
+-> tp_names, fp_names, tn_names, fn_names (iff threshold is given)
 """
-def run_test_loop(test_dataloader, embedder, cuda, num_anchors, num_pos, num_neg):
+def run_test_loop(test_dataloader, embedder, cuda, num_anchors, num_pos, num_neg, threshold=None):
     # distances between embedding of positive and negative pair
     _01_dist = []
     _02_dist = []
@@ -196,6 +232,12 @@ def run_test_loop(test_dataloader, embedder, cuda, num_anchors, num_pos, num_neg
 
     # tracks which pairs of fingerprint samples have been seen
     seen_pairs = set()
+
+    # tracks true positive, false positive, true negative, false negative (iff threshold is given)
+    tp_names = list()
+    fp_names = list()
+    tn_names = list()
+    fn_names = list()
 
     # loop through all the data
     for i in range(len(test_dataloader)):
@@ -219,6 +261,7 @@ def run_test_loop(test_dataloader, embedder, cuda, num_anchors, num_pos, num_neg
             assert len(embedding_anchor.size()) == 1 and embedding_anchor.size(dim=0) == 512      
             anchor_filepath = test_filepaths[0][i_a]
             anchor_finger = get_int_fgrp_from_filepath(anchor_filepath)
+            curr_anchor_name = test_filepaths[0][i_a]
 
             for triplet_sameness_idx, sameness_code, num_samples, curr_dists \
                     in zip([1, 2], [SAME_PERSON, DIFF_PERSON], [num_pos, num_neg], [curr_anchor_pos_dists, curr_anchor_neg_dists]):
@@ -227,6 +270,23 @@ def run_test_loop(test_dataloader, embedder, cuda, num_anchors, num_pos, num_neg
                     embedding_curr = torch.flatten(embedder(curr_sample))
                     assert len(embedding_curr.size()) == 1 and embedding_curr.size(dim=0) == 512
                     curr_dists.append(euclideanDist(embedding_anchor, embedding_curr).item())
+                    curr_name = test_filepaths[triplet_sameness_idx][i_curr]
+
+                    # get names for confusion diagram
+                    if threshold is not None:
+                        curr_pair = (curr_anchor_name[0].split('/')[-1], curr_name[0].split('/')[-1])
+                        if sameness_code == SAME_PERSON:
+                            if curr_dists[-1] < threshold: # tp
+                                tp_names.append(curr_pair)
+                            else: # fn
+                                fn_names.append(curr_pair)
+                        elif sameness_code == DIFF_PERSON:
+                            if curr_dists[-1] >= threshold: # tn
+                                tn_names.append(curr_pair)
+                            else: # fp
+                                fp_names.append(curr_pair)
+                        else:
+                            raise ValueError('invalid sameness code')
                     
                     # finger-by-finger
                     curr_filepath = test_filepaths[triplet_sameness_idx][i_curr]
@@ -247,7 +307,8 @@ def run_test_loop(test_dataloader, embedder, cuda, num_anchors, num_pos, num_neg
             print('\taverage, std squared L2 distance between positive pairs {:.3f}, {:.3f}'.format(np.mean(_01_dist), np.std(_01_dist)))
             print('\taverage, std squared L2 distance between negative pairs {:.3f}, {:.3f}'.format(np.mean(_02_dist), np.std(_02_dist)))
     
-    return _01_dist, _02_dist, finger_to_finger_dist
+    return _01_dist, _02_dist, finger_to_finger_dist, \
+        tp_names, fp_names, tn_names, fn_names
 
 """
 Saves a ROC curve
@@ -290,13 +351,23 @@ def create_finger_by_finger_plot(f2f_data, the_title, the_cmap, the_fontsize, th
     fgrp_names = ['Right Thumb', 'Right Index', 'Right Middle', 'Right Ring', 'Right Pinky', \
         'Left Thumb', 'Left Index', 'Left Middle', 'Left Ring', 'Left Pinky']
     plt.subplots_adjust(bottom=0.22, left=0.22)
-    plt.title(the_title)
+    plt.title(the_title.replace('\n', ' '))
     sns.heatmap(f2f_data, annot=True, xticklabels=fgrp_names, yticklabels=fgrp_names, \
         cmap=the_cmap, fmt=the_fmt, annot_kws={"fontsize":the_fontsize})
-    plt.savefig(os.path.join(output_dir, '{}.pdf'.format(the_title)))
-    plt.savefig(os.path.join(output_dir, '{}.png'.format(the_title)))
+    plt.savefig(os.path.join(output_dir, '{}.pdf'.format(the_title.replace('\n', ' '))))
+    plt.savefig(os.path.join(output_dir, '{}.png'.format(the_title.replace('\n', ' '))))
     plt.clf(); plt.close()
     return
+
+def create_shorthand_dataset_name(dataset_name):
+    if '300' in dataset_name:
+        return 'SD300'
+    elif '301' in dataset_name:
+        return 'SD301'
+    elif '302' in dataset_name:
+        return 'SD302'
+    else:
+        return 'Unknown'
 
 def main(the_data_folder, weights_path, cuda, output_dir, num_anchors, num_pos, num_neg, \
         scale_factor=1, \
@@ -328,15 +399,19 @@ def main(the_data_folder, weights_path, cuda, output_dir, num_anchors, num_pos, 
     # TEST
     assert batch_size == 1
 
-    _01_dist, _02_dist, finger_to_finger_dist = run_test_loop(test_dataloader=test_dataloader, embedder=embedder, cuda=cuda, \
-        num_anchors=num_anchors, num_pos=num_pos, num_neg=num_neg)
+    _01_dist, _02_dist, finger_to_finger_dist, _, _, _, _ = \
+        run_test_loop(test_dataloader=test_dataloader, embedder=embedder, cuda=cuda, \
+        num_anchors=num_anchors, num_pos=num_pos, num_neg=num_neg, threshold=None)
 
-    # TODO: update finger-by-finger
-    f2f_roc, f2f_p_val, f2f_num_samples, f2f_percent_samePerson = get_finger_by_finger_metrics(finger_to_finger_dist)
-    create_finger_by_finger_plot(f2f_roc, 'Finger-to-Finger ROC AUC', the_cmap='Reds', the_fontsize=9, the_fmt='.2f')
-    create_finger_by_finger_plot(f2f_p_val, 'Finger-to-Finger P-Value (Welch\'s T-Test)', the_cmap='Purples', the_fontsize=6, the_fmt='.2g')
-    create_finger_by_finger_plot(f2f_num_samples, 'Number of Finger-to-Finger Pairs', the_cmap='Blues', the_fontsize=9, the_fmt='g')
-    create_finger_by_finger_plot(f2f_percent_samePerson, 'Proportion of Same-Person Samples', the_cmap='Greens', the_fontsize=9, the_fmt='.2f')
+    f2f_roc, f2f_p_val, f2f_t_val, f2f_num_samePerson_samples, f2f_num_diffPerson_samples, f2f_dof = \
+        get_finger_by_finger_metrics(finger_to_finger_dist)
+    short_dataset_name = create_shorthand_dataset_name(dataset_name)
+    create_finger_by_finger_plot(f2f_roc, '{} Finger-to-Finger ROC AUC'.format(short_dataset_name), the_cmap='Reds', the_fontsize=9, the_fmt='.2f')
+    create_finger_by_finger_plot(f2f_p_val, '{} Finger-to-Finger P-Value'.format(short_dataset_name), the_cmap='Blues', the_fontsize=6, the_fmt='.2g')
+    create_finger_by_finger_plot(f2f_t_val, '{} Finger-to-Finger T-Value'.format(short_dataset_name), the_cmap='Purples', the_fontsize=8, the_fmt='.2f')
+    create_finger_by_finger_plot(f2f_num_samePerson_samples, '{} Number of Same-Person\nFinger-to-Finger Pairs'.format(short_dataset_name), the_cmap='Greens', the_fontsize=7, the_fmt='g')
+    create_finger_by_finger_plot(f2f_num_diffPerson_samples, '{} Number of Different-Person\nFinger-to-Finger Pairs'.format(short_dataset_name), the_cmap='Oranges', the_fontsize=7, the_fmt='g')
+    create_finger_by_finger_plot(f2f_dof, '{} Finger-to-Finger\nDegrees of Freedom'.format(short_dataset_name), the_cmap='Wistia', the_fontsize=6, the_fmt='.1f')
 
     # CALCULATE ACCURACY AND ROC AUC
     accs, fpr, tpr, auc, threshold, welch_t, p_val = get_metrics(_01_dist, _02_dist)
@@ -344,6 +419,10 @@ def main(the_data_folder, weights_path, cuda, output_dir, num_anchors, num_pos, 
     plot_roc_auc(fpr=fpr, tpr=tpr, \
         dataset_name=dataset_name, weights_name=weights_name, \
         num_anchors=num_anchors, num_pos=num_pos, num_neg=num_neg)
+
+    _, _, _, tp_names, fp_names, tn_names, fn_names = run_test_loop(\
+        test_dataloader=test_dataloader, embedder=embedder, cuda=cuda, \
+        num_anchors=num_anchors, num_pos=num_pos, num_neg=num_neg, threshold=threshold)
 
     # do the output
     final_results = {
@@ -358,7 +437,12 @@ def main(the_data_folder, weights_path, cuda, output_dir, num_anchors, num_pos, 
         MEAN_POS_DIST_KEY: np.mean(_01_dist), STD_POS_DIST_KEY: np.std(_01_dist),
         MEAN_NEG_DIST_KEY: np.mean(_02_dist), STD_NEG_DIST_KEY: np.std(_02_dist),
         ACC_KEY: max(accs), ROC_AUC_KEY: auc,
-        T_VAL_KEY: welch_t, P_VAL_KEY: p_val
+        T_VAL_KEY: welch_t, P_VAL_KEY: p_val,
+        DF_KEY: calc_dof_welch(s1=np.std(_01_dist), n1=len(_01_dist), s2=np.std(_02_dist), n2=len(_02_dist)),
+        TP_NAMES_KEY: tp_names[:NUM_EXAMPLES_NEEDED], FP_NAMES_KEY: fp_names[:NUM_EXAMPLES_NEEDED], \
+        TN_NAMES_KEY: tn_names[:NUM_EXAMPLES_NEEDED], FN_NAMES_KEY: fn_names[:NUM_EXAMPLES_NEEDED],
+        TP_NUM_KEY: len(tp_names), FP_NUM_KEY: len(fp_names), TN_NUM_KEY: len(tn_names), FN_NUM_KEY: len(fn_names),
+        BEST_ACC_THRESHOLD_KEY: threshold
     }
 
     results_fname = os.path.join(output_dir, \
