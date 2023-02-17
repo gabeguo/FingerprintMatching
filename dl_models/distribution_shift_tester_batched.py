@@ -581,4 +581,4 @@ if __name__ == "__main__":
         diff_fingers_across_sets=diff_fingers_across_sets, diff_fingers_within_set=diff_fingers_within_set, \
         diff_sensors_across_sets=diff_sensors_across_sets, same_sensor_within_set=same_sensor_within_set)
 
-    # TESTED - pass!
+    # TESTED - pass (distribution shift)
