@@ -41,7 +41,8 @@ DEFAULT_LEADS_FILE = 'geometric_analysis_results'
 DEFAULT_CUDA = 'cuda:2'
 
 # Batch Size constant
-batch_size=16
+batch_size=32
+assert batch_size > 1 # can't be 1, has to be more (otherwise, squeezing tensors bugs out)
 
 # JSON Keys
 DATASET_KEY = 'dataset'
@@ -187,6 +188,7 @@ def fgrps_match(filepaths_A, filepaths_B):
     return characteristics_match(get_int_fgrp_from_filepaths(filepaths_A), get_int_fgrp_from_filepaths(filepaths_B))
 
 def characteristics_match(characteristics_A, characteristics_B):
+    #print(characteristics_A, '\n', characteristics_B)
     assert len(characteristics_A) == len(characteristics_B)
 
     num_matching = len([1 for i in range(len(characteristics_A)) if characteristics_A[i] == characteristics_B[i]])
@@ -221,8 +223,6 @@ def run_test_loop(test_dataloader, embedder, cuda, num_anchors, num_pos, num_neg
     seen_pairs = set()
 
     # loop through all the data
-    print(len(test_dataloader))
-
     for i in range(len(test_dataloader)):
         isPos = i in pos_indices
         # test_images is 3 (anchor, pos, neg) * N (number of sample images) * image_size (1*3*224*224)
@@ -231,47 +231,47 @@ def run_test_loop(test_dataloader, embedder, cuda, num_anchors, num_pos, num_neg
         #print(len(test_images[0]), len(test_images[1]), len(test_images[2]), num_anchors, num_pos, num_neg)
         assert len(test_images[0]) == num_anchors and len(test_images[1]) == num_pos and len(test_images[2]) == num_neg
 
-        curr_anchor_pos_dists = []
-        curr_anchor_neg_dists = []
+        curr_anchor_pos_dists_by_batch = [[] for i in range(batch_size)]
+        curr_anchor_neg_dists_by_batch = [[] for i in range(batch_size)]
 
         # batched pairwise comparison
-        for i_a in range(num_anchors):
+        for i_a in range(num_anchors): # go through every anchor
             curr_anchor = test_images[0][i_a].to(cuda)
             embedding_anchor = torch.squeeze(embedder(curr_anchor))
-            assert embedding_anchor.shape == (batch_size, 512)
+            assert embedding_anchor.shape == (batch_size, 512) or i == len(test_dataloader) - 1 # one embedding for each item in batch
 
             anchor_filepaths = test_filepaths[0][i_a]
             anchor_fingers = get_int_fgrp_from_filepaths(anchor_filepaths)
-            assert len(anchor_filepaths) == batch_size
-            assert len(anchor_fingers) == batch_size
+            assert len(anchor_filepaths) == batch_size or i == len(test_dataloader) - 1
+            assert len(anchor_fingers) == batch_size or i == len(test_dataloader) - 1
 
-            for triplet_sameness_idx, sameness_code, num_samples, curr_dists \
-                    in zip([1, 2], [SAME_PERSON, DIFF_PERSON], [num_pos, num_neg], [curr_anchor_pos_dists, curr_anchor_neg_dists]):
+            for triplet_sameness_idx, sameness_code, num_samples, curr_dists_by_batch \
+                    in zip([1, 2], [SAME_PERSON, DIFF_PERSON], [num_pos, num_neg], [curr_anchor_pos_dists_by_batch, curr_anchor_neg_dists_by_batch]):
                 assert isPos == 1 or not isPos == 1 or isPos == 0 or not isPos == 0
                 if (not isPos) != sameness_code: # skip the other pair, because we want to have a given proportion of positive samples
                     continue
                 for i_curr in range(num_samples):
                     curr_sample = test_images[triplet_sameness_idx][i_curr].to(cuda)
                     embedding_curr = torch.squeeze(embedder(curr_sample))
-                    assert embedding_curr.shape == (batch_size, 512)
+                    assert embedding_curr.shape == (batch_size, 512) or i == len(test_dataloader) - 1
 
-                    batched_dists = nn.functional.pairwise_distance(embedding_anchor, embedding_curr).tolist()
-                    assert len(batched_dists) == batch_size
-                    curr_dists.extend(batched_dists)
+                    batched_dists = torch.square(nn.functional.pairwise_distance(embedding_anchor, embedding_curr)).tolist()
+                    assert len(batched_dists) == batch_size or i == len(test_dataloader) - 1
+                    for b in range(len(anchor_filepaths)): # can't average across different items in a batch, can only average embeddings for one item
+                        curr_dists_by_batch[b].append(batched_dists[b])
                     
                     # finger-by-finger
                     curr_filepaths = test_filepaths[triplet_sameness_idx][i_curr]
                     curr_fingers = get_int_fgrp_from_filepaths(curr_filepaths)
-                    curr_pids = get_pid_from_filepaths(curr_filepaths)
 
-                    assert len(curr_filepaths) == len(anchor_filepaths) and len(curr_filepaths) == batch_size
-                    assert len(curr_fingers) == len(anchor_fingers) and len(curr_fingers) == batch_size
+                    assert len(curr_filepaths) == len(anchor_filepaths) and (len(curr_filepaths) == batch_size or i == len(test_dataloader) - 1)
+                    assert len(curr_fingers) == len(anchor_fingers) and (len(curr_fingers) == batch_size or i == len(test_dataloader) - 1)
                     do_pids_match = pids_match(curr_filepaths, anchor_filepaths)
                     assert (isPos and do_pids_match) or ((not isPos) and (not do_pids_match))
                     assert not fgrps_match(curr_filepaths, anchor_filepaths)
 
                     # go through each item in the batch
-                    for b in range(batch_size):
+                    for b in range(len(anchor_filepaths)):
                         anchor_filepath = anchor_filepaths[b]
                         curr_filepath = curr_filepaths[b]
                         anchor_finger = anchor_fingers[b]
@@ -284,13 +284,14 @@ def run_test_loop(test_dataloader, embedder, cuda, num_anchors, num_pos, num_neg
                         finger_to_finger_dist[anchor_finger][curr_finger][sameness_code].append(batched_dists[b])
                         if anchor_finger != curr_finger: # don't double-count same-finger pair
                             finger_to_finger_dist[curr_finger][anchor_finger][sameness_code].append(batched_dists[b])
-        #print(np.mean(curr_anchor_pos_dists), np.mean(curr_anchor_neg_dists))
-        if isPos:
-            _01_dist.append(np.mean(curr_anchor_pos_dists))
-        else:
-            _02_dist.append(np.mean(curr_anchor_neg_dists))
+        # process item-by-item from batch, and only average embeddings for that item (can't average everything within batch)
+        for b in range(len(anchor_filepaths)):
+            if isPos:
+                _01_dist.append(np.mean(curr_anchor_pos_dists_by_batch[b]))
+            else:
+                _02_dist.append(np.mean(curr_anchor_neg_dists_by_batch[b]))
 
-        if i % 1 == 0:
+        if i % 5 == 0:
             print('Batch (item) {} out of {}'.format(i, len(test_dataloader)))
             print('\taverage, std squared L2 distance between positive pairs {:.3f}, {:.3f}'.format(np.mean(_01_dist), np.std(_01_dist)))
             print('\taverage, std squared L2 distance between negative pairs {:.3f}, {:.3f}'.format(np.mean(_02_dist), np.std(_02_dist)))
@@ -329,6 +330,9 @@ def load_data(the_data_folder, num_anchors, num_pos, num_neg, scale_factor, \
         SCALE_FACTOR=scale_factor, \
         diff_fingers_across_sets=diff_fingers_across_sets, diff_fingers_within_set=diff_fingers_within_set, \
         diff_sensors_across_sets=diff_sensors_across_sets, same_sensor_within_set=same_sensor_within_set)
+    # TEST CODE TO SPEED UP
+    # test_dataset = torch.utils.data.Subset(test_dataset, list(range(0, len(test_dataset), 5)))
+    # END TEST CODE
     print('loaded test dataset: {}'.format(the_data_folder))
     test_dataloader = DataLoader(test_dataset, batch_size=batch_size, shuffle=True)
     return fingerprint_dataset, test_dataset, test_dataloader
@@ -546,6 +550,8 @@ if __name__ == "__main__":
         action='store_true')
     parser.add_argument('--leads_output', '-l', nargs='?', help='Leads analysis data output filename', \
         const=DEFAULT_LEADS_FILE, default=DEFAULT_LEADS_FILE, type=str)
+
+    # TODO: make it dynamically create output file
 
     args = parser.parse_args()
 
