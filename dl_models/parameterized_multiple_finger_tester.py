@@ -372,7 +372,8 @@ def create_shorthand_dataset_name(dataset_name):
 def main(the_data_folder, weights_path, cuda, output_dir, num_anchors, num_pos, num_neg, \
         scale_factor=1, \
         diff_fingers_across_sets=True, diff_fingers_within_set=True, \
-        diff_sensors_across_sets=True, same_sensor_within_set=True):
+        diff_sensors_across_sets=True, same_sensor_within_set=True, \
+        track_confusion_examples=False):
     print('Number anchor, pos, neg fingers: {}, {}, {}'.format(num_anchors, num_pos, num_neg))
 
     fingerprint_dataset, test_dataset, test_dataloader = \
@@ -420,9 +421,12 @@ def main(the_data_folder, weights_path, cuda, output_dir, num_anchors, num_pos, 
         dataset_name=dataset_name, weights_name=weights_name, \
         num_anchors=num_anchors, num_pos=num_pos, num_neg=num_neg)
 
-    _, _, _, tp_names, fp_names, tn_names, fn_names = run_test_loop(\
-        test_dataloader=test_dataloader, embedder=embedder, cuda=cuda, \
-        num_anchors=num_anchors, num_pos=num_pos, num_neg=num_neg, threshold=threshold)
+    if track_confusion_examples:
+        _, _, _, tp_names, fp_names, tn_names, fn_names = run_test_loop(\
+            test_dataloader=test_dataloader, embedder=embedder, cuda=cuda, \
+            num_anchors=num_anchors, num_pos=num_pos, num_neg=num_neg, threshold=threshold)
+    else:
+        tp_names, fp_names, tn_names, fn_names = [], [], [], []
 
     # do the output
     final_results = {
@@ -481,6 +485,9 @@ if __name__ == "__main__":
     parser.add_argument('--same_sensor_within_set', '-sss', \
         help='Force all fingerprints in a set to come from the same sensor', \
         action='store_true')
+    parser.add_argument('--track_confusion_examples', '-tc', \
+        help='Log examples from confusion matrix', \
+        action='store_true')
 
     args = parser.parse_args()
 
@@ -496,6 +503,8 @@ if __name__ == "__main__":
     diff_sensors_across_sets = args.diff_sensors_across_sets
     same_sensor_within_set = args.same_sensor_within_set
 
+    track_confusion_examples = args.track_confusion_examples
+
     print(args)
 
     assert num_fingers > 0
@@ -505,6 +514,7 @@ if __name__ == "__main__":
         num_anchors=num_fingers, num_pos=num_fingers, num_neg=num_fingers, \
         scale_factor=scale_factor, \
         diff_fingers_across_sets=diff_fingers_across_sets, diff_fingers_within_set=diff_fingers_within_set, \
-        diff_sensors_across_sets=diff_sensors_across_sets, same_sensor_within_set=same_sensor_within_set)
+        diff_sensors_across_sets=diff_sensors_across_sets, same_sensor_within_set=same_sensor_within_set, \
+        track_confusion_examples=track_confusion_examples)
 
     # TESTED - pass!
