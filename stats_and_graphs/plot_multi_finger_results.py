@@ -1,15 +1,16 @@
 import os
 import json
 import sys; sys.path.append('../dl_models')
+import numpy as np
 from parameterized_multiple_finger_tester import *
 
 DATA_FOLDER = '/data/therealgabeguo/paper_results/multi_finger'
 SD301_KEY = 'SD 301'
 SD302_KEY = 'SD 302'
 
-dataset_to_roc = {SD301_KEY: list(), SD302_KEY: list()}
-dataset_to_num_samples = {SD301_KEY: list(), SD302_KEY: list()}
-dataset_to_num_tuples = {SD301_KEY: list(), SD302_KEY: list()}
+dataset_to_roc = {SD301_KEY: dict(), SD302_KEY: dict()}
+dataset_to_num_samples = {SD301_KEY: set(), SD302_KEY: set()}
+dataset_to_num_tuples = {SD301_KEY: set(), SD302_KEY: set()}
 
 # find all the files and create ROC dict of lists
 for root, dirs, files in os.walk(DATA_FOLDER, topdown=False):
@@ -29,33 +30,45 @@ for root, dirs, files in os.walk(DATA_FOLDER, topdown=False):
             assert the_info[NUM_POS_PAIRS_KEY] == the_info[NUM_NEG_PAIRS_KEY]
 
             dataset_key = SD301_KEY if 'sd301' in the_filepath.lower() else SD302_KEY
-            dataset_to_roc[dataset_key].append((curr_n, curr_roc))
+            if curr_n not in dataset_to_roc[dataset_key]:
+                dataset_to_roc[dataset_key][curr_n] = list()
+            dataset_to_roc[dataset_key][curr_n].append(curr_roc)
 
-            dataset_to_num_samples[dataset_key].append(curr_num_samples)
-            dataset_to_num_tuples[dataset_key].append(curr_num_tuples)
+            dataset_to_num_samples[dataset_key].add(curr_num_samples)
+            dataset_to_num_tuples[dataset_key].add(curr_num_tuples)
 
 #print(dataset_to_roc)
 
 import matplotlib.pyplot as plt
 
-line_markers = ['o', 'X']
+line_markers = ['o', 'x']
 print(dataset_to_num_samples)
+
+n_trials = set([len(dataset_to_roc[the_dataset][n_fingers]) \
+    for the_dataset in dataset_to_roc for n_fingers in dataset_to_roc[the_dataset]])
+assert len(n_trials) == 1
+n_trials = list(n_trials)[0]
+
 for key in dataset_to_roc:
     curr_data = dataset_to_roc[key]
-    curr_num_distinct_fingerprints = set(dataset_to_num_samples[key])
+
+    curr_num_distinct_fingerprints = dataset_to_num_samples[key]
     assert len(curr_num_distinct_fingerprints) == 1
     (curr_num_distinct_fingerprints,) = curr_num_distinct_fingerprints
     #print(curr_num_distinct_fingerprints)
-    curr_num_tuples = set(dataset_to_num_tuples[key])
+    curr_num_tuples = dataset_to_num_tuples[key]
     assert len(curr_num_tuples) == 1
     (curr_num_tuples,) = curr_num_tuples
     #print(curr_num_tuples)
 
-    curr_x = [item[0] for item in curr_data]
-    curr_y = [item[1] for item in curr_data]
-    plt.plot(curr_x, curr_y, line_markers.pop(0) + '-', \
+    curr_x = [n_fingers for n_fingers in curr_data]
+    curr_y = [np.mean(curr_data[n_fingers]) for n_fingers in curr_data]
+    yerr = [np.std(curr_data[n_fingers], ddof=1) for n_fingers in curr_data]
+    print(curr_data)
+    plt.errorbar(curr_x, curr_y, yerr=yerr, fmt=line_markers.pop(0) + '-', \
         label='{} ({} samples, {} combos)'.format(key, curr_num_distinct_fingerprints, curr_num_tuples))
-    for num_fingers, roc_auc in curr_data:
+    for num_fingers in curr_data:
+        roc_auc = np.mean(curr_data[num_fingers])
         plt.text(num_fingers - 0.15, roc_auc + 0.005, str(round(roc_auc, 3)))
 
 plt.legend()
@@ -63,7 +76,7 @@ plt.xlim(0.75, 5.25)
 plt.xticks([i for i in range(1, 6)], ['1-to-1', '2-to-2', '3-to-3', '4-to-4', '5-to-5'])
 plt.xlabel('Number of Fingers')
 plt.ylim(0.75, 0.95)
-plt.ylabel('ROC AUC')
+plt.ylabel('ROC AUC ({} trials)'.format(n_trials))
 plt.title('N-to-N Disjoint Finger Matching Results')
 plt.grid()
 

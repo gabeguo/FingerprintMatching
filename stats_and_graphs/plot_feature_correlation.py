@@ -9,7 +9,7 @@ import json
 ORIGINAL = 'Original'
 BINARIZED = 'Binarized'
 RIDGE_ORIENT = 'Ridge\nOrientation'
-RIDGE_FREQ = 'Ridge\nFrequency'
+RIDGE_FREQ = 'Ridge\nDensity'
 MINUTIAE_LOC = 'Minutiae\nLocation'
 
 datasetNames = [ORIGINAL, BINARIZED, RIDGE_ORIENT, RIDGE_FREQ, MINUTIAE_LOC]
