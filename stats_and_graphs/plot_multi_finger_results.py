@@ -65,7 +65,7 @@ for key in dataset_to_roc:
     curr_y = [np.mean(curr_data[n_fingers]) for n_fingers in curr_data]
     yerr = [np.std(curr_data[n_fingers], ddof=1) for n_fingers in curr_data]
     print(curr_data)
-    plt.errorbar(curr_x, curr_y, yerr=yerr, fmt=line_markers.pop(0) + '-', \
+    plt.errorbar(curr_x, curr_y, yerr=yerr, fmt=line_markers.pop(0) + '-', capsize=5, \
         label='{} ({} samples, {} combos)'.format(key, curr_num_distinct_fingerprints, curr_num_tuples))
     for num_fingers in curr_data:
         roc_auc = np.mean(curr_data[num_fingers])
@@ -75,7 +75,7 @@ plt.legend()
 plt.xlim(0.75, 5.25)
 plt.xticks([i for i in range(1, 6)], ['1-to-1', '2-to-2', '3-to-3', '4-to-4', '5-to-5'])
 plt.xlabel('Number of Fingers')
-plt.ylim(0.75, 0.95)
+plt.ylim(0.70, 0.95)
 plt.ylabel('ROC AUC ({} trials)'.format(n_trials))
 plt.title('N-to-N Disjoint Finger Matching Results')
 plt.grid()
