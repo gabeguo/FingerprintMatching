@@ -2,6 +2,7 @@ import os
 import json
 import sys; sys.path.append('../dl_models')
 import numpy as np
+from scipy.stats import sem
 from parameterized_multiple_finger_tester import *
 
 DATA_FOLDER = '/data/therealgabeguo/paper_results/multi_finger'
@@ -63,7 +64,7 @@ for key in dataset_to_roc:
 
     curr_x = [n_fingers for n_fingers in curr_data]
     curr_y = [np.mean(curr_data[n_fingers]) for n_fingers in curr_data]
-    yerr = [np.std(curr_data[n_fingers], ddof=1) for n_fingers in curr_data]
+    yerr = [sem(curr_data[n_fingers]) for n_fingers in curr_data]
     print(curr_data)
     plt.errorbar(curr_x, curr_y, yerr=yerr, fmt=line_markers.pop(0) + '-', capsize=5, \
         label='{} ({} samples, {} combos)'.format(key, curr_num_distinct_fingerprints, curr_num_tuples))
