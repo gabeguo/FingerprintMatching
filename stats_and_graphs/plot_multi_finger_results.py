@@ -50,6 +50,8 @@ n_trials = set([len(dataset_to_roc[the_dataset][n_fingers]) \
 assert len(n_trials) == 1
 n_trials = list(n_trials)[0]
 
+colors = ['deepskyblue', 'salmon']
+
 for key in dataset_to_roc:
     curr_data = dataset_to_roc[key]
 
@@ -67,7 +69,8 @@ for key in dataset_to_roc:
     yerr = [sem(curr_data[n_fingers]) for n_fingers in curr_data]
     print(curr_data)
     plt.errorbar(curr_x, curr_y, yerr=yerr, fmt=line_markers.pop(0) + '-', capsize=5, \
-        label='{} ({} samples, {} combos)'.format(key, curr_num_distinct_fingerprints, curr_num_tuples))
+        label='{} ({} samples, {} combos)'.format(key, curr_num_distinct_fingerprints, curr_num_tuples), \
+        color = colors.pop())
     for num_fingers in curr_data:
         roc_auc = np.mean(curr_data[num_fingers])
         plt.text(num_fingers - 0.15, roc_auc + 0.005, str(round(roc_auc, 3)))
