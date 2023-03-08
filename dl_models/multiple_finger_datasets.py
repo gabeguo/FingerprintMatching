@@ -13,6 +13,8 @@ import sys
 sys.path.append('../directory_organization')
 from fileProcessingUtil import get_id, get_fgrp, get_sensor
 
+ALL_FINGERS = ['01', '02', '03', '04', '05', '06', '07', '08', '09', '10']
+
 # Use https://discuss.pytorch.org/t/how-to-resize-and-pad-in-a-torchvision-transforms-compose/71850/10
 # makes images squares by padding
 class SquarePad:
@@ -68,12 +70,14 @@ class MultipleFingerDataset(Dataset):
        all negative fingers must be from same sensor.
     -> All anchor fingers must be distinct fingers, all positive fingers must be distinct fingers,
        all negative fingers must be distinct fingers
+    -> We can only have fingers from acceptable_anchor_fgrps, acceptable_pos_fgrps, acceptable_neg_fgrps
     """
 
     def __init__(self, fingerprint_dataset, num_anchor_fingers, num_pos_fingers, num_neg_fingers, \
-            SCALE_FACTOR=1, \
-            diff_fingers_across_sets=True, diff_fingers_within_set=True, \
-            diff_sensors_across_sets=True, same_sensor_within_set=True):
+                SCALE_FACTOR=1, \
+                diff_fingers_across_sets=True, diff_fingers_within_set=True, \
+                diff_sensors_across_sets=True, same_sensor_within_set=True, \
+                acceptable_anchor_fgrps=ALL_FINGERS, acceptable_pos_fgrps=ALL_FINGERS, acceptable_neg_fgrps=ALL_FINGERS):
         if diff_fingers_across_sets and diff_fingers_within_set:
             assert num_anchor_fingers + num_pos_fingers <= 10
             assert num_anchor_fingers + num_neg_fingers <= 10
@@ -107,13 +111,16 @@ class MultipleFingerDataset(Dataset):
                 #print('{} out of {}'.format(i, len(self.test_data)))
                 while True: # need to find original combos
                     anchor_indices = self.get_anchor_indices(i, \
-                        diff_fingers_within_set=diff_fingers_within_set, same_sensor_within_set=same_sensor_within_set)
+                        diff_fingers_within_set=diff_fingers_within_set, same_sensor_within_set=same_sensor_within_set,
+                        possible_fgrps=acceptable_anchor_fgrps)
                     positive_indices = self.get_indices(anchor_indices, same_class_as_anchor=True, \
                         diff_fingers_across_sets=diff_fingers_across_sets, diff_fingers_within_set=diff_fingers_within_set, \
-                        diff_sensors_across_sets=diff_sensors_across_sets, same_sensor_within_set=same_sensor_within_set)
+                        diff_sensors_across_sets=diff_sensors_across_sets, same_sensor_within_set=same_sensor_within_set,
+                        possible_fgrps=acceptable_pos_fgrps)
                     negative_indices = self.get_indices(anchor_indices, same_class_as_anchor=False, \
                         diff_fingers_across_sets=diff_fingers_across_sets, diff_fingers_within_set=diff_fingers_within_set, \
-                        diff_sensors_across_sets=diff_sensors_across_sets, same_sensor_within_set=same_sensor_within_set)
+                        diff_sensors_across_sets=diff_sensors_across_sets, same_sensor_within_set=same_sensor_within_set,
+                        possible_fgrps=acceptable_neg_fgrps)
 
                     curr_anchor_pos_combo = tuple(sorted(anchor_indices + positive_indices))
                     curr_anchor_neg_combo = tuple(sorted(anchor_indices + negative_indices))
@@ -122,7 +129,6 @@ class MultipleFingerDataset(Dataset):
                         seen_combos.add(curr_anchor_pos_combo)
                         seen_combos.add(curr_anchor_neg_combo)
                         break # found original combo in both anchor-positive and anchor-negative
-
                 triplets.append((anchor_indices, positive_indices, negative_indices))
         self.test_triplets = triplets
 
@@ -136,9 +142,12 @@ class MultipleFingerDataset(Dataset):
         2) from the same class
         3) (optionally) from different fingers
         4) (optionally) from the same sensor
+        5) from certain fingers, as told by possible_fgrps
        as base_index
     """
-    def get_anchor_indices(self, base_index, diff_fingers_within_set=True, same_sensor_within_set=True):
+    def get_anchor_indices(self, base_index, diff_fingers_within_set=True, same_sensor_within_set=True,\
+                           possible_fgrps=ALL_FINGERS):
+        # TODO: debug possible_fgrps
         ret_val = [base_index]
 
         seen_fgrps = set()
@@ -159,6 +168,9 @@ class MultipleFingerDataset(Dataset):
             # guarantees (4) same sensor (optional)
             if same_sensor_within_set and (self.get_sensor_from_index(base_index) != self.get_sensor_from_index(next_index)):
                 continue
+            # guarantees (5) only from certain fingers
+            if self.get_fgrp_from_index(next_index) not in possible_fgrps:
+                continue
                 
             ret_val.append(next_index) # ensure (1) different samples
             seen_fgrps.add(self.get_fgrp_from_index(next_index)) # ensure (3) different fingers (optional)
@@ -172,6 +184,7 @@ class MultipleFingerDataset(Dataset):
             assert len(seen_fgrps) == len(ret_val) # ensure 3) different fingers (optional)
         assert len(set([self.test_labels[i] for i in ret_val])) == 1 # ensure 2) same class
         assert len(set(ret_val)) == len(ret_val) # ensure 1) distinct samples
+        assert seen_fgrps.issubset(set(possible_fgrps)) # ensure 5) only from certain fingers
         
         return tuple(ret_val)
 
@@ -186,10 +199,13 @@ class MultipleFingerDataset(Dataset):
     (6) (optionally) from different fingers than each other
     (7) (optionally) from different sensor than anchor_indices
     (8) (optionally) from same sensor as each other
+    (9) has only fingers from possible_fgrps
     """
     def get_indices(self, anchor_indices, same_class_as_anchor, \
-            diff_fingers_across_sets=True, diff_fingers_within_set=True, \
-            diff_sensors_across_sets=True, same_sensor_within_set=True):
+                    diff_fingers_across_sets=True, diff_fingers_within_set=True, \
+                    diff_sensors_across_sets=True, same_sensor_within_set=True, \
+                    possible_fgrps=ALL_FINGERS):
+        # TODO: debug possible_fgrps
         ret_val = []
 
         # satisfy (5) - different fingers than anchor (possibly)
@@ -230,6 +246,9 @@ class MultipleFingerDataset(Dataset):
             # satisfy (8) - same sensor as each other, if needed
             if same_sensor_within_set and len(retVal_sensors) >= 1 and curr_sensor not in retVal_sensors:
                 continue
+            # satisfy (9) - only use certain fingers
+            if curr_fgrp not in possible_fgrps:
+                continue
             
             # satisfy (4) - distinct samples than each other
             ret_val.append(curr_index)
@@ -261,6 +280,8 @@ class MultipleFingerDataset(Dataset):
         # (8) (optionally) from same sensor as each other
         if same_sensor_within_set:
             assert len(retVal_sensors) == 1
+        # (9) only use certain fingers
+        assert retVal_sensors.issubset(set(possible_fgrps))
         
         return tuple(ret_val)
     
