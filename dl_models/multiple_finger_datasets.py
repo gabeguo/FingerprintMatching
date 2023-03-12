@@ -59,6 +59,12 @@ def my_transformation(the_image, train=False, target_image_size=(224, 224)):
         return the_image
     return transform(the_image.float())
 
+def my_read_image(x):
+    if '.bmp' in x:
+        pil2tensor = transforms.Compose([transforms.PILToTensor()]) # for .bmp images
+        return pil2tensor(Image.open(x).convert('RGB'))
+    return read_image(x, mode=ImageReadMode.RGB)
+
 class MultipleFingerDataset(Dataset):
     """
     Returns triplets of (N_0 anchor fingers, N_1 positive fingers, N_2 negative fingers).
@@ -273,36 +279,26 @@ class MultipleFingerDataset(Dataset):
         while len(ret_val) < the_size:
             # satisfy (0) - same class as each other
             curr_index = self.random_state.choice(self.label_to_indices[the_label])
-            # satisfy (3), (4) - try again until we get previously unseen samples
             if curr_index in anchor_indices or curr_index in ret_val:
-                continue
+                continue # satisfy (3), (4) - try again until we get previously unseen samples
             curr_fgrp = self.get_fgrp_from_index(curr_index)
             curr_sensor = self.get_sensor_from_index(curr_index)
-            # satisfy (5) - different fingers than anchor, if needed
             if diff_fingers_across_sets and curr_fgrp in anchor_fgrps:
-                continue
-            # satisfy (6) - different fingers than each other, if needed
+                continue # satisfy (5) - different fingers than anchor, if needed
             if diff_fingers_within_set and curr_fgrp in retVal_fgrps:
-                continue
-            # satisfy (7) - different sensors than anchor, if needed
+                continue # satisfy (6) - different fingers than each other, if needed
             if diff_sensors_across_sets and curr_sensor in anchor_sensors:
-                continue
-            # satisfy (8) - same sensor as each other, if needed
+                continue # satisfy (7) - different sensors than anchor, if needed
             if same_sensor_within_set and len(retVal_sensors) >= 1 and curr_sensor not in retVal_sensors:
-                continue
-            # satisfy (9) - only use certain fingers
+                continue # satisfy (8) - same sensor as each other, if needed
             if curr_fgrp not in possible_fgrps:
-                continue
-            # satisfy (10) - same dataset as anchors
+                continue # satisfy (9) - only use certain fingers
             if self.get_datasetName_from_index(curr_index) != self.get_datasetName_from_index(anchor_indices[0]):
-                continue
+                continue # satisfy (10) - same dataset as anchors
             
-            # satisfy (4) - distinct samples than each other
-            ret_val.append(curr_index)
-            # satisfy (6) - different fingers than each other (optionally)
-            retVal_fgrps.add(curr_fgrp)
-            # satisfy (8) - same sensor as each other (optionally)
-            retVal_sensors.add(curr_sensor)
+            ret_val.append(curr_index) # satisfy (4) - distinct samples than each other
+            retVal_fgrps.add(curr_fgrp) # satisfy (6) - different fingers than each other (optionally)
+            retVal_sensors.add(curr_sensor) # satisfy (8) - same sensor as each other (optionally)
 
         # (0) definitely same class as each other
         assert len(set([self.the_labels[x] for x in ret_val])) == 1
@@ -366,49 +362,65 @@ class MultipleFingerDataset(Dataset):
     3) triplet of tuples of filepaths corresponding to images
     """
     def __getitem__(self, index):
-        # if training, should only be one at a time
         if self.train: # randomized
-            # TODO: debug this
-            anchor_filepath = self.the_data[self.train_anchor_indices[index]]
-            curr_pos_indices = self.get_indices(anchor_indices=self.train_anchor_indices,\
-                            same_class_as_anchor=True, \
-                            diff_fingers_across_sets=self.diff_fingers_across_sets,\
-                            diff_fingers_within_set=self.diff_fingers_within_set, \
-                            diff_sensors_across_sets=self.diff_sensors_across_sets, \
-                            same_sensor_within_set=self.same_sensor_within_set)
-            assert len(curr_pos_indices) == 1
-            pos_filepath = self.the_data[curr_pos_indices[0]]
-            curr_neg_indices = self.get_indices(anchor_indices=self.train_anchor_indices,\
-                            same_class_as_anchor=False, \
-                            diff_fingers_across_sets=self.diff_fingers_across_sets,\
-                            diff_fingers_within_set=self.diff_fingers_within_set, \
-                            diff_sensors_across_sets=self.diff_sensors_across_sets, \
-                            same_sensor_within_set=self.same_sensor_within_set)
-            assert len(curr_neg_indices) == 1
-            neg_filepath = self.the_data[curr_neg_indices[0]]
-            curr_iteration_labels = [self.the_labels[self.train_anchor_indices[index]], \
-                                     self.the_labels[curr_pos_indices[0]], \
-                                     self.the_labels[curr_neg_indices[0]]
-            ]
-            pass # TODO: implement
+            return self.get_item_train(index)
         else: # deterministic
-            # TODO: scope prevents this from being buggy, but should change double index var name
-            anchor_filepaths = [self.the_data[index] for index in self.test_triplets[index][0]]
-            pos_filepaths = [self.the_data[index] for index in self.test_triplets[index][1]]
-            neg_filepaths = [self.the_data[index] for index in self.test_triplets[index][2]]
+            return self.get_item_test(index)
 
-            the_labels = [self.the_labels[self.test_triplets[index][0][0]], \
-                        self.the_labels[self.test_triplets[index][1][0]], \
-                        self.the_labels[self.test_triplets[index][2][0]]]
-            assert the_labels[0] == the_labels[1]
-            assert the_labels[0] != the_labels[2]
+    """
+    If training, should only be one at a time
+    """
+    def get_item_train(self, index):
+        # TODO: debug this
+        anchor_filepath = self.the_data[self.train_anchor_indices[index]]
+        anchor_img = my_transformation(my_read_image(anchor_filepath), train=self.train)
+        curr_pos_indices = self.get_indices(anchor_indices=self.train_anchor_indices,\
+                        same_class_as_anchor=True, \
+                        diff_fingers_across_sets=self.diff_fingers_across_sets,\
+                        diff_fingers_within_set=self.diff_fingers_within_set, \
+                        diff_sensors_across_sets=self.diff_sensors_across_sets, \
+                        same_sensor_within_set=self.same_sensor_within_set)
+        assert len(curr_pos_indices) == 1
+        pos_filepath = self.the_data[curr_pos_indices[0]]
+        pos_img = my_transformation(my_read_image(pos_filepath), train=self.train)
+        curr_neg_indices = self.get_indices(anchor_indices=self.train_anchor_indices,\
+                        same_class_as_anchor=False, \
+                        diff_fingers_across_sets=self.diff_fingers_across_sets,\
+                        diff_fingers_within_set=self.diff_fingers_within_set, \
+                        diff_sensors_across_sets=self.diff_sensors_across_sets, \
+                        same_sensor_within_set=self.same_sensor_within_set)
+        assert len(curr_neg_indices) == 1
+        neg_filepath = self.the_data[curr_neg_indices[0]]
+        neg_img = my_transformation(my_read_image(neg_filepath), train=self.train)
 
-            # TODO: support .bmp
-            anchor_imgs = [my_transformation(read_image(x, mode=ImageReadMode.RGB), train=self.train) for x in anchor_filepaths]
-            pos_imgs = [my_transformation(read_image(x, mode=ImageReadMode.RGB), train=self.train) for x in pos_filepaths]
-            neg_imgs = [my_transformation(read_image(x, mode=ImageReadMode.RGB), train=self.train) for x in neg_filepaths]
-            
-            return (anchor_imgs, pos_imgs, neg_imgs), the_labels, (anchor_filepaths, pos_filepaths, neg_filepaths)
+        curr_iteration_labels = [self.the_labels[self.train_anchor_indices[index]], \
+                                    self.the_labels[curr_pos_indices[0]], \
+                                    self.the_labels[curr_neg_indices[0]]
+        ]
+        return (anchor_img, pos_img, neg_img), curr_iteration_labels, (anchor_filepath, pos_filepath, neg_filepath)
+
+    def get_item_test(self, index):
+        anchor_filepaths = [self.the_data[i] for i in self.test_triplets[index][0]]
+        pos_filepaths = [self.the_data[i] for i in self.test_triplets[index][1]]
+        neg_filepaths = [self.the_data[i] for i in self.test_triplets[index][2]]
+
+        the_labels = [self.the_labels[self.test_triplets[index][0][0]], \
+                    self.the_labels[self.test_triplets[index][1][0]], \
+                    self.the_labels[self.test_triplets[index][2][0]]]
+        assert the_labels[0] == the_labels[1]
+        assert the_labels[0] != the_labels[2]
+
+        anchor_imgs = [my_transformation(my_read_image(x), train=self.train) for x in anchor_filepaths]
+        pos_imgs = [my_transformation(my_read_image(x), train=self.train) for x in pos_filepaths]
+        neg_imgs = [my_transformation(my_read_image(x), train=self.train) for x in neg_filepaths]
+        
+        # for backwards compatability in train loop - remove singleton tuples, just return the items themselves
+        if self.num_anchor_fingers == 1 and self.num_pos_fingers == 1 and self.num_neg_fingers == 1:
+            return (anchor_imgs[0], pos_imgs[0], neg_imgs[0]), \
+                (the_labels[0][0], the_labels[1][0], the_labels[2][0]), \
+                (anchor_filepaths[0], pos_filepaths[0], neg_filepaths[0])
+
+        return (anchor_imgs, pos_imgs, neg_imgs), the_labels, (anchor_filepaths, pos_filepaths, neg_filepaths)
 
     def __len__(self):
         if not self.train: # we can have multiple testing triplets for each item in the dataset

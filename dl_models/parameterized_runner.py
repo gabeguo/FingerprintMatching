@@ -17,7 +17,7 @@ import getopt, argparse
 
 sys.path.append('../')
 
-from new_trainer import *
+from trainer import *
 from siamese_datasets import *
 from fingerprint_dataset import FingerprintDataset
 from multiple_finger_datasets import *
@@ -110,7 +110,6 @@ def main(args, cuda):
 
     return
 
-# TODO: have option for which fingers we want
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Train the Fingerprint Matcher')
     parser.add_argument('--batch-size', type=int, default=64,
