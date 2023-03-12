@@ -85,42 +85,81 @@ class MultipleFingerDataset(Dataset):
 
         self.fingerprint_dataset = fingerprint_dataset
         self.train = self.fingerprint_dataset.train
+        if self.train:
+            assert num_anchor_fingers == 1 and num_pos_fingers == 1 and num_neg_fingers == 1
         
         # number of each type of fingers
         self.num_anchor_fingers = num_anchor_fingers
         self.num_pos_fingers = num_pos_fingers
         self.num_neg_fingers = num_neg_fingers
 
+        # finger acceptability rules
+        self.diff_fingers_across_sets = diff_fingers_across_sets
+        self.diff_fingers_within_set = diff_fingers_within_set
+        self.diff_sensors_across_sets = diff_sensors_across_sets
+        self.same_sensor_within_set = same_sensor_within_set
+
+        self.acceptable_anchor_fgrps = acceptable_anchor_fgrps
+        self.acceptable_pos_fgrps = acceptable_pos_fgrps
+        self.acceptable_neg_fgrps = acceptable_neg_fgrps
+
+        # number of times to go through dataset in testing
+        self.scale_factor = SCALE_FACTOR
+
         # initialize the lookup tables
-        self.test_labels = self.fingerprint_dataset.test_labels
-        self.test_data = self.fingerprint_dataset.test_data
+        self.the_labels = self.fingerprint_dataset.test_labels
+        self.the_data = self.fingerprint_dataset.train_data if self.train else self.fingerprint_dataset.test_data
         # generate fixed triplets for testing
-        self.labels_set = set(self.test_labels)
-        self.label_to_indices = {label: np.where(np.array(self.test_labels) == label)[0]
+        self.labels_set = set(self.the_labels)
+        self.label_to_indices = {label: np.where(np.array(self.the_labels) == label)[0]
                                     for label in self.labels_set}
 
         self.random_state = np.random.RandomState(29)
 
+        if self.train:
+            self.choose_train_anchors()
+        else:
+            self.choose_test_triplets()
+
+        return
+
+    """
+    Chooses the fingers to use as anchors for training, sets self.train_anchor_indices
+    """
+    def choose_train_anchors(self):
+        self.train_anchor_indices = list()
+        # ignore scale factor, since pos and neg are randomized every time
+        for i in range(len(self.the_data)):
+            if self.get_fgrp_from_index(i) in self.acceptable_anchor_fgrps:
+                self.train_anchor_indices.append(i)
+        return
+
+    """
+    Sets self.test_triplets, according to rules laid out in __init__
+    """
+    def choose_test_triplets(self):
         # Don't allow duplicate combos
         seen_combos = set()
 
         # Create triplets
         triplets = list()
-        for j in range(SCALE_FACTOR):
-            for i in range(len(self.test_data)):
-                #print('{} out of {}'.format(i, len(self.test_data)))
+        for j in range(self.scale_factor):
+            for i in range(len(self.the_data)):
+                #print('{} out of {}'.format(i, len(self.the_data)))
                 while True: # need to find original combos
+                    if self.get_fgrp_from_index(i) not in self.acceptable_anchor_fgrps:
+                        break # this will never give a valid triplet
                     anchor_indices = self.get_anchor_indices(i, \
-                        diff_fingers_within_set=diff_fingers_within_set, same_sensor_within_set=same_sensor_within_set,
-                        possible_fgrps=acceptable_anchor_fgrps)
+                        diff_fingers_within_set=self.diff_fingers_within_set, same_sensor_within_set=self.same_sensor_within_set,
+                        possible_fgrps=self.acceptable_anchor_fgrps)
                     positive_indices = self.get_indices(anchor_indices, same_class_as_anchor=True, \
-                        diff_fingers_across_sets=diff_fingers_across_sets, diff_fingers_within_set=diff_fingers_within_set, \
-                        diff_sensors_across_sets=diff_sensors_across_sets, same_sensor_within_set=same_sensor_within_set,
-                        possible_fgrps=acceptable_pos_fgrps)
+                        diff_fingers_across_sets=self.diff_fingers_across_sets, diff_fingers_within_set=self.diff_fingers_within_set, \
+                        diff_sensors_across_sets=self.diff_sensors_across_sets, same_sensor_within_set=self.same_sensor_within_set,
+                        possible_fgrps=self.acceptable_pos_fgrps)
                     negative_indices = self.get_indices(anchor_indices, same_class_as_anchor=False, \
-                        diff_fingers_across_sets=diff_fingers_across_sets, diff_fingers_within_set=diff_fingers_within_set, \
-                        diff_sensors_across_sets=diff_sensors_across_sets, same_sensor_within_set=same_sensor_within_set,
-                        possible_fgrps=acceptable_neg_fgrps)
+                        diff_fingers_across_sets=self.diff_fingers_across_sets, diff_fingers_within_set=self.diff_fingers_within_set, \
+                        diff_sensors_across_sets=self.diff_sensors_across_sets, same_sensor_within_set=self.same_sensor_within_set,
+                        possible_fgrps=self.acceptable_neg_fgrps)
 
                     curr_anchor_pos_combo = tuple(sorted(anchor_indices + positive_indices))
                     curr_anchor_neg_combo = tuple(sorted(anchor_indices + negative_indices))
@@ -131,7 +170,6 @@ class MultipleFingerDataset(Dataset):
                         break # found original combo in both anchor-positive and anchor-negative
                 triplets.append((anchor_indices, positive_indices, negative_indices))
         self.test_triplets = triplets
-
         return
 
     """
@@ -143,6 +181,7 @@ class MultipleFingerDataset(Dataset):
         3) (optionally) from different fingers
         4) (optionally) from the same sensor
         5) from certain fingers, as told by possible_fgrps
+        6) from same dataset
        as base_index
     """
     def get_anchor_indices(self, base_index, diff_fingers_within_set=True, same_sensor_within_set=True,\
@@ -158,7 +197,7 @@ class MultipleFingerDataset(Dataset):
 
         while len(ret_val) < self.num_anchor_fingers:
             # guarantees (2) same class
-            next_index = self.random_state.choice(self.label_to_indices[self.test_labels[base_index]]) # guarantees same class
+            next_index = self.random_state.choice(self.label_to_indices[self.the_labels[base_index]]) # guarantees same class
             # guarantees (1) distinct samples
             if next_index in ret_val:
                 continue
@@ -171,6 +210,9 @@ class MultipleFingerDataset(Dataset):
             # guarantees (5) only from certain fingers
             if self.get_fgrp_from_index(next_index) not in possible_fgrps:
                 continue
+            # guarantees (6) from same dataset
+            if self.get_datasetName_from_index(next_index) != self.get_datasetName_from_index(base_index):
+                continue
                 
             ret_val.append(next_index) # ensure (1) different samples
             seen_fgrps.add(self.get_fgrp_from_index(next_index)) # ensure (3) different fingers (optional)
@@ -182,9 +224,10 @@ class MultipleFingerDataset(Dataset):
             assert len(seen_sensors) == 1 # ensure 4) same sensor (as each other) (optional)
         if diff_fingers_within_set:
             assert len(seen_fgrps) == len(ret_val) # ensure 3) different fingers (optional)
-        assert len(set([self.test_labels[i] for i in ret_val])) == 1 # ensure 2) same class
+        assert len(set([self.the_labels[i] for i in ret_val])) == 1 # ensure 2) same class
         assert len(set(ret_val)) == len(ret_val) # ensure 1) distinct samples
         assert seen_fgrps.issubset(set(possible_fgrps)) # ensure 5) only from certain fingers
+        assert len(set([self.get_datasetName_from_index(i) for i in ret_val])) == 1 # ensure 6) only one dataset
         
         return tuple(ret_val)
 
@@ -200,6 +243,7 @@ class MultipleFingerDataset(Dataset):
     (7) (optionally) from different sensor than anchor_indices
     (8) (optionally) from same sensor as each other
     (9) has only fingers from possible_fgrps
+    (10) from same dataset as anchor_indices
     """
     def get_indices(self, anchor_indices, same_class_as_anchor, \
                     diff_fingers_across_sets=True, diff_fingers_within_set=True, \
@@ -217,12 +261,12 @@ class MultipleFingerDataset(Dataset):
 
         # satisfy (1)(a), (2)(a) - same class as anchor
         if same_class_as_anchor:
-            the_label = self.test_labels[anchor_indices[0]]
+            the_label = self.the_labels[anchor_indices[0]]
             the_size = self.num_pos_fingers
         # satisfy (1)(b), (2)(b) - diff class than anchor
         else:
             the_label = np.random.choice(
-                list(self.labels_set - set([self.test_labels[anchor_indices[0]]]))
+                list(self.labels_set - set([self.the_labels[anchor_indices[0]]]))
             )
             the_size = self.num_neg_fingers
         
@@ -249,6 +293,9 @@ class MultipleFingerDataset(Dataset):
             # satisfy (9) - only use certain fingers
             if curr_fgrp not in possible_fgrps:
                 continue
+            # satisfy (10) - same dataset as anchors
+            if self.get_datasetName_from_index(curr_index) != self.get_datasetName_from_index(anchor_indices[0]):
+                continue
             
             # satisfy (4) - distinct samples than each other
             ret_val.append(curr_index)
@@ -258,9 +305,9 @@ class MultipleFingerDataset(Dataset):
             retVal_sensors.add(curr_sensor)
 
         # (0) definitely same class as each other
-        assert len(set([self.test_labels[x] for x in ret_val])) == 1
+        assert len(set([self.the_labels[x] for x in ret_val])) == 1
         # (1) from same (a) / diff (b) class as anchor_indices, depending on same_class_as_anchor
-        assert same_class_as_anchor == (self.test_labels[anchor_indices[0]] == self.test_labels[ret_val[0]])
+        assert same_class_as_anchor == (self.the_labels[anchor_indices[0]] == self.the_labels[ret_val[0]])
         # (2) size self.num_pos_fingers (a) or self.num_neg_fingers (b), depending on same_class_as_anchor
         assert (same_class_as_anchor and len(ret_val) == self.num_pos_fingers) \
             or (not same_class_as_anchor and len(ret_val) == self.num_neg_fingers)
@@ -282,6 +329,8 @@ class MultipleFingerDataset(Dataset):
             assert len(retVal_sensors) == 1
         # (9) only use certain fingers
         assert retVal_sensors.issubset(set(possible_fgrps))
+        # (10) same dataset as anchor
+        assert set([self.get_datasetName_from_index(i) for i in ret_val]) == set([self.get_datasetName_from_index(i) for i in anchor_indices])
         
         return tuple(ret_val)
     
@@ -294,9 +343,12 @@ class MultipleFingerDataset(Dataset):
         ret_val = filepath.split('/')[DATASET_NAME_INDEX]
         assert 'sd30' in ret_val or 'RidgeBase' in ret_val or 'SOCOFing' in ret_val
         return ret_val
+    
+    def get_datasetName_from_index(self, i):
+        return self.get_dataset_name(self.the_data[i])
 
     def get_filename_from_index(self, i):
-        return self.test_data[i].split('/')[-1]
+        return self.the_data[i].split('/')[-1]
     
     def get_sensor_from_index(self, i):
         return get_sensor(self.get_filename_from_index(i))
@@ -314,26 +366,53 @@ class MultipleFingerDataset(Dataset):
     3) triplet of tuples of filepaths corresponding to images
     """
     def __getitem__(self, index):
-        anchor_filepaths = [self.test_data[index] for index in self.test_triplets[index][0]]
-        pos_filepaths = [self.test_data[index] for index in self.test_triplets[index][1]]
-        neg_filepaths = [self.test_data[index] for index in self.test_triplets[index][2]]
+        # if training, should only be one at a time
+        if self.train: # randomized
+            # TODO: debug this
+            anchor_filepath = self.the_data[self.train_anchor_indices[index]]
+            curr_pos_indices = self.get_indices(anchor_indices=self.train_anchor_indices,\
+                            same_class_as_anchor=True, \
+                            diff_fingers_across_sets=self.diff_fingers_across_sets,\
+                            diff_fingers_within_set=self.diff_fingers_within_set, \
+                            diff_sensors_across_sets=self.diff_sensors_across_sets, \
+                            same_sensor_within_set=self.same_sensor_within_set)
+            assert len(curr_pos_indices) == 1
+            pos_filepath = self.the_data[curr_pos_indices[0]]
+            curr_neg_indices = self.get_indices(anchor_indices=self.train_anchor_indices,\
+                            same_class_as_anchor=False, \
+                            diff_fingers_across_sets=self.diff_fingers_across_sets,\
+                            diff_fingers_within_set=self.diff_fingers_within_set, \
+                            diff_sensors_across_sets=self.diff_sensors_across_sets, \
+                            same_sensor_within_set=self.same_sensor_within_set)
+            assert len(curr_neg_indices) == 1
+            neg_filepath = self.the_data[curr_neg_indices[0]]
+            curr_iteration_labels = [self.the_labels[self.train_anchor_indices[index]], \
+                                     self.the_labels[curr_pos_indices[0]], \
+                                     self.the_labels[curr_neg_indices[0]]
+            ]
+            pass # TODO: implement
+        else: # deterministic
+            # TODO: scope prevents this from being buggy, but should change double index var name
+            anchor_filepaths = [self.the_data[index] for index in self.test_triplets[index][0]]
+            pos_filepaths = [self.the_data[index] for index in self.test_triplets[index][1]]
+            neg_filepaths = [self.the_data[index] for index in self.test_triplets[index][2]]
 
-        the_labels = [self.test_labels[self.test_triplets[index][0][0]], \
-                      self.test_labels[self.test_triplets[index][1][0]], \
-                      self.test_labels[self.test_triplets[index][2][0]]]
-        assert the_labels[0] == the_labels[1]
-        assert the_labels[0] != the_labels[2]
+            the_labels = [self.the_labels[self.test_triplets[index][0][0]], \
+                        self.the_labels[self.test_triplets[index][1][0]], \
+                        self.the_labels[self.test_triplets[index][2][0]]]
+            assert the_labels[0] == the_labels[1]
+            assert the_labels[0] != the_labels[2]
 
-        # TODO: support .bmp
-        anchor_imgs = [my_transformation(read_image(x, mode=ImageReadMode.RGB), train=self.train) for x in anchor_filepaths]
-        pos_imgs = [my_transformation(read_image(x, mode=ImageReadMode.RGB), train=self.train) for x in pos_filepaths]
-        neg_imgs = [my_transformation(read_image(x, mode=ImageReadMode.RGB), train=self.train) for x in neg_filepaths]
-        
-        return (anchor_imgs, pos_imgs, neg_imgs), the_labels, (anchor_filepaths, pos_filepaths, neg_filepaths)
+            # TODO: support .bmp
+            anchor_imgs = [my_transformation(read_image(x, mode=ImageReadMode.RGB), train=self.train) for x in anchor_filepaths]
+            pos_imgs = [my_transformation(read_image(x, mode=ImageReadMode.RGB), train=self.train) for x in pos_filepaths]
+            neg_imgs = [my_transformation(read_image(x, mode=ImageReadMode.RGB), train=self.train) for x in neg_filepaths]
+            
+            return (anchor_imgs, pos_imgs, neg_imgs), the_labels, (anchor_filepaths, pos_filepaths, neg_filepaths)
 
     def __len__(self):
         if not self.train: # we can have multiple testing triplets for each item in the dataset
             return len(self.test_triplets)
-        return len(self.fingerprint_dataset)
+        return len(self.fingerprint_dataset) # TODO: fix this to accomodate limited fingers
 
 

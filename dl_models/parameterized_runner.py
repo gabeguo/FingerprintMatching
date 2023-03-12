@@ -11,40 +11,52 @@ from torch.utils.data import DataLoader
 import torch.optim as optim
 import sys
 import os
+import json
 import math
 import getopt, argparse
 
 sys.path.append('../')
 
-from trainer import *
+from new_trainer import *
 from siamese_datasets import *
-from fingerprint_dataset import *
+from fingerprint_dataset import FingerprintDataset
+from multiple_finger_datasets import *
 from embedding_models import *
 
 from common_filepaths import *
 
-def main(datasets, the_cuda, \
-        batch_size=64, num_accumulated_batches=1, \
-        pretrained_image_net=False, pretrained_printsgan=False, \
-        PRETRAINED_MODEL_PATH='/data/therealgabeguo/embedding_net_weights_printsgan.pth', \
-        learning_rate=0.001, scheduler=None, tripletLoss_margin=0.2, \
-        num_epochs=200, early_stopping_interval=65):
-    
+def main(args, cuda):    
+    datasets = args.datasets.split()
+    possible_fgrps = args.possible_fgrps.split()
+    assert set(possible_fgrps).issubset(set(ALL_FINGERS))
+
     the_name = '_'.join([path[:len(path) if path[-1] != '/' else -1].split('/')[-1] for path in datasets])
-    # ResNet-18
-    POSTRAINED_MODEL_PATH = '/data/therealgabeguo/fingerprint_weights/embedding_net_weights_' + the_name + '.pth'
-    print('weights saved to:', POSTRAINED_MODEL_PATH)
+    print('Name of this dataset:', the_name)
+
+    print('weights saved to:', args.posttrained_model_path)
 
     train_dir_paths = [os.path.join(x, 'train') for x in datasets]
     val_dir_paths = [os.path.join(x, 'val') for x in datasets]
 
-    training_dataset = TripletDataset(FingerprintDataset(train_dir_paths, train=True))
+    training_dataset = TripletDataset(\
+        MultipleFingerDataset(fingerprint_dataset=FingerprintDataset(train_dir_paths, train=True)),\
+        num_anchor_fingers=1, num_pos_fingers=1, num_neg_fingers=1,\
+        SCALE_FACTOR=args.scale_factor,\
+        diff_fingers_across_sets=args.diff_fingers_across_sets, diff_fingers_within_set=True,\
+        diff_sensors_across_sets=args.diff_sensors_across_sets, same_sensor_within_set=True, \
+        acceptable_anchor_fgrps=args.possible_fgrps, acceptable_pos_fgrps=args.possible_fgrps, acceptable_neg_fgrps=args.possible_fgrps)
     #training_dataset = torch.utils.data.Subset(training_dataset, list(range(0, len(training_dataset), 50)))
-    train_dataloader = DataLoader(training_dataset, batch_size=batch_size, shuffle=True, num_workers=16)
+    train_dataloader = DataLoader(training_dataset, batch_size=args.batch_size, shuffle=True, num_workers=16)
 
-    val_dataset = TripletDataset(FingerprintDataset(val_dir_paths, train=False))
+    val_dataset = TripletDataset(\
+        MultipleFingerDataset(fingerprint_dataset=FingerprintDataset(val_dir_paths, train=False)),\
+        num_anchor_fingers=1, num_pos_fingers=1, num_neg_fingers=1,\
+        SCALE_FACTOR=args.scale_factor,\
+        diff_fingers_across_sets=args.diff_fingers_across_sets, diff_fingers_within_set=True,\
+        diff_sensors_across_sets=args.diff_sensors_across_sets, same_sensor_within_set=True, \
+        acceptable_anchor_fgrps=args.possible_fgrps, acceptable_pos_fgrps=args.possible_fgrps, acceptable_neg_fgrps=args.possible_fgrps)
     #val_dataset = torch.utils.data.Subset(val_dataset, list(range(0, len(val_dataset), 5)))
-    val_dataloader = DataLoader(val_dataset, batch_size=batch_size, shuffle=True, num_workers=16)
+    val_dataloader = DataLoader(val_dataset, batch_size=args.batch_size, shuffle=True, num_workers=16)
 
     # CLEAR CUDA MEMORY
     # https://stackoverflow.com/questions/54374935/how-to-fix-this-strange-error-runtimeerror-cuda-error-out-of-memory
@@ -52,65 +64,101 @@ def main(datasets, the_cuda, \
     gc.collect()
     torch.cuda.empty_cache()
 
-    # FILE OUTPUT
-    log = ""
-
     # LOG TRAINING DATA
-    log += 'Training data: {}\n'.format(train_dir_paths)
     print('Training data: {}\n'.format(train_dir_paths))
 
     # CREATE EMBEDDER
-    embedder = EmbeddingNet(pretrained=pretrained_image_net)
-    log += 'pretrained on image net: {}\n'.format(pretrained_image_net)
-    print('pretrained on image net:', pretrained_image_net)
+    embedder = EmbeddingNet(pretrained=False)
 
     # load saved weights!
-    if pretrained_printsgan:
-        embedder.load_state_dict(torch.load(PRETRAINED_MODEL_PATH))
+    if args.pretrained_model_path:
+        embedder.load_state_dict(torch.load(args.pretrained_model_path))
 
-    pretrained_other_msg = 'pretrained on other data: {}, {}\n'.format(pretrained_printsgan, PRETRAINED_MODEL_PATH)
+    pretrained_other_msg = 'pretrained on other data: {}\n'.format(args.pretrained_model_path)
     print(pretrained_other_msg)
-    log += pretrained_other_msg
 
     # CREATE TRIPLET NET
     triplet_net = TripletNet(embedder)
 
     # TRAIN
-    optimizer = optim.Adam(triplet_net.parameters(), lr=learning_rate)
+    optimizer = optim.Adam(triplet_net.parameters(), lr=args.learning_rate)
+    scheduler = optim.lr_scheduler.ExponentialLR(optimizer, args.gamma, last_epoch=- 1, verbose=False) if \
+        (args.lr_step is not None and args.gamma is not None) \
+        else None
 
-    log += 'learning rate = {}\ntriplet loss margin = {}\n'.format(learning_rate, tripletLoss_margin)
-    print('learning rate = {}\ntriplet loss margin = {}\n'.format(learning_rate, tripletLoss_margin))
-    log += 'max epochs = {}\n'.format(num_epochs)
-    print('max epochs = {}\n'.format(num_epochs))
+    print('learning rate = {}\ntriplet loss margin = {}\n'.format(args.learning_rate, args.tripletLoss_margin))
+    print('max epochs = {}\n'.format(args.num_epochs))
 
     best_val_epoch, best_val_loss = 0, 0
 
     best_val_epoch, best_val_loss = fit(train_loader=train_dataloader, val_loader=val_dataloader, model=triplet_net, \
-        loss_fn=nn.TripletMarginLoss(margin=tripletLoss_margin), optimizer=optimizer, scheduler=scheduler, \
-        n_epochs=num_epochs, cuda=the_cuda, log_interval=300, metrics=[], start_epoch=0, early_stopping_interval=early_stopping_interval, \
-        num_accumulated_batches=num_accumulated_batches, temp_model_path='temp_{}.pth'.format(the_name))
+        loss_fn=nn.TripletMarginLoss(margin=args.tripletLoss_margin), optimizer=optimizer, scheduler=scheduler, \
+        n_epochs=args.num_epochs, cuda=device, log_interval=300, metrics=[], start_epoch=0, early_stopping_interval=args.early_stopping_interval, \
+        num_accumulated_batches=args.num_accumulated_batches, temp_model_path='temp_weights/temp_{}.pth'.format(the_name))
 
-    log += 'best_val_epoch = {}\nbest_val_loss = {}\n'.format(best_val_epoch, best_val_loss)
     print('best_val_epoch = {}\nbest_val_loss = {}\n'.format(best_val_epoch, best_val_loss))
 
     # SAVE MODEL
-    torch.save(embedder.state_dict(), POSTRAINED_MODEL_PATH)
-    log += 'save to: {}\n'.format(POSTRAINED_MODEL_PATH)
+    torch.save(embedder.state_dict(), args.posttrained_model_path)
 
     from datetime import datetime
     datetime_str = datetime.now().strftime("%Y-%m-%d_%H:%M:%S")
     with open('/data/therealgabeguo/results/results_{}.txt'.format(datetime_str), 'w') as fout:
-        fout.write(log + '\n')
+        json.dump(args.__dict__, fout, indent=2)
+        fout.write('\nbest_val_epoch = {}\nbest_val_loss = {}\n'.format(best_val_epoch, best_val_loss))
     torch.save(embedder.state_dict(), '/data/therealgabeguo/results/weights_{}.pth'.format(datetime_str))
 
     return
 
+# TODO: have option for which fingers we want
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser('parameterized_runner.py')
-    parser.add_argument('--datasets', '-d', help='Paths to folders containing images', type=str)
-    parser.add_argument('--cuda', '-c', help='Name of GPU we want to use', type=str)
+    parser = argparse.ArgumentParser(description='Train the Fingerprint Matcher')
+    parser.add_argument('--batch-size', type=int, default=64,
+                        help='input batch size for training (default: 64)')
+    parser.add_argument('--num-accumulated-batches', type=int, default=1,
+                        help='number of accumulated batches before weight update (default: 1)')
+    parser.add_argument('--pretrained-model-path', type=str, default=None,
+                        help='path to pretrained model (default: None)')
+    parser.add_argument('--posttrained-model-path', type=str, default='/data/therealgabeguo/fingerprint_weights/curr_model.pth',
+                        help='path to save the model at')
+    parser.add_argument('--data-dir', type=str, default='/data/therealgabeguo/fingerprint_data/sd302_split',
+                        help='where is the data stored')
+    parser.add_argument('--num-epochs', type=int, default=200,
+                        help='number of epochs to train (default: 200)')
+    parser.add_argument('--early-stopping-interval', type=int, default=65,
+                        help='how long to train model before early stopping, if no improvement')
+    parser.add_argument('--scale-factor', type=int, default=1,
+                        help='number of times to go over the dataset to create triplets (default: 1)')
+    parser.add_argument('--lr', type=float, default=0.001,
+                        help='learning rate (default: 0.001)')
+    parser.add_argument('--lr_step', type=int, default=None,
+                        help='learning rate step interval (default: None)')
+    parser.add_argument('--gamma', type=float, default=None,
+                        help='Learning rate step gamma (default: None)')
+    parser.add_argument('--tripletLoss-margin', type=float, default=0.2,
+                        help='Margin for triplet loss (default: 0.2)')
+    parser.add_argument('--possible-fgrps', type=str, default='01 02 03 04 05 06 07 08 09 10',
+                        help='Possible finger types to use in analysis (default: \'01 02 03 04 05 06 07 08 09 10\')')
+    parser.add_argument('--diff-fingers-across-sets', action='store_true', default=True,
+                        help='Whether to force different fingers across sets')
+    parser.add_argument('--diff-sensors-across-sets', action='store_true', default=True,
+                        help='Whether to force different sensors across sets')
+    parser.add_argument('--no-cuda', action='store_true', default=False,
+                        help='disables CUDA training')
+    parser.add_argument('--seed', type=int, default=1,
+                        help='random seed (default: 1)')
+        
     args = parser.parse_args()
-    datasets = args.datasets.split()
-    cuda = args.cuda
+    use_cuda = not args.no_cuda and torch.cuda.is_available()
+    use_mps = not args.no_mps and torch.backends.mps.is_available()
 
-    main(datasets, cuda)
+    torch.manual_seed(args.seed)
+
+    if use_cuda:
+        device = torch.device("cuda")
+    elif use_mps:
+        device = torch.device("mps")
+    else:
+        device = torch.device("cpu")
+
+    main(args, device)
