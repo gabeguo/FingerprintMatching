@@ -39,7 +39,7 @@ def fit(train_loader, val_loader, model, loss_fn, optimizer, scheduler, n_epochs
 
     for epoch in range(start_epoch, n_epochs):
         print('current epoch:', epoch)
-
+        
         # Train stage
         train_loss, metrics = train_epoch(train_loader, model, loss_fn, optimizer, cuda, log_interval, metrics,\
             accumulation_steps=num_accumulated_batches)
@@ -48,7 +48,8 @@ def fit(train_loader, val_loader, model, loss_fn, optimizer, scheduler, n_epochs
         message = 'Epoch: {}/{}. Train set: Average loss: {:.4f}'.format(epoch + 1, n_epochs, train_loss)
         for metric in metrics:
             message += '\t{}: {}'.format(metric.name(), metric.value())
-
+        
+        # Test stage
         val_loss, metrics = test_epoch(val_loader, model, loss_fn, cuda, metrics)
         val_loss /= len(val_loader)
         if val_loss < best_val_loss:
@@ -109,7 +110,19 @@ def train_epoch(train_loader, model, loss_fn, optimizer, cuda, log_interval, met
     # individual losses
 
     for batch_idx, (data, target, filepaths) in enumerate(train_loader):
-        target = target if len(target) > 0 else None
+        """
+        print('length of dataset', len(train_loader.dataset))
+        print('batch train {}'.format(batch_idx))
+        for the_idx in range(len(filepaths[0])):
+            print('\titem {}'.format(the_idx))
+            print('\t\t', '\n\t\t'.join([x[the_idx] for x in filepaths]))
+        print('length of data', len(data))
+        print('length of individual items', len(data[0]), len(data[1]), len(data[2]))
+        print(data[0][0].shape)
+        return
+        """
+        
+        target = None #target if len(target) > 0 else None
         if not type(data) in (tuple, list):
             data = (data,)
         if cuda:
@@ -117,8 +130,6 @@ def train_epoch(train_loader, model, loss_fn, optimizer, cuda, log_interval, met
             if target is not None:
                 target = torch.tensor([int(item) for item in target]).cuda(device=cuda)
 
-
-        #optimizer.zero_grad()
         outputs = model(*data)
 
         if type(outputs) not in (tuple, list):
@@ -128,8 +139,6 @@ def train_epoch(train_loader, model, loss_fn, optimizer, cuda, log_interval, met
         if target is not None:
             target = (target,)
             loss_inputs += target
-
-        #print(loss_inputs)
 
         loss_inputs = list(loss_inputs)
         for i in range(len(loss_inputs)):
@@ -189,7 +198,18 @@ def test_epoch(val_loader, model, loss_fn, cuda, metrics):
         model.eval()
         val_loss = 0
         for batch_idx, (data, target, filepaths) in enumerate(val_loader):
-            target = target if len(target) > 0 else None
+            """
+            print('length of dataset', len(val_loader.dataset))
+            print('batch test {}'.format(batch_idx))
+            for the_idx in range(len(filepaths[0])):
+                print('\titem {}'.format(the_idx))
+                print('\t\t', '\n\t\t'.join([x[the_idx] for x in filepaths]))
+            print('length of data', len(data))
+            print('length of individual items', len(data[0]), len(data[1]), len(data[2]))
+            print(data[0][0].shape)
+            return
+            """
+            target = None #target if len(target) > 0 else None
             if not type(data) in (tuple, list):
                 data = (data,)
             if cuda:

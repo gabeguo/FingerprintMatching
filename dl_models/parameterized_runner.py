@@ -18,7 +18,6 @@ import getopt, argparse
 sys.path.append('../')
 
 from trainer import *
-from siamese_datasets import *
 from fingerprint_dataset import FingerprintDataset
 from multiple_finger_datasets import *
 from embedding_models import *
@@ -38,23 +37,21 @@ def main(args, cuda):
     train_dir_paths = [os.path.join(x, 'train') for x in datasets]
     val_dir_paths = [os.path.join(x, 'val') for x in datasets]
 
-    training_dataset = TripletDataset(\
-        MultipleFingerDataset(fingerprint_dataset=FingerprintDataset(train_dir_paths, train=True)),\
+    training_dataset = MultipleFingerDataset(fingerprint_dataset=FingerprintDataset(train_dir_paths, train=True),\
         num_anchor_fingers=1, num_pos_fingers=1, num_neg_fingers=1,\
         SCALE_FACTOR=args.scale_factor,\
-        diff_fingers_across_sets=args.diff_fingers_across_sets, diff_fingers_within_set=True,\
-        diff_sensors_across_sets=args.diff_sensors_across_sets, same_sensor_within_set=True, \
-        acceptable_anchor_fgrps=args.possible_fgrps, acceptable_pos_fgrps=args.possible_fgrps, acceptable_neg_fgrps=args.possible_fgrps)
+        diff_fingers_across_sets=args.diff_fingers_across_sets_train, diff_fingers_within_set=True,\
+        diff_sensors_across_sets=args.diff_sensors_across_sets_train, same_sensor_within_set=True, \
+        acceptable_anchor_fgrps=possible_fgrps, acceptable_pos_fgrps=possible_fgrps, acceptable_neg_fgrps=possible_fgrps)
     #training_dataset = torch.utils.data.Subset(training_dataset, list(range(0, len(training_dataset), 50)))
     train_dataloader = DataLoader(training_dataset, batch_size=args.batch_size, shuffle=True, num_workers=16)
 
-    val_dataset = TripletDataset(\
-        MultipleFingerDataset(fingerprint_dataset=FingerprintDataset(val_dir_paths, train=False)),\
+    val_dataset = MultipleFingerDataset(fingerprint_dataset=FingerprintDataset(val_dir_paths, train=False),\
         num_anchor_fingers=1, num_pos_fingers=1, num_neg_fingers=1,\
         SCALE_FACTOR=args.scale_factor,\
-        diff_fingers_across_sets=args.diff_fingers_across_sets, diff_fingers_within_set=True,\
-        diff_sensors_across_sets=args.diff_sensors_across_sets, same_sensor_within_set=True, \
-        acceptable_anchor_fgrps=args.possible_fgrps, acceptable_pos_fgrps=args.possible_fgrps, acceptable_neg_fgrps=args.possible_fgrps)
+        diff_fingers_across_sets=args.diff_fingers_across_sets_val, diff_fingers_within_set=True,\
+        diff_sensors_across_sets=args.diff_sensors_across_sets_val, same_sensor_within_set=True, \
+        acceptable_anchor_fgrps=possible_fgrps, acceptable_pos_fgrps=possible_fgrps, acceptable_neg_fgrps=possible_fgrps)
     #val_dataset = torch.utils.data.Subset(val_dataset, list(range(0, len(val_dataset), 5)))
     val_dataloader = DataLoader(val_dataset, batch_size=args.batch_size, shuffle=True, num_workers=16)
 
@@ -81,12 +78,12 @@ def main(args, cuda):
     triplet_net = TripletNet(embedder)
 
     # TRAIN
-    optimizer = optim.Adam(triplet_net.parameters(), lr=args.learning_rate)
+    optimizer = optim.Adam(triplet_net.parameters(), lr=args.lr)
     scheduler = optim.lr_scheduler.ExponentialLR(optimizer, args.gamma, last_epoch=- 1, verbose=False) if \
         (args.lr_step is not None and args.gamma is not None) \
         else None
 
-    print('learning rate = {}\ntriplet loss margin = {}\n'.format(args.learning_rate, args.tripletLoss_margin))
+    print('learning rate = {}\ntriplet loss margin = {}\n'.format(args.lr, args.tripletLoss_margin))
     print('max epochs = {}\n'.format(args.num_epochs))
 
     best_val_epoch, best_val_loss = 0, 0
@@ -120,7 +117,7 @@ if __name__ == "__main__":
                         help='path to pretrained model (default: None)')
     parser.add_argument('--posttrained-model-path', type=str, default='/data/therealgabeguo/fingerprint_weights/curr_model.pth',
                         help='path to save the model at')
-    parser.add_argument('--data-dir', type=str, default='/data/therealgabeguo/fingerprint_data/sd302_split',
+    parser.add_argument('--datasets', type=str, default='/data/therealgabeguo/fingerprint_data/sd302_split',
                         help='where is the data stored')
     parser.add_argument('--num-epochs', type=int, default=200,
                         help='number of epochs to train (default: 200)')
@@ -138,10 +135,14 @@ if __name__ == "__main__":
                         help='Margin for triplet loss (default: 0.2)')
     parser.add_argument('--possible-fgrps', type=str, default='01 02 03 04 05 06 07 08 09 10',
                         help='Possible finger types to use in analysis (default: \'01 02 03 04 05 06 07 08 09 10\')')
-    parser.add_argument('--diff-fingers-across-sets', action='store_true', default=True,
-                        help='Whether to force different fingers across sets')
-    parser.add_argument('--diff-sensors-across-sets', action='store_true', default=True,
-                        help='Whether to force different sensors across sets')
+    parser.add_argument('--diff-fingers-across-sets-train', action='store_true', default=True,
+                        help='Whether to force different fingers across sets in training')
+    parser.add_argument('--diff-sensors-across-sets-train', action='store_true', default=True,
+                        help='Whether to force different sensors across sets in training')
+    parser.add_argument('--diff-fingers-across-sets-val', action='store_true', default=True,
+                        help='Whether to force different fingers across sets in validation')
+    parser.add_argument('--diff-sensors-across-sets-val', action='store_true', default=True,
+                        help='Whether to force different sensors across sets in validation')
     parser.add_argument('--no-cuda', action='store_true', default=False,
                         help='disables CUDA training')
     parser.add_argument('--seed', type=int, default=1,
@@ -149,14 +150,11 @@ if __name__ == "__main__":
         
     args = parser.parse_args()
     use_cuda = not args.no_cuda and torch.cuda.is_available()
-    use_mps = not args.no_mps and torch.backends.mps.is_available()
 
     torch.manual_seed(args.seed)
 
     if use_cuda:
         device = torch.device("cuda")
-    elif use_mps:
-        device = torch.device("mps")
     else:
         device = torch.device("cpu")
 

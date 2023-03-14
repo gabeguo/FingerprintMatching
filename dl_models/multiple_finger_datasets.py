@@ -113,7 +113,7 @@ class MultipleFingerDataset(Dataset):
         self.scale_factor = SCALE_FACTOR
 
         # initialize the lookup tables
-        self.the_labels = self.fingerprint_dataset.test_labels
+        self.the_labels = self.fingerprint_dataset.train_labels if self.train else self.fingerprint_dataset.test_labels
         self.the_data = self.fingerprint_dataset.train_data if self.train else self.fingerprint_dataset.test_data
         # generate fixed triplets for testing
         self.labels_set = set(self.the_labels)
@@ -173,8 +173,9 @@ class MultipleFingerDataset(Dataset):
                             and curr_anchor_neg_combo not in seen_combos:
                         seen_combos.add(curr_anchor_pos_combo)
                         seen_combos.add(curr_anchor_neg_combo)
+                        # We found someting! We can add it
+                        triplets.append((anchor_indices, positive_indices, negative_indices))
                         break # found original combo in both anchor-positive and anchor-negative
-                triplets.append((anchor_indices, positive_indices, negative_indices))
         self.test_triplets = triplets
         return
 
@@ -291,7 +292,7 @@ class MultipleFingerDataset(Dataset):
                 continue # satisfy (7) - different sensors than anchor, if needed
             if same_sensor_within_set and len(retVal_sensors) >= 1 and curr_sensor not in retVal_sensors:
                 continue # satisfy (8) - same sensor as each other, if needed
-            if curr_fgrp not in possible_fgrps:
+            if curr_fgrp not in possible_fgrps: # TODO: optimize this code???
                 continue # satisfy (9) - only use certain fingers
             if self.get_datasetName_from_index(curr_index) != self.get_datasetName_from_index(anchor_indices[0]):
                 continue # satisfy (10) - same dataset as anchors
@@ -324,7 +325,7 @@ class MultipleFingerDataset(Dataset):
         if same_sensor_within_set:
             assert len(retVal_sensors) == 1
         # (9) only use certain fingers
-        assert retVal_sensors.issubset(set(possible_fgrps))
+        assert retVal_fgrps.issubset(set(possible_fgrps))
         # (10) same dataset as anchor
         assert set([self.get_datasetName_from_index(i) for i in ret_val]) == set([self.get_datasetName_from_index(i) for i in anchor_indices])
         
@@ -374,21 +375,23 @@ class MultipleFingerDataset(Dataset):
         # TODO: debug this
         anchor_filepath = self.the_data[self.train_anchor_indices[index]]
         anchor_img = my_transformation(my_read_image(anchor_filepath), train=self.train)
-        curr_pos_indices = self.get_indices(anchor_indices=self.train_anchor_indices,\
+        curr_pos_indices = self.get_indices(anchor_indices=[self.train_anchor_indices[index]],\
                         same_class_as_anchor=True, \
                         diff_fingers_across_sets=self.diff_fingers_across_sets,\
                         diff_fingers_within_set=self.diff_fingers_within_set, \
                         diff_sensors_across_sets=self.diff_sensors_across_sets, \
-                        same_sensor_within_set=self.same_sensor_within_set)
+                        same_sensor_within_set=self.same_sensor_within_set, \
+                        possible_fgrps=self.acceptable_pos_fgrps)
         assert len(curr_pos_indices) == 1
         pos_filepath = self.the_data[curr_pos_indices[0]]
         pos_img = my_transformation(my_read_image(pos_filepath), train=self.train)
-        curr_neg_indices = self.get_indices(anchor_indices=self.train_anchor_indices,\
+        curr_neg_indices = self.get_indices(anchor_indices=[self.train_anchor_indices[index]],\
                         same_class_as_anchor=False, \
                         diff_fingers_across_sets=self.diff_fingers_across_sets,\
                         diff_fingers_within_set=self.diff_fingers_within_set, \
                         diff_sensors_across_sets=self.diff_sensors_across_sets, \
-                        same_sensor_within_set=self.same_sensor_within_set)
+                        same_sensor_within_set=self.same_sensor_within_set, \
+                        possible_fgrps=self.acceptable_neg_fgrps)
         assert len(curr_neg_indices) == 1
         neg_filepath = self.the_data[curr_neg_indices[0]]
         neg_img = my_transformation(my_read_image(neg_filepath), train=self.train)
@@ -425,6 +428,7 @@ class MultipleFingerDataset(Dataset):
     def __len__(self):
         if not self.train: # we can have multiple testing triplets for each item in the dataset
             return len(self.test_triplets)
-        return len(self.fingerprint_dataset) # TODO: fix this to accomodate limited fingers
+        return len(self.train_anchor_indices)
+        #return len(self.fingerprint_dataset)
 
 
