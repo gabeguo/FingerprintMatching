@@ -75,6 +75,7 @@ FN_NUM_KEY = 'num false negatives'
 TN_NUM_KEY = 'num true negatives'
 FP_NUM_KEY = 'num false positives'
 BEST_ACC_THRESHOLD_KEY = 'best accuracy threshold'
+VALID_FINGERS_KEY = 'fingers used'
 
 # More constants
 SAME_PERSON = 0
@@ -256,7 +257,8 @@ def run_test_loop(test_dataloader, embedder, cuda, num_anchors, num_pos, num_neg
         curr_anchor_neg_dists = []
 
         for i_a in range(num_anchors):
-            curr_anchor = test_images[0][i_a].to(cuda)
+            curr_anchor = torch.unsqueeze(test_images[0][i_a], 0).to(cuda)
+            print(curr_anchor.shape)
             embedding_anchor = torch.flatten(embedder(curr_anchor))
             assert len(embedding_anchor.size()) == 1 and embedding_anchor.size(dim=0) == 512      
             anchor_filepath = test_filepaths[0][i_a]
@@ -266,7 +268,7 @@ def run_test_loop(test_dataloader, embedder, cuda, num_anchors, num_pos, num_neg
             for triplet_sameness_idx, sameness_code, num_samples, curr_dists \
                     in zip([1, 2], [SAME_PERSON, DIFF_PERSON], [num_pos, num_neg], [curr_anchor_pos_dists, curr_anchor_neg_dists]):
                 for i_curr in range(num_samples):
-                    curr_sample = test_images[triplet_sameness_idx][i_curr].to(cuda)
+                    curr_sample = torch.unsqueeze(test_images[triplet_sameness_idx][i_curr], 0).to(cuda)
                     embedding_curr = torch.flatten(embedder(curr_sample))
                     assert len(embedding_curr.size()) == 1 and embedding_curr.size(dim=0) == 512
                     curr_dists.append(euclideanDist(embedding_anchor, embedding_curr).item())
@@ -336,12 +338,15 @@ Returns:
 """
 def load_data(the_data_folder, num_anchors, num_pos, num_neg, scale_factor, \
         diff_fingers_across_sets=True, diff_fingers_within_set=True, \
-        diff_sensors_across_sets=True, same_sensor_within_set=True):
+        diff_sensors_across_sets=True, same_sensor_within_set=True, \
+        possible_fgrps=ALL_FINGERS):
+    assert set(possible_fgrps).issubset(ALL_FINGERS)
     fingerprint_dataset = FingerprintDataset(os.path.join(the_data_folder, 'test'), train=False)
     test_dataset = MultipleFingerDataset(fingerprint_dataset, num_anchors, num_pos, num_neg, \
         SCALE_FACTOR=scale_factor, \
         diff_fingers_across_sets=diff_fingers_across_sets, diff_fingers_within_set=diff_fingers_within_set, \
-        diff_sensors_across_sets=diff_sensors_across_sets, same_sensor_within_set=same_sensor_within_set)
+        diff_sensors_across_sets=diff_sensors_across_sets, same_sensor_within_set=same_sensor_within_set, \
+        acceptable_anchor_fgrps=possible_fgrps, acceptable_pos_fgrps=possible_fgrps, acceptable_neg_fgrps=possible_fgrps)
     print('loaded test dataset: {}'.format(the_data_folder))
     assert batch_size == 1
     test_dataloader = DataLoader(test_dataset, batch_size=batch_size, shuffle=True)
@@ -373,7 +378,7 @@ def main(the_data_folder, weights_path, cuda, output_dir, num_anchors, num_pos, 
         scale_factor=1, \
         diff_fingers_across_sets=True, diff_fingers_within_set=True, \
         diff_sensors_across_sets=True, same_sensor_within_set=True, \
-        track_confusion_examples=False):
+        track_confusion_examples=False, possible_fgrps=' '.join(ALL_FINGERS)):
     print('Number anchor, pos, neg fingers: {}, {}, {}'.format(num_anchors, num_pos, num_neg))
 
     fingerprint_dataset, test_dataset, test_dataloader = \
@@ -381,7 +386,8 @@ def main(the_data_folder, weights_path, cuda, output_dir, num_anchors, num_pos, 
         num_anchors=num_anchors, num_pos=num_pos, num_neg=num_neg, \
         scale_factor=scale_factor, \
         diff_fingers_across_sets=diff_fingers_across_sets, diff_fingers_within_set=diff_fingers_within_set, \
-        diff_sensors_across_sets=diff_sensors_across_sets, same_sensor_within_set=same_sensor_within_set)
+        diff_sensors_across_sets=diff_sensors_across_sets, same_sensor_within_set=same_sensor_within_set, \
+        possible_fgrps=possible_fgrps.split())
 
     dataset_name = the_data_folder[:-1 if the_data_folder[-1] == '/' else len(the_data_folder)].split('/')[-1]
     print('dataset name:', dataset_name)
@@ -443,10 +449,11 @@ def main(the_data_folder, weights_path, cuda, output_dir, num_anchors, num_pos, 
         ACC_KEY: max(accs), ROC_AUC_KEY: auc,
         T_VAL_KEY: welch_t, P_VAL_KEY: p_val,
         DF_KEY: calc_dof_welch(s1=np.std(_01_dist), n1=len(_01_dist), s2=np.std(_02_dist), n2=len(_02_dist)),
-        TP_NAMES_KEY: tp_names[:NUM_EXAMPLES_NEEDED], FP_NAMES_KEY: fp_names[:NUM_EXAMPLES_NEEDED], \
+        TP_NAMES_KEY: tp_names[:NUM_EXAMPLES_NEEDED], FP_NAMES_KEY: fp_names[:NUM_EXAMPLES_NEEDED],
         TN_NAMES_KEY: tn_names[:NUM_EXAMPLES_NEEDED], FN_NAMES_KEY: fn_names[:NUM_EXAMPLES_NEEDED],
         TP_NUM_KEY: len(tp_names), FP_NUM_KEY: len(fp_names), TN_NUM_KEY: len(tn_names), FN_NUM_KEY: len(fn_names),
-        BEST_ACC_THRESHOLD_KEY: threshold
+        BEST_ACC_THRESHOLD_KEY: threshold,
+        VALID_FINGERS_KEY: possible_fgrps
     }
 
     results_fname = os.path.join(output_dir, \
@@ -486,8 +493,10 @@ if __name__ == "__main__":
         help='Force all fingerprints in a set to come from the same sensor', \
         action='store_true')
     parser.add_argument('--track_confusion_examples', '-tc', \
-        help='Log examples from confusion matrix', \
+        default=False, help='Log examples from confusion matrix', \
         action='store_true')
+    parser.add_argument('--possible_fgrps', type=str, default='01 02 03 04 05 06 07 08 09 10',
+        help='Possible finger types to use in analysis (default: \'01 02 03 04 05 06 07 08 09 10\')')
 
     args = parser.parse_args()
 
@@ -504,6 +513,7 @@ if __name__ == "__main__":
     same_sensor_within_set = args.same_sensor_within_set
 
     track_confusion_examples = args.track_confusion_examples
+    possible_fgrps = args.possible_fgrps
 
     print(args)
 
@@ -515,6 +525,7 @@ if __name__ == "__main__":
         scale_factor=scale_factor, \
         diff_fingers_across_sets=diff_fingers_across_sets, diff_fingers_within_set=diff_fingers_within_set, \
         diff_sensors_across_sets=diff_sensors_across_sets, same_sensor_within_set=same_sensor_within_set, \
-        track_confusion_examples=track_confusion_examples)
+        track_confusion_examples=track_confusion_examples, \
+        possible_fgrps=possible_fgrps)
 
     # TESTED - pass!
