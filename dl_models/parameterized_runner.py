@@ -26,6 +26,7 @@ from common_filepaths import *
 
 def main(args, cuda):    
     datasets = args.datasets.split()
+    val_datasets = args.val_datasets.split()
     possible_fgrps = args.possible_fgrps.split()
     assert set(possible_fgrps).issubset(set(ALL_FINGERS))
 
@@ -35,7 +36,7 @@ def main(args, cuda):
     print('weights saved to:', args.posttrained_model_path)
 
     train_dir_paths = [os.path.join(x, 'train') for x in datasets]
-    val_dir_paths = [os.path.join(x, 'val') for x in datasets]
+    val_dir_paths = [os.path.join(x, 'val') for x in val_datasets]
 
     training_dataset = MultipleFingerDataset(fingerprint_dataset=FingerprintDataset(train_dir_paths, train=True),\
         num_anchor_fingers=1, num_pos_fingers=1, num_neg_fingers=1,\
@@ -90,7 +91,7 @@ def main(args, cuda):
 
     best_val_epoch, best_val_loss = fit(train_loader=train_dataloader, val_loader=val_dataloader, model=triplet_net, \
         loss_fn=nn.TripletMarginLoss(margin=args.tripletLoss_margin), optimizer=optimizer, scheduler=scheduler, \
-        n_epochs=args.num_epochs, cuda=device, log_interval=300, metrics=[], start_epoch=0, early_stopping_interval=args.early_stopping_interval, \
+        n_epochs=args.num_epochs, cuda=device, log_interval=args.log_interval, metrics=[], start_epoch=0, early_stopping_interval=args.early_stopping_interval, \
         num_accumulated_batches=args.num_accumulated_batches, temp_model_path='temp_weights/temp_{}.pth'.format(the_name))
 
     print('best_val_epoch = {}\nbest_val_loss = {}\n'.format(best_val_epoch, best_val_loss))
@@ -119,10 +120,14 @@ if __name__ == "__main__":
                         help='path to save the model at')
     parser.add_argument('--datasets', type=str, default='/data/therealgabeguo/fingerprint_data/sd302_split',
                         help='where is the data stored')
+    parser.add_argument('--val-datasets', type=str, default='/data/therealgabeguo/fingerprint_data/sd302_split',
+                        help='where is the validation data stored')
     parser.add_argument('--num-epochs', type=int, default=200,
                         help='number of epochs to train (default: 200)')
     parser.add_argument('--early-stopping-interval', type=int, default=65,
                         help='how long to train model before early stopping, if no improvement')
+    parser.add_argument('--log-interval', type=int, default=300,
+                        help='How many batches to go through before logging in training')
     parser.add_argument('--scale-factor', type=int, default=1,
                         help='number of times to go over the dataset to create triplets (default: 1)')
     parser.add_argument('--lr', type=float, default=0.001,
