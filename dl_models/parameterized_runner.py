@@ -135,13 +135,13 @@ if __name__ == "__main__":
                         help='Margin for triplet loss (default: 0.2)')
     parser.add_argument('--possible-fgrps', type=str, default='01 02 03 04 05 06 07 08 09 10',
                         help='Possible finger types to use in analysis (default: \'01 02 03 04 05 06 07 08 09 10\')')
-    parser.add_argument('--diff-fingers-across-sets-train', action='store_true', default=True,
+    parser.add_argument('--diff-fingers-across-sets-train', action='store_true',
                         help='Whether to force different fingers across sets in training')
-    parser.add_argument('--diff-sensors-across-sets-train', action='store_true', default=True,
+    parser.add_argument('--diff-sensors-across-sets-train', action='store_true',
                         help='Whether to force different sensors across sets in training')
-    parser.add_argument('--diff-fingers-across-sets-val', action='store_true', default=True,
+    parser.add_argument('--diff-fingers-across-sets-val', action='store_true',
                         help='Whether to force different fingers across sets in validation')
-    parser.add_argument('--diff-sensors-across-sets-val', action='store_true', default=True,
+    parser.add_argument('--diff-sensors-across-sets-val', action='store_true',
                         help='Whether to force different sensors across sets in validation')
     parser.add_argument('--no-cuda', action='store_true', default=False,
                         help='disables CUDA training')

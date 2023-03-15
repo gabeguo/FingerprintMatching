@@ -272,14 +272,22 @@ class MultipleFingerDataset(Dataset):
             the_size = self.num_pos_fingers
         # satisfy (1)(b), (2)(b) - diff class than anchor
         else:
-            the_label = np.random.choice(
-                list(self.labels_set - set([self.the_labels[anchor_indices[0]]]))
-            )
+            while True:
+                the_label = np.random.choice(
+                    list(self.labels_set - set([self.the_labels[anchor_indices[0]]]))
+                )
+                random_index = self.random_state.choice(self.label_to_indices[the_label])
+                if self.get_datasetName_from_index(random_index) == self.get_datasetName_from_index(anchor_indices[0]):
+                    break # satisfy (10) - same dataset as anchors
             the_size = self.num_neg_fingers
         
         while len(ret_val) < the_size:
             # satisfy (0) - same class as each other
             curr_index = self.random_state.choice(self.label_to_indices[the_label])
+            """
+            print('anchors: {}'.format([self.get_filename_from_index(the_idx) for the_idx in anchor_indices]))
+            print('selected: {}'.format(self.get_filename_from_index(curr_index)))
+            """
             if curr_index in anchor_indices or curr_index in ret_val:
                 continue # satisfy (3), (4) - try again until we get previously unseen samples
             curr_fgrp = self.get_fgrp_from_index(curr_index)
