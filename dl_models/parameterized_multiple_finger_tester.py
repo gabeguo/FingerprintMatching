@@ -258,7 +258,6 @@ def run_test_loop(test_dataloader, embedder, cuda, num_anchors, num_pos, num_neg
 
         for i_a in range(num_anchors):
             curr_anchor = torch.unsqueeze(test_images[0][i_a], 0).to(cuda)
-            print(curr_anchor.shape)
             embedding_anchor = torch.flatten(embedder(curr_anchor))
             assert len(embedding_anchor.size()) == 1 and embedding_anchor.size(dim=0) == 512      
             anchor_filepath = test_filepaths[0][i_a]
