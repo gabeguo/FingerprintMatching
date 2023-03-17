@@ -5,7 +5,7 @@ python3 parameterized_multiple_finger_tester.py \
     --cuda 'cuda:2' \
     --num_fingers 1 \
     --output_root /data/therealgabeguo/paper_results/proving_correlation/general/sd300 \
-    --scale_factor 1 \
+    --scale_factor 2 \
     --diff_fingers_across_sets \
     --diff_fingers_within_set \
     --diff_sensors_across_sets \
