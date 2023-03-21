@@ -11,7 +11,9 @@ do
         done
         echo "\t\t~"
         num_people=$(ls "/data/therealgabeguo/fingerprint_data/${dir}/${modality}" | wc -l)
+        total_num_samples=$(find "/data/therealgabeguo/fingerprint_data/${dir}/${modality}" -type f | wc -l)
         echo "\t\tNum people: ${num_people}"
+        echo "\t\tNum samples: ${total_num_samples}"
     done
     echo "---"
 done
