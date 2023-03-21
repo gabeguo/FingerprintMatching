@@ -6,12 +6,13 @@ from scipy.stats import sem
 from parameterized_multiple_finger_tester import *
 
 DATA_FOLDER = '/data/therealgabeguo/paper_results/multi_finger'
+SD300_KEY = 'SD 300'
 SD301_KEY = 'SD 301'
 SD302_KEY = 'SD 302'
 
-dataset_to_roc = {SD301_KEY: dict(), SD302_KEY: dict()}
-dataset_to_num_samples = {SD301_KEY: set(), SD302_KEY: set()}
-dataset_to_num_tuples = {SD301_KEY: set(), SD302_KEY: set()}
+dataset_to_roc = {SD300_KEY: dict(), SD301_KEY: dict(), SD302_KEY: dict()}
+dataset_to_num_samples = {SD300_KEY: dict(), SD301_KEY: set(), SD302_KEY: set()}
+dataset_to_num_tuples = {SD300_KEY: dict(), SD301_KEY: set(), SD302_KEY: set()}
 
 # find all the files and create ROC dict of lists
 for root, dirs, files in os.walk(DATA_FOLDER, topdown=False):
@@ -30,7 +31,14 @@ for root, dirs, files in os.walk(DATA_FOLDER, topdown=False):
                 the_info[NUM_POS_PAIRS_KEY] # anchor combo (plus pos & neg)
             assert the_info[NUM_POS_PAIRS_KEY] == the_info[NUM_NEG_PAIRS_KEY]
 
-            dataset_key = SD301_KEY if 'sd301' in the_filepath.lower() else SD302_KEY
+            if 'sd300' in the_filepath.lower():
+                dataset_key = SD300_KEY
+            elif 'sd301' in the_filepath.lower():
+                dataset_key = SD301_KEY
+            elif 'sd302' in the_filepath.lower():
+                dataset_key = SD302_KEY
+            else:
+                print('error - invalid filepath')
             if curr_n not in dataset_to_roc[dataset_key]:
                 dataset_to_roc[dataset_key][curr_n] = list()
             dataset_to_roc[dataset_key][curr_n].append(curr_roc)
@@ -50,7 +58,7 @@ n_trials = set([len(dataset_to_roc[the_dataset][n_fingers]) \
 assert len(n_trials) == 1
 n_trials = list(n_trials)[0]
 
-colors = ['deepskyblue', 'salmon']
+colors = ['deepskyblue', 'salmon', 'gold']
 
 for key in dataset_to_roc:
     curr_data = dataset_to_roc[key]
