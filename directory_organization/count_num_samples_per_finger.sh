@@ -9,5 +9,9 @@ do
             count=$(find "/data/therealgabeguo/fingerprint_data/${dir}/${modality}" -type f -name "*_${fgrp}.*" | wc -l)
             echo "\t\t${fgrp}: ${count}"
         done
+        echo "\t\t~"
+        num_people=$(ls "/data/therealgabeguo/fingerprint_data/${dir}/${modality}" | wc -l)
+        echo "\t\tNum people: ${num_people}"
     done
+    echo "---"
 done
