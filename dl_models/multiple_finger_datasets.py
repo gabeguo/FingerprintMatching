@@ -155,13 +155,16 @@ class MultipleFingerDataset(Dataset):
                 while True: # need to find original combos
                     if self.get_fgrp_from_index(i) not in self.acceptable_anchor_fgrps:
                         break # this will never give a valid triplet
+                    #print('get anchor')
                     anchor_indices = self.get_anchor_indices(i, \
                         diff_fingers_within_set=self.diff_fingers_within_set, same_sensor_within_set=self.same_sensor_within_set,
                         possible_fgrps=self.acceptable_anchor_fgrps)
+                    #print('get pos')
                     positive_indices = self.get_indices(anchor_indices, same_class_as_anchor=True, \
                         diff_fingers_across_sets=self.diff_fingers_across_sets, diff_fingers_within_set=self.diff_fingers_within_set, \
                         diff_sensors_across_sets=self.diff_sensors_across_sets, same_sensor_within_set=self.same_sensor_within_set,
                         possible_fgrps=self.acceptable_pos_fgrps)
+                    #print('get neg')
                     negative_indices = self.get_indices(anchor_indices, same_class_as_anchor=False, \
                         diff_fingers_across_sets=self.diff_fingers_across_sets, diff_fingers_within_set=self.diff_fingers_within_set, \
                         diff_sensors_across_sets=self.diff_sensors_across_sets, same_sensor_within_set=self.same_sensor_within_set,
@@ -285,24 +288,33 @@ class MultipleFingerDataset(Dataset):
             # satisfy (0) - same class as each other
             curr_index = self.random_state.choice(self.label_to_indices[the_label])
             """
-            print('anchors: {}'.format([self.get_filename_from_index(the_idx) for the_idx in anchor_indices]))
-            print('selected: {}'.format(self.get_filename_from_index(curr_index)))
+            print('\n\tanchors: {}'.format([self.get_filename_from_index(the_idx) for the_idx in anchor_indices]))
+            print('\tselected: {}'.format(self.get_filename_from_index(curr_index)))
+            print('\tret val: {}'.format([self.get_filename_from_index(the_idx) for the_idx in ret_val]))
+            print('\tsame class as anchor: {}'.format(same_class_as_anchor))
             """
             if curr_index in anchor_indices or curr_index in ret_val:
+                #print('\t\tviolated unseen samples: {}'.format(curr_index))
                 continue # satisfy (3), (4) - try again until we get previously unseen samples
             curr_fgrp = self.get_fgrp_from_index(curr_index)
             curr_sensor = self.get_sensor_from_index(curr_index)
             if diff_fingers_across_sets and curr_fgrp in anchor_fgrps:
+                #print('\t\tviolated fingers - diff across sets: {}'.format(curr_fgrp))
                 continue # satisfy (5) - different fingers than anchor, if needed
             if diff_fingers_within_set and curr_fgrp in retVal_fgrps:
+                #print('\t\tviolated fingers - diff within set: {}'.format(curr_fgrp))
                 continue # satisfy (6) - different fingers than each other, if needed
             if diff_sensors_across_sets and curr_sensor in anchor_sensors:
+                #print('\t\tviolated sensors - diff across sets: {}'.format(curr_sensor))
                 continue # satisfy (7) - different sensors than anchor, if needed
             if same_sensor_within_set and len(retVal_sensors) >= 1 and curr_sensor not in retVal_sensors:
+                #print('\t\tviolated sensors - same within set: {}'.format(curr_sensor))
                 continue # satisfy (8) - same sensor as each other, if needed
             if curr_fgrp not in possible_fgrps: # TODO: optimize this code???
+                #print('\t\tviolated possible fingerprints: {}'.format(curr_fgrp))
                 continue # satisfy (9) - only use certain fingers
             if self.get_datasetName_from_index(curr_index) != self.get_datasetName_from_index(anchor_indices[0]):
+                #print('\t\tviolated dataset name: {}'.format(self.get_datasetName_from_index(curr_index)))
                 continue # satisfy (10) - same dataset as anchors
             
             ret_val.append(curr_index) # satisfy (4) - distinct samples than each other
