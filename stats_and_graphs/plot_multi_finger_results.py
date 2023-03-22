@@ -11,8 +11,8 @@ SD301_KEY = 'SD 301'
 SD302_KEY = 'SD 302'
 
 dataset_to_roc = {SD300_KEY: dict(), SD301_KEY: dict(), SD302_KEY: dict()}
-dataset_to_num_samples = {SD300_KEY: dict(), SD301_KEY: set(), SD302_KEY: set()}
-dataset_to_num_tuples = {SD300_KEY: dict(), SD301_KEY: set(), SD302_KEY: set()}
+dataset_to_num_samples = {SD300_KEY: set(), SD301_KEY: set(), SD302_KEY: set()}
+dataset_to_num_tuples = {SD300_KEY: set(), SD301_KEY: set(), SD302_KEY: set()}
 
 # find all the files and create ROC dict of lists
 for root, dirs, files in os.walk(DATA_FOLDER, topdown=False):
@@ -50,7 +50,7 @@ for root, dirs, files in os.walk(DATA_FOLDER, topdown=False):
 
 import matplotlib.pyplot as plt
 
-line_markers = ['o', 'x']
+line_markers = ['x', '+', 'o']
 print(dataset_to_num_samples)
 
 n_trials = set([len(dataset_to_roc[the_dataset][n_fingers]) \
@@ -58,7 +58,9 @@ n_trials = set([len(dataset_to_roc[the_dataset][n_fingers]) \
 assert len(n_trials) == 1
 n_trials = list(n_trials)[0]
 
-colors = ['deepskyblue', 'salmon', 'gold']
+colors = ['deepskyblue', 'salmon', 'goldenrod']
+
+already_written_roc = set()
 
 for key in dataset_to_roc:
     curr_data = dataset_to_roc[key]
@@ -81,7 +83,12 @@ for key in dataset_to_roc:
         color = colors.pop())
     for num_fingers in curr_data:
         roc_auc = np.mean(curr_data[num_fingers])
-        plt.text(num_fingers - 0.15, roc_auc + 0.005, str(round(roc_auc, 3)))
+        if int(100 * round(roc_auc, 2)) in already_written_roc:
+            plt.text(num_fingers - 0.15, roc_auc + 0.015, str(round(roc_auc, 3)))
+        else:
+            plt.text(num_fingers - 0.15, roc_auc + 0.005, str(round(roc_auc, 3)))
+
+        already_written_roc.add(int(100 * round(roc_auc, 2)))
 
 plt.legend()
 plt.xlim(0.75, 5.25)
