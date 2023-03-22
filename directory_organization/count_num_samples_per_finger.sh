@@ -1,4 +1,4 @@
-for dir in "sd300a_split" "sd301_split_balanced" "sd302_split_balanced"
+for dir in "sd300a_split" "sd300a_split_balanced" "sd301_split_balanced" "sd302_split_balanced"
 do
     echo $dir
     for modality in "train" "val" "test"
