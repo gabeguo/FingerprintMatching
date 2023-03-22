@@ -279,7 +279,7 @@ def run_test_loop(test_dataloader, embedder, cuda, num_anchors, num_pos, num_neg
 
                     # get names for confusion diagram
                     if threshold is not None:
-                        curr_pair = (curr_anchor_name[0].split('/')[-1], curr_name[0].split('/')[-1])
+                        curr_pair = (curr_anchor_name.split('/')[-1], curr_name.split('/')[-1])
                         if sameness_code == SAME_PERSON:
                             if curr_dists[-1] < threshold: # tp
                                 tp_names.append(curr_pair)
