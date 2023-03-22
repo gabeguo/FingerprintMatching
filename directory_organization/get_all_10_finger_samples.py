@@ -74,19 +74,31 @@ def create_train_val_test_subfolders(data_folder):
 
 # Checks if for this person-sensor combo, do we have all 10 fingerprints?
 # Ex: Given: 00002650_S_500_slap_01.png; do we have _02, _03, etc.?
-def all_10_samples_exist(orig_path):
+def all_10_samples_exist(orig_path, all_sensors_need_10_samples):
     fgrps = ['_01', '_02', '_03', '_04', '_05', '_06', '_07', '_08', '_09', '_10']
-    fgrp_index = orig_path.rfind('_')
+    fgrp_index = orig_path[:orig_path.rfind("_")].rfind("_") if 'MOD' in orig_path else orig_path.rfind('_')
     for fgrp in fgrps:
-        alt_finger = orig_path[:fgrp_index] + fgrp + orig_path[fgrp_index + len(fgrp):]
-        if not os.path.exists(alt_finger):
+        found_valid_path = False
+        for the_mod in ['', '_MOD11', '_MOD12']:
+            alt_finger = orig_path[:fgrp_index] + the_mod + fgrp + orig_path[orig_path.rfind('.'):]
+            if os.path.exists(alt_finger):
+                found_valid_path = True
+                break
+
+        if not found_valid_path:
             return False
+    
+    if all_sensors_need_10_samples:
+        person_folder = os.path.dirname(orig_path)
+        if len(os.listdir(person_folder)) % 10 != 0:
+            return False
+        
     return True
 
 """
 Copies the files from data_folder into balanced_data_folder that are from desired_sensors
 """
-def copy_files(data_folder, balanced_data_folder):
+def copy_files(data_folder, balanced_data_folder, all_sensors_need_10_samples):
     create_train_val_test_subfolders(balanced_data_folder)
 
     # https://stackoverflow.com/questions/1192978/python-get-relative-path-of-all-files-and-subfolders-in-a-directory
@@ -94,7 +106,7 @@ def copy_files(data_folder, balanced_data_folder):
         for filename in filenames:
             orig_path = os.path.join(dirpath, filename)
             if any(ending in filename for ending in ['.jpg', '.png', '.jpeg', '.pneg']) \
-                    and all_10_samples_exist(orig_path): # make sure we have all 10 samples from this person
+                    and all_10_samples_exist(orig_path, all_sensors_need_10_samples): # make sure we have all 10 samples from this person
                 rel_dir = os.path.relpath(dirpath, data_folder)
                 rel_file = os.path.join(rel_dir, filename)
                 
@@ -104,21 +116,22 @@ def copy_files(data_folder, balanced_data_folder):
                 if not os.path.exists(new_dir):
                     os.mkdir(new_dir)
 
-                # print('\t', orig_path, '\n\t', new_path, '\n')
+                #print('\t', orig_path, '\n\t', new_path, '\n')
                 shutil.copy(orig_path, new_path)
     return
 
 def main():
     # Variables we need
     data_folder = None
+    all_sensors_need_10_samples = False
 
     argv = sys.argv[1:] 
 
     # help message
-    usage_msg = "Usage: get_all_10_finger_samples.py --data_folder <directory address>"
+    usage_msg = "Usage: get_all_10_finger_samples.py --data_folder <directory address> [--all_sensors_need_10_samples]"
     
     try:
-        opts, args = getopt.getopt(argv, "h", ['help', 'data_folder='])
+        opts, args = getopt.getopt(argv, "h", ['help', 'data_folder=', 'all_sensors_need_10_samples'])
     except getopt.GetoptError:
         print('incorrect usage:\n', usage_msg)
         sys.exit(1)
@@ -130,6 +143,8 @@ def main():
             sys.exit(0)
         elif opt in ('--data_folder', '-d', '-f', '-df'):
             data_folder = arg
+        elif opt in ('--all_sensors_need_10_samples'):
+            all_sensors_need_10_samples = True
         
     # validate arguments
     if data_folder is None:
@@ -141,7 +156,7 @@ def main():
     if not os.path.exists(balanced_data_folder):
         os.mkdir(balanced_data_folder)
 
-    copy_files(data_folder, balanced_data_folder) 
+    copy_files(data_folder, balanced_data_folder, all_sensors_need_10_samples) 
 
     return
 
