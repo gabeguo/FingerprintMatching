@@ -257,7 +257,9 @@ def run_test_loop(test_dataloader, embedder, cuda, num_anchors, num_pos, num_neg
         curr_anchor_neg_dists = []
 
         for i_a in range(num_anchors):
-            curr_anchor = torch.unsqueeze(test_images[0][i_a], 0).to(cuda)
+            curr_anchor = test_images[0][i_a].to(cuda)
+            if curr_anchor.dim() == 3:
+                curr_anchor = torch.unsqueeze(test_images[0][i_a], 0).to(cuda)
             embedding_anchor = torch.flatten(embedder(curr_anchor))
             assert len(embedding_anchor.size()) == 1 and embedding_anchor.size(dim=0) == 512      
             anchor_filepath = test_filepaths[0][i_a]
@@ -267,7 +269,9 @@ def run_test_loop(test_dataloader, embedder, cuda, num_anchors, num_pos, num_neg
             for triplet_sameness_idx, sameness_code, num_samples, curr_dists \
                     in zip([1, 2], [SAME_PERSON, DIFF_PERSON], [num_pos, num_neg], [curr_anchor_pos_dists, curr_anchor_neg_dists]):
                 for i_curr in range(num_samples):
-                    curr_sample = torch.unsqueeze(test_images[triplet_sameness_idx][i_curr], 0).to(cuda)
+                    curr_sample = test_images[triplet_sameness_idx][i_curr].to(cuda)
+                    if curr_sample.dim() == 3:
+                        curr_sample = torch.unsqueeze(test_images[triplet_sameness_idx][i_curr], 0).to(cuda)
                     embedding_curr = torch.flatten(embedder(curr_sample))
                     assert len(embedding_curr.size()) == 1 and embedding_curr.size(dim=0) == 512
                     curr_dists.append(euclideanDist(embedding_anchor, embedding_curr).item())
