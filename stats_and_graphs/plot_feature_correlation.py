@@ -11,21 +11,25 @@ BINARIZED = 'Binarized'
 RIDGE_ORIENT = 'Ridge\nOrientation'
 RIDGE_FREQ = 'Ridge\nDensity'
 MINUTIAE_LOC = 'Minutiae\nLocation'
+MINUTIAE_FULL = 'Minutiae'
 
-datasetNames = [ORIGINAL, BINARIZED, RIDGE_ORIENT, RIDGE_FREQ, MINUTIAE_LOC]
+datasetNames = [ORIGINAL, BINARIZED, RIDGE_ORIENT, RIDGE_FREQ, MINUTIAE_FULL]#MINUTIAE_LOC]
 datasetName_2_resultPath = {
     ORIGINAL: '/data/therealgabeguo/paper_results/explaining_correlation/sd302/baseline_noPretrain/2023-02-05_22:45:41/test_results_sd302_split_embedding_net_weights_sd302_split_1_1_1.json',
     BINARIZED: '/data/therealgabeguo/paper_results/explaining_correlation/sd302/enhanced/2023-02-04_02:21:32/test_results_enhanced_embedding_net_weights_enhanced_1_1_1.json',
     RIDGE_ORIENT: '/data/therealgabeguo/paper_results/explaining_correlation/sd302/orient/2023-02-04_02:30:16/test_results_orient_embedding_net_weights_orient_1_1_1.json',
     RIDGE_FREQ: '/data/therealgabeguo/paper_results/explaining_correlation/sd302/freq/2023-02-04_02:33:49/test_results_freq_embedding_net_weights_freq_1_1_1.json',
-    MINUTIAE_LOC: '/data/therealgabeguo/paper_results/explaining_correlation/sd302/minutiae/2023-02-04_02:25:11/test_results_minutiae_embedding_net_weights_minutiae_1_1_1.json'
+    MINUTIAE_FULL: '/data/therealgabeguo/paper_results/explaining_correlation/sd302/minutiae_mindtct/2023-03-27_13:33:21/test_results_sd302_mindtct_minutiae_sd302_1_1_1.json',
+    #MINUTIAE_LOC: '/data/therealgabeguo/paper_results/explaining_correlation/sd302/minutiae/2023-02-04_02:25:11/test_results_minutiae_embedding_net_weights_minutiae_1_1_1.json'
+
 }
 datasetName_2_representativeImage = {
     ORIGINAL: '/data/therealgabeguo/fingerprint_data/sd302_split/test/00002332/00002332_A_roll_05.png',
     BINARIZED: '/data/therealgabeguo/fingerprint_data/sd302_feature_extractions/enhanced/test/00002332/00002332_A_roll_05.png',
     RIDGE_ORIENT: '/data/therealgabeguo/fingerprint_data/sd302_feature_extractions/orient/test/00002332/00002332_A_roll_05.png',
     RIDGE_FREQ: '/data/therealgabeguo/fingerprint_data/sd302_feature_extractions/freq/test/00002332/00002332_A_roll_05.png',
-    MINUTIAE_LOC: '/data/therealgabeguo/fingerprint_data/sd302_feature_extractions/minutiae/test/00002332/00002332_A_roll_05.png'
+    MINUTIAE_FULL: '/data/therealgabeguo/fingerprint_data/mindtct_minutiae/sd302/test/00002332/00002332_A_roll_05.png',
+    #MINUTIAE_LOC: '/data/therealgabeguo/fingerprint_data/sd302_feature_extractions/minutiae/test/00002332/00002332_A_roll_05.png'
 }
 
 name_2_rocAuc = dict()
@@ -65,8 +69,9 @@ for i in range(len(datasetNames)):
     plt.text(name_2_rocAuc[the_name] * 1.01, y_pos[i] - 0.025, "{:.3f}\n({})".format(name_2_rocAuc[the_name], p_test_passed), \
         color='black', fontsize=8)
     img = plt.imread(datasetName_2_representativeImage[the_name])
+    origin = 'lower' if the_name == MINUTIAE_FULL else 'upper'
     plt.imshow(img, extent=[0, 0.1, \
-        y_pos[i] - 0.05, y_pos[i] + 0.05], aspect='equal', zorder=2, cmap='gray')
+        y_pos[i] - 0.05, y_pos[i] + 0.05], aspect='equal', zorder=2, cmap='gray', origin=origin)
 plt.xlabel('ROC AUC', fontsize=11)
 plt.ylabel('Dataset', fontsize=11)
 
