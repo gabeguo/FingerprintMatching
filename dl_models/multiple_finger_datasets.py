@@ -356,7 +356,7 @@ class MultipleFingerDataset(Dataset):
     /data/therealgabeguo/fingerprint_data/sd300a_split/train/00001765/00001765_plain_500_08.png
     """
     def get_dataset_name(self, filepath):
-        DATASET_NAME_INDEX = 4
+        DATASET_NAME_INDEX = -4
         ret_val = filepath.split('/')[DATASET_NAME_INDEX]
         assert 'sd30' in ret_val or 'RidgeBase' in ret_val or 'SOCOFing' in ret_val
         return ret_val
