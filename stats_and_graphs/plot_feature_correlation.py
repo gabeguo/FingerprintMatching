@@ -6,12 +6,12 @@ sys.path.append('../dl_models')
 from parameterized_multiple_finger_tester import NUM_SAMPLES_KEY, NUM_POS_PAIRS_KEY, NUM_NEG_PAIRS_KEY, ROC_AUC_KEY, P_VAL_KEY
 import json
 
-ORIGINAL = 'Original'
-BINARIZED = 'Binarized'
-RIDGE_ORIENT = 'Ridge\nOrientation'
-RIDGE_FREQ = 'Ridge\nDensity'
+ORIGINAL = 'Raw\nImage'
+BINARIZED = 'Binarized\nImage'
+RIDGE_ORIENT = 'Ridge\nOrientation\nMap'
+RIDGE_FREQ = 'Ridge\nDensity\nMap'
 MINUTIAE_LOC = 'Minutiae\nLocation'
-MINUTIAE_FULL = 'Minutiae'
+MINUTIAE_FULL = 'Minutiae\nMap'
 
 datasetNames = [ORIGINAL, BINARIZED, RIDGE_ORIENT, RIDGE_FREQ, MINUTIAE_FULL]#MINUTIAE_LOC]
 datasetName_2_resultPath = {
@@ -56,14 +56,14 @@ plt.figure(dpi=900)
 plt.xlim([0, 1])
 plt.ylim([0.05, 0.85])
 y_pos = [0.15, 0.30, 0.45, 0.60, 0.75]
-plt.yticks(y_pos, datasetNames)
+plt.yticks(y_pos, datasetNames, fontsize=9)
 
 plt.subplots_adjust(left=0.1)
 
 for i in range(len(datasetNames)):
     the_name = datasetNames[i]
     plt.barh(y_pos[i], name_2_rocAuc[the_name], height=0.12, color = colors.pop(), hatch=patterns.pop(), \
-        label='{}: {} pairs \n({} fingerprints)'.format(the_name.split('\n')[0], \
+        label='{}: {} pairs \n({} fingerprints)'.format(the_name.split('\n')[-2], \
         name_2_numSamples[the_name], name_2_size[the_name]))
     p_test_passed = 'p {} {:.0e}'.format('<' if name_2_pVal[the_name] < alpha else '>=', alpha)
     plt.text(name_2_rocAuc[the_name] * 1.01, y_pos[i] - 0.025, "{:.3f}\n({})".format(name_2_rocAuc[the_name], p_test_passed), \
