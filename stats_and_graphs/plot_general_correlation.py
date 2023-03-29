@@ -7,7 +7,7 @@ from parameterized_multiple_finger_tester import NUM_SAMPLES_KEY, NUM_POS_PAIRS_
 import json
 
 datasetName_2_resultPath = {
-    'SD300a': '/data/therealgabeguo/paper_results/proving_correlation/general/sd300/2023-03-17_22:30:17/test_results_sd300a_split_weights_2023-01-07_11:06:28_1_1_1.json',
+    'SD300': '/data/therealgabeguo/paper_results/proving_correlation/general/sd300/2023-03-17_22:30:17/test_results_sd300a_split_weights_2023-01-07_11:06:28_1_1_1.json',
     'SD301\n(true\nholdout)': '/data/therealgabeguo/paper_results/proving_correlation/general/sd301/2023-02-04_01:59:23/test_results_sd301_split_weights_2023-01-07_11:06:28_1_1_1.json',
     'SD302': '/data/therealgabeguo/paper_results/proving_correlation/general/sd302/2023-02-04_02:04:52/test_results_sd302_split_weights_2023-01-07_11:06:28_1_1_1.json'
 }
