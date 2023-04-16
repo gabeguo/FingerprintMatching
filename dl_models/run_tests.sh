@@ -167,19 +167,19 @@
         #     --same_sensor_within_set
 #     done
 # done
-# Confusion diagram: SD300
-python3 parameterized_multiple_finger_tester.py \
-    --dataset /data/therealgabeguo/fingerprint_data/sd300a_split/ \
-    --weights /data/therealgabeguo/most_recent_experiment_reports/jan_08_resnet18Final/weights_2023-01-07_11\:06\:28.pth \
-    --cuda 'cuda:1' \
-    --num_fingers 1 \
-    --output_root /data/therealgabeguo/paper_results/confusion_diagram/sd300 \
-    --scale_factor 1 \
-    --diff_fingers_across_sets \
-    --diff_fingers_within_set \
-    --diff_sensors_across_sets \
-    --same_sensor_within_set \
-    --track_confusion_examples
+# # Confusion diagram: SD300
+# python3 parameterized_multiple_finger_tester.py \
+#     --dataset /data/therealgabeguo/fingerprint_data/sd300a_split/ \
+#     --weights /data/therealgabeguo/most_recent_experiment_reports/jan_08_resnet18Final/weights_2023-01-07_11\:06\:28.pth \
+#     --cuda 'cuda:1' \
+#     --num_fingers 1 \
+#     --output_root /data/therealgabeguo/paper_results/confusion_diagram/sd300 \
+#     --scale_factor 1 \
+#     --diff_fingers_across_sets \
+#     --diff_fingers_within_set \
+#     --diff_sensors_across_sets \
+#     --same_sensor_within_set \
+#     --track_confusion_examples
 # # Confusion diagram: SD301
 # python3 parameterized_multiple_finger_tester.py \
 #     --dataset /data/therealgabeguo/fingerprint_data/sd301_split/ \
@@ -217,8 +217,18 @@ python3 parameterized_multiple_finger_tester.py \
 #     --diff_fingers_within_set \
 #     --diff_sensors_across_sets \
 #     --same_sensor_within_set \
-
-
+# # High-quality images: NFIQ score == 1, 2
+# python3 -W "ignore" parameterized_multiple_finger_tester.py \
+#     --dataset /data/therealgabeguo/fingerprint_data/sd302_high_quality/ \
+#     --weights /data/therealgabeguo/most_recent_experiment_reports/jan_08_resnet18Final/weights_2023-01-07_11\:06\:28.pth \
+#     --cuda 'cuda:2' \
+#     --num_fingers 1 \
+#     --output_root /data/therealgabeguo/paper_results/high_quality/sd302 \
+#     --scale_factor 2 \
+#     --diff_fingers_across_sets \
+#     --diff_fingers_within_set \
+#     --diff_sensors_across_sets \
+#     --same_sensor_within_set
 
 
 
@@ -296,12 +306,6 @@ python3 parameterized_multiple_finger_tester.py \
 
 
 
-
-
-# Required other tests:
-# Lead analysis
-
 # Possible other tests:
 # SD301 feature extractions
 # un-pretrained SD302
-# SD300 - general correlation, finger-by-finger

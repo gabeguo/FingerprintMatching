@@ -1,5 +1,5 @@
 # Train on MINDTCT minutiae, SD302
-python3 parameterized_runner.py \
+python3 -W "ignore" parameterized_runner.py \
     --datasets '/data/therealgabeguo/fingerprint_data/mindtct_minutiae/sd302' \
     --val-datasets '/data/therealgabeguo/fingerprint_data/mindtct_minutiae/sd302' \
     --posttrained-model-path /data/therealgabeguo/fingerprint_weights/mindtct_minutiae_sd302.pth \
@@ -10,7 +10,7 @@ python3 parameterized_runner.py \
     --scale-factor 1 \
     --log-interval 100
 # Test on MINDTCT minutiae, SD302
-python3 parameterized_multiple_finger_tester.py \
+python3 -W "ignore" parameterized_multiple_finger_tester.py \
     --dataset /data/therealgabeguo/fingerprint_data/mindtct_minutiae/sd302 \
     --weights /data/therealgabeguo/fingerprint_weights/mindtct_minutiae_sd302.pth \
     --cuda 'cuda:2' \
