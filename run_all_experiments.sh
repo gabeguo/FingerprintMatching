@@ -11,3 +11,4 @@ CUDA_VISIBLE_DEVICES=$cuda python3 runner.py \
 cd ../
 
 ## Regular train
+# TODO
