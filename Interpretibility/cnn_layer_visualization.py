@@ -10,17 +10,18 @@ import torch
 from torch import nn
 from torch.optim import Adam
 
-sys.path.append("/home/aniv/FingerprintMatching")
+sys.path.append("../")
 from dl_models.embedding_models import EmbeddingNet
 
 from misc_functions import preprocess_image, recreate_image, save_image
+import argparse
 
 class CNNLayerVisualization():
     """
         Produces an image that minimizes the loss of a convolution
         operation for a specific layer and filter
     """
-    def __init__(self, model, selected_layer, selected_filter, layer_id, stop_index):
+    def __init__(self, model, selected_layer, selected_filter, layer_id, stop_index, out_folder):
         self.model = model
         self.model.eval()
         self.selected_layer = selected_layer
@@ -28,7 +29,7 @@ class CNNLayerVisualization():
         self.selected_filter = selected_filter
         self.stop_index = stop_index
         self.conv_output = 0
-        self.out_folder = "/data/verifiedanivray/generated_end"
+        self.out_folder = out_folder
         # Create the folder to export images if not exists
         #if not os.path.exists('../generated'):
         #    os.makedirs('../generated')
@@ -122,11 +123,22 @@ class CNNLayerVisualization():
 
 
 if __name__ == '__main__':
+    parser = argparse.ArgumentParser(description='CNN layer visualization')
+
+    parser.add_argument('--model_path', type=str,
+                        default='/data/therealgabeguo/most_recent_experiment_reports/jan_08_resnet18Final/weights_2023-01-07_11:06:28.pth',
+                        help='Path to the model file')
+    parser.add_argument('--output_folder', type=str,
+                        default='/data/verifiedanivray/generated_end',
+                        help='Path to the output folder')
+
+    args = parser.parse_args()
+
     for filter_pos in range(0, 512):
         stop_index = 7
         # Perform network surgery to "flatten" the layer heirarchy of the model
         pretrained_model = EmbeddingNet()
-        pretrained_model.load_state_dict(torch.load('/data/therealgabeguo/most_recent_experiment_reports/jan_08_resnet18Final/weights_2023-01-07_11:06:28.pth'))
+        pretrained_model.load_state_dict(torch.load(args.model_path))
         print(pretrained_model)
         cnn_layer = pretrained_model.feature_extractor[7][1].conv2
         print(cnn_layer)
@@ -146,7 +158,7 @@ if __name__ == '__main__':
                 modules.append(layer)
         print(modules)
         '''
-        layer_vis = CNNLayerVisualization(pretrained_model, cnn_layer, filter_pos, "7.1.conv2", stop_index)
+        layer_vis = CNNLayerVisualization(pretrained_model, cnn_layer, filter_pos, "7.1.conv2", stop_index, args.output_folder)
 
         # Layer visualization with pytorch hooks
         layer_vis.visualise_layer_with_hooks()
