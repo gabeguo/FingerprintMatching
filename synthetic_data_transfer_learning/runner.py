@@ -39,6 +39,9 @@ def main():
     print(f'Model path: {args.model_path}')
     print(f'Output folder: {args.output_folder}')
 
+    os.makedirs(os.path.dirname(args.model_path), exist_ok=True)
+    os.makedirs(args.output_folder, exist_ok=True)
+
     batch_size=64
 
     training_dataset = TripletDataset(FingerprintDataset(os.path.join(args.data_path, 'train'), train=True))
