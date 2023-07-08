@@ -1,4 +1,4 @@
-# train.sh root_folder cuda
+# sh train.sh root_folder cuda
 
 ##########
 # Official training
@@ -16,7 +16,16 @@ NON_CAUCASIAN="sd302_non-white_split"
 MALE_GROUP="sd302_male_split"
 FEMALE_GROUP="sd302_female_split"
 
+FEATURE_EXTRACTIONS_ROOT="/data/therealgabeguo/fingerprint_data/sd302_feature_extractions"
+ENHANCED="enhanced"
+ORIENTATION="orient"
+FREQUENCY="freq"
+
+MINDTCT_MINUTIAE_ROOT="/data/therealgabeguo/fingerprint_data/mindtct_minutiae/sd302"
+
+######
 # Training base model
+######
 CUDA_VISIBLE_DEVICES=$2 python3 parameterized_runner.py \
     --datasets "${SD302} ${SD300} ${RIDGEBASE}" \
     --val-datasets "${SD302} ${SD300} ${RIDGEBASE}" \
@@ -25,7 +34,9 @@ CUDA_VISIBLE_DEVICES=$2 python3 parameterized_runner.py \
     --temp_model_dir 'temp_weights' --results_dir "$1/results" \
     --diff-fingers-across-sets-train --diff-sensors-across-sets-train --diff-fingers-across-sets-val --diff-sensors-across-sets-val \
     --scale-factor 2 --log-interval 100
+######
 # Training balanced model
+######
 CUDA_VISIBLE_DEVICES=$2 python3 parameterized_runner.py \
     --datasets "${SD302_BALANCED} ${SD300}" \
     --val-datasets "${SD302_BALANCED} ${SD300}" \
@@ -33,18 +44,53 @@ CUDA_VISIBLE_DEVICES=$2 python3 parameterized_runner.py \
     --temp_model_dir 'temp_weights' --results_dir "$1/results" \
     --diff-fingers-across-sets-train --diff-sensors-across-sets-train --diff-fingers-across-sets-val --diff-sensors-across-sets-val \
     --scale-factor 1 --log-interval 100
+######
+# Training demographic models
+######
 for category in $CAUCASIAN_DESCENT $NON_CAUCASIAN $MALE_GROUP $FEMALE_GROUP
 do
     folder="${DEMOGRAPHICS_ROOT}/${category}"
     CUDA_VISIBLE_DEVICES=$2 python3 parameterized_runner.py \
         --datasets "${folder}" \
         --val-datasets "${folder}" \
-        --posttrained-model-path $1/model_weights/demographic_model${category}.pth \
+        --posttrained-model-path $1/model_weights/demographic_model_${category}.pth \
         --temp_model_dir 'temp_weights' --results_dir "$1/results" \
         --diff-fingers-across-sets-train --diff-sensors-across-sets-train --diff-fingers-across-sets-val --diff-sensors-across-sets-val \
         --scale-factor 1 --log-interval 100
 done
+######
+# Training specific feature models
+######
+for feature in $ENHANCED $ORIENTATION $FREQUENCY
+do
+    folder="${FEATURE_EXTRACTIONS_ROOT}/${feature}"
+    CUDA_VISIBLE_DEVICES=$2 python3 parameterized_runner.py \
+        --datasets "${folder}" \
+        --val-datasets "${folder}" \
+        --posttrained-model-path $1/model_weights/feature_model_${feature}.pth \
+        --temp_model_dir 'temp_weights' --results_dir "$1/results" \
+        --diff-fingers-across-sets-train --diff-sensors-across-sets-train --diff-fingers-across-sets-val --diff-sensors-across-sets-val \
+        --scale-factor 1 --log-interval 100    
+done
+# Training un-pre-trained SD302 model, for comparison with feature-specific
+CUDA_VISIBLE_DEVICES=$2 python3 parameterized_runner.py \
+    --datasets "${SD302}" \
+    --val-datasets "${SD302}" \
+    --posttrained-model-path $1/model_weights/unpretrained_model_sd302.pth \
+    --temp_model_dir 'temp_weights' --results_dir "$1/results" \
+    --diff-fingers-across-sets-train --diff-sensors-across-sets-train --diff-fingers-across-sets-val --diff-sensors-across-sets-val \
+    --scale-factor 2 --log-interval 100
+# minutiae needs a separate one, because it was created with MINDTCT
+CUDA_VISIBLE_DEVICES=$2 python3 parameterized_runner.py \
+    --datasets $MINDTCT_MINUTIAE_ROOT \
+    --val-datasets $MINDTCT_MINUTIAE_ROOT \
+    --posttrained-model-path $1/model_weights/feature_model_minutiae.pth \
+    --temp_model_dir 'temp_weights' --results_dir "$1/results" \
+    --diff-fingers-across-sets-train --diff-sensors-across-sets-train --diff-fingers-across-sets-val --diff-sensors-across-sets-val \
+    --scale-factor 1 --log-interval 100    
+######
 # Two-finger experiment
+######
 CUDA_VISIBLE_DEVICES=$2 python3 parameterized_runner.py \
     --datasets "${SD302} ${SD300} ${RIDGEBASE}" \
     --val-datasets "${SD302}" \

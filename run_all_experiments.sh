@@ -12,7 +12,7 @@ cd ../
 
 ## Regular train
 cd dl-models
-sh train.sh
+sh train.sh $root_folder $cuda
 
 ## Test
-sh run_tests.sh
+sh run_tests.sh $root_folder $cuda
