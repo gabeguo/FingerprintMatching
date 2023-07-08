@@ -76,16 +76,6 @@ class FingerprintDataset(Dataset):
     def __len__(self):
         return self.len
 
-    # THIS IS NOT CALLED FROM TRIPLET DATASET
-    # returns image, label, filepath
+    # THIS IS NOT CALLED
     def __getitem__(self, idx):
-        # TODO: Add data augmentation
-        curr_fname = self.images[idx]
-        if '.bmp' not in curr_fname.lower():
-            the_image = my_transformation(read_image(curr_fname, mode=ImageReadMode.RGB), train=self.train)
-        else: # handle bmp file
-            the_image = my_transformation(self.pil2tensor(Image.open(curr_fname).convert('RGB')), train=self.train)
-
-        return the_image, \
-        self.img_labels[idx], \
-        self.images[idx]
+        raise RuntimeError('should not be called')

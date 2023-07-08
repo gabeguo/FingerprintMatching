@@ -392,7 +392,6 @@ class MultipleFingerDataset(Dataset):
     If training, should only be one at a time
     """
     def get_item_train(self, index):
-        # TODO: debug this
         anchor_filepath = self.the_data[self.train_anchor_indices[index]]
         anchor_img = my_transformation(my_read_image(anchor_filepath), train=self.train)
         curr_pos_indices = self.get_indices(anchor_indices=[self.train_anchor_indices[index]],\

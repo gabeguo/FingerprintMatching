@@ -89,11 +89,14 @@ def main(args, cuda):
 
     best_val_epoch, best_val_loss = 0, 0
 
-    best_val_epoch, best_val_loss = fit(train_loader=train_dataloader, val_loader=val_dataloader, model=triplet_net, \
-        loss_fn=nn.TripletMarginLoss(margin=args.tripletLoss_margin), optimizer=optimizer, scheduler=scheduler, \
-        n_epochs=args.num_epochs, cuda=device, log_interval=args.log_interval, metrics=[], start_epoch=0, early_stopping_interval=args.early_stopping_interval, \
-        num_accumulated_batches=args.num_accumulated_batches, temp_model_path='temp_weights/temp_{}.pth'.format(the_name))
-
+    best_val_epoch, best_val_loss, all_epochs, past_train_losses, past_val_losses = fit(
+        train_loader=train_dataloader, val_loader=val_dataloader, model=triplet_net,
+        loss_fn=nn.TripletMarginLoss(margin=args.tripletLoss_margin), optimizer=optimizer, scheduler=scheduler,
+        n_epochs=args.num_epochs, cuda=device, log_interval=args.log_interval, metrics=[], 
+        start_epoch=0, early_stopping_interval=args.early_stopping_interval,
+        num_accumulated_batches=args.num_accumulated_batches, 
+        temp_model_path=os.path.join(args.temp_model_dir, 'temp_{}.pth'.format(the_name))
+    )
     print('best_val_epoch = {}\nbest_val_loss = {}\n'.format(best_val_epoch, best_val_loss))
 
     # SAVE MODEL
@@ -101,35 +104,24 @@ def main(args, cuda):
 
     from datetime import datetime
     datetime_str = datetime.now().strftime("%Y-%m-%d_%H:%M:%S")
-    with open('/data/therealgabeguo/results/results_{}.txt'.format(datetime_str), 'w') as fout:
+    with open('{}/results_{}.txt'.format(args.results_dir, datetime_str), 'w') as fout:
         json.dump(args.__dict__, fout, indent=2)
         fout.write('\nbest_val_epoch = {}\nbest_val_loss = {}\n'.format(best_val_epoch, best_val_loss))
-    torch.save(embedder.state_dict(), '/data/therealgabeguo/results/weights_{}.pth'.format(datetime_str))
-
+        fout.write('\nepochs: {}\ntrain_losses: {}\nval_losses: {}\n'.format(all_epochs, past_train_losses, past_val_losses))
+    torch.save(embedder.state_dict(), os.path.join(args.results_dir, 'weights_{}.pth'.format(datetime_str)))
     return
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Train the Fingerprint Matcher')
+    # training loop arguments
     parser.add_argument('--batch-size', type=int, default=64,
                         help='input batch size for training (default: 64)')
     parser.add_argument('--num-accumulated-batches', type=int, default=1,
                         help='number of accumulated batches before weight update (default: 1)')
-    parser.add_argument('--pretrained-model-path', type=str, default=None,
-                        help='path to pretrained model (default: None)')
-    parser.add_argument('--posttrained-model-path', type=str, default='/data/therealgabeguo/fingerprint_weights/curr_model.pth',
-                        help='path to save the model at')
-    parser.add_argument('--datasets', type=str, default='/data/therealgabeguo/fingerprint_data/sd302_split',
-                        help='where is the data stored')
-    parser.add_argument('--val-datasets', type=str, default='/data/therealgabeguo/fingerprint_data/sd302_split',
-                        help='where is the validation data stored')
     parser.add_argument('--num-epochs', type=int, default=200,
                         help='number of epochs to train (default: 200)')
     parser.add_argument('--early-stopping-interval', type=int, default=65,
                         help='how long to train model before early stopping, if no improvement')
-    parser.add_argument('--log-interval', type=int, default=300,
-                        help='How many batches to go through before logging in training')
-    parser.add_argument('--scale-factor', type=int, default=1,
-                        help='number of times to go over the dataset to create triplets (default: 1)')
     parser.add_argument('--lr', type=float, default=0.001,
                         help='learning rate (default: 0.001)')
     parser.add_argument('--lr_step', type=int, default=None,
@@ -138,6 +130,23 @@ if __name__ == "__main__":
                         help='Learning rate step gamma (default: None)')
     parser.add_argument('--tripletLoss-margin', type=float, default=0.2,
                         help='Margin for triplet loss (default: 0.2)')
+    # model arguments
+    parser.add_argument('--pretrained-model-path', type=str, default=None,
+                        help='path to pretrained model (default: None)')
+    parser.add_argument('--posttrained-model-path', type=str, default='/data/therealgabeguo/fingerprint_weights/curr_model.pth',
+                        help='path to save the model at')
+    # saving arguments
+    parser.add_argument('--temp_model_dir', type=str, default='temp_weights',
+                        help='where to save the temporary model weights, as the model is training')
+    parser.add_argument('--results_dir', type=str, default='/data/therealgabeguo/results',
+                        help='what directory to save the results in')
+    # dataset arguments
+    parser.add_argument('--datasets', type=str, default='/data/therealgabeguo/fingerprint_data/sd302_split',
+                        help='where is the data stored')
+    parser.add_argument('--val-datasets', type=str, default='/data/therealgabeguo/fingerprint_data/sd302_split',
+                        help='where is the validation data stored')
+    parser.add_argument('--scale-factor', type=int, default=1,
+                        help='number of times to go over the dataset to create triplets (default: 1)')
     parser.add_argument('--possible-fgrps', type=str, default='01 02 03 04 05 06 07 08 09 10',
                         help='Possible finger types to use in analysis (default: \'01 02 03 04 05 06 07 08 09 10\')')
     parser.add_argument('--diff-fingers-across-sets-train', action='store_true',
@@ -148,10 +157,13 @@ if __name__ == "__main__":
                         help='Whether to force different fingers across sets in validation')
     parser.add_argument('--diff-sensors-across-sets-val', action='store_true',
                         help='Whether to force different sensors across sets in validation')
+    # miscellaneous arguments
     parser.add_argument('--no-cuda', action='store_true', default=False,
                         help='disables CUDA training')
     parser.add_argument('--seed', type=int, default=1,
                         help='random seed (default: 1)')
+    parser.add_argument('--log-interval', type=int, default=300,
+                        help='How many batches to go through before logging in training')
         
     args = parser.parse_args()
     use_cuda = not args.no_cuda and torch.cuda.is_available()

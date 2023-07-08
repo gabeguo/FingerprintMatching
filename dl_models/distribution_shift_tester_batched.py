@@ -551,8 +551,6 @@ if __name__ == "__main__":
     parser.add_argument('--leads_output', '-l', nargs='?', help='Leads analysis data output filename', \
         const=DEFAULT_LEADS_FILE, default=DEFAULT_LEADS_FILE, type=str)
 
-    # TODO: make it dynamically create output file
-
     args = parser.parse_args()
 
     dataset = args.dataset
