@@ -11,4 +11,8 @@ CUDA_VISIBLE_DEVICES=$cuda python3 runner.py \
 cd ../
 
 ## Regular train
-# TODO
+cd dl-models
+sh train.sh
+
+## Test
+sh run_tests.sh
