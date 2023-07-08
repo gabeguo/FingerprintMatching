@@ -15,83 +15,87 @@ from siamese_datasets import *
 from fingerprint_dataset import *
 from embedding_models import *
 
-from common_filepaths import DATA_FOLDER, SYNTHETIC_DATA_FOLDER
+from common_filepaths import SYNTHETIC_DATA_FOLDER
+
+import argparse
 
 print('synthetic data pretraining')
 
-MODEL_PATH = '/data/therealgabeguo/embedding_net_weights_printsgan.pth'
+def main():
+    parser = argparse.ArgumentParser(description='Pretraining on PrinstGAN')
 
-batch_size=64
-test_batch_size=4
+    parser.add_argument('--model_path', type=str, default='/data/therealgabeguo/embedding_net_weights_printsgan.pth',
+                        help='Where to save the model at the end')
+    parser.add_argument('--data_path', type=str, default=SYNTHETIC_DATA_FOLDER,
+                        help='Where the PrintsGAN data is')
+    parser.add_argument('--output_folder', type=str, default='/data/therealgabeguo/pretrain_results',
+                        help='Path to the output folder')
 
-training_dataset = TripletDataset(FingerprintDataset(os.path.join(SYNTHETIC_DATA_FOLDER, 'train'), train=True))
-#training_dataset = torch.utils.data.Subset(training_dataset, list(range(0, len(training_dataset), 50)))
-train_dataloader = DataLoader(training_dataset, batch_size=batch_size, shuffle=True, num_workers=16)
+    args = parser.parse_args()
 
-val_dataset = TripletDataset(FingerprintDataset(os.path.join(SYNTHETIC_DATA_FOLDER, 'val'), train=False))
-#val_dataset = torch.utils.data.Subset(val_dataset, list(range(0, len(val_dataset), 50)))
-val_dataloader = DataLoader(val_dataset, batch_size=batch_size, shuffle=True, num_workers=16)
+    # You can now access the values as:
+    # args.model_path and args.output_folder
 
-# SHOW IMAGES
-"""
-import matplotlib.pyplot as plt
-for the_name, the_dataloader in zip(['train', 'val', 'test'], [train_dataloader, val_dataloader, test_dataloader]):
-    print(the_name)
-    it = iter(the_dataloader)
-    for i in range(10):
-        images, labels, filepaths = next(it)
-        next_img = images[2][0]
-        the_min = torch.min(next_img)
-        the_max = torch.max(next_img)
-        next_img = (next_img - the_min) / (the_max - the_min)
-        print(filepaths[2][0])
-        print(next_img[0])
-        plt.imshow(next_img.permute(1, 2, 0))
-        plt.show()
-"""
+    print(f'Model path: {args.model_path}')
+    print(f'Output folder: {args.output_folder}')
 
-# CLEAR CUDA MEMORY
-# https://stackoverflow.com/questions/54374935/how-to-fix-this-strange-error-runtimeerror-cuda-error-out-of-memory
-import gc
-gc.collect()
-torch.cuda.empty_cache()
+    batch_size=64
 
-# FILE OUTPUT
-log = ""
+    training_dataset = TripletDataset(FingerprintDataset(os.path.join(args.data_path, 'train'), train=True))
+    #training_dataset = torch.utils.data.Subset(training_dataset, list(range(0, len(training_dataset), 50)))
+    train_dataloader = DataLoader(training_dataset, batch_size=batch_size, shuffle=True, num_workers=16)
 
-# CREATE EMBEDDER
-pretrained=False
-embedder = EmbeddingNet(pretrained=pretrained)
-log += 'pretrained: {}\n'.format(pretrained)
-print('pretrained:', pretrained)
+    val_dataset = TripletDataset(FingerprintDataset(os.path.join(args.data_path, 'val'), train=False))
+    #val_dataset = torch.utils.data.Subset(val_dataset, list(range(0, len(val_dataset), 50)))
+    val_dataloader = DataLoader(val_dataset, batch_size=batch_size, shuffle=True, num_workers=16)
 
-# CREATE TRIPLET NET
-triplet_net = TripletNet(embedder)
+    # CLEAR CUDA MEMORY
+    # https://stackoverflow.com/questions/54374935/how-to-fix-this-strange-error-runtimeerror-cuda-error-out-of-memory
+    import gc
+    gc.collect()
+    torch.cuda.empty_cache()
 
-# TRAIN
+    # FILE OUTPUT
+    log = ""
 
-learning_rate = 0.001
-scheduler=None # not needed for Adam
-optimizer = optim.Adam(triplet_net.parameters(), lr=learning_rate)
-tripletLoss_margin = 0.2
+    # CREATE EMBEDDER
+    pretrained=False
+    embedder = EmbeddingNet(pretrained=pretrained)
+    log += 'pretrained: {}\n'.format(pretrained)
+    print('pretrained:', pretrained)
 
-log += 'learning rate = {}\ntriplet loss margin = {}\n'.format(learning_rate, tripletLoss_margin)
+    # CREATE TRIPLET NET
+    triplet_net = TripletNet(embedder)
 
-best_val_epoch, best_val_loss = 0, 0
+    # TRAIN
 
-best_val_epoch, best_val_loss = fit(train_loader=train_dataloader, val_loader=val_dataloader, model=triplet_net, \
-    loss_fn=nn.TripletMarginLoss(margin=tripletLoss_margin), optimizer=optimizer, scheduler=scheduler, \
-    n_epochs=25, cuda='cuda:2', log_interval=1000, metrics=[], start_epoch=0, early_stopping_interval=5)
+    learning_rate = 0.001
+    scheduler=None # not needed for Adam
+    optimizer = optim.Adam(triplet_net.parameters(), lr=learning_rate)
+    tripletLoss_margin = 0.2
 
-log += 'best_val_epoch = {}\nbest_val_loss = {}\n'.format(best_val_epoch, best_val_loss)
-print('best_val_epoch = {}\nbest_val_loss = {}\n'.format(best_val_epoch, best_val_loss))
+    log += 'learning rate = {}\ntriplet loss margin = {}\n'.format(learning_rate, tripletLoss_margin)
 
-# SAVE MODEL
-torch.save(embedder.state_dict(), MODEL_PATH)
+    best_val_epoch, best_val_loss = 0, 0
 
-from datetime import datetime
-datetime_str = datetime.now().strftime("%Y-%m-%d_%H:%M:%S")
-with open('/data/therealgabeguo/pretrain_results/results_{}.txt'.format(datetime_str), 'w') as fout:
-    fout.write(log + '\n')
-torch.save(embedder.state_dict(), '/data/therealgabeguo/pretrain_results/weights_{}.pth'.format(datetime_str))
+    best_val_epoch, best_val_loss, all_epochs, train_losses, val_losses = fit(
+        train_loader=train_dataloader, val_loader=val_dataloader, model=triplet_net, \
+        loss_fn=nn.TripletMarginLoss(margin=tripletLoss_margin), optimizer=optimizer, scheduler=scheduler, \
+        n_epochs=25, cuda='cuda', log_interval=1000, metrics=[], start_epoch=0, early_stopping_interval=5
+    )
 
+    log += 'best_val_epoch = {}\nbest_val_loss = {}\n'.format(best_val_epoch, best_val_loss)
+    log += f'\nall epochs: {all_epochs}\ntrain losses: {train_losses}\nval losses: {val_losses}\n'
+    print(log)
+
+    # SAVE MODEL
+    torch.save(embedder.state_dict(), args.model_path)
+
+    from datetime import datetime
+    datetime_str = datetime.now().strftime("%Y-%m-%d_%H:%M:%S")
+    with open(os.path.join(args.output_folder, 'results_{}.txt'.format(datetime_str)), 'w') as fout:
+        fout.write(log + '\n')
+    torch.save(embedder.state_dict(), os.path.join(args.output_folder, 'weights_{}.pth'.format(datetime_str)))
+
+if __name__ == "__main__":
+    main()
