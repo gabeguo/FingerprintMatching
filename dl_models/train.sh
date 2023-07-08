@@ -1,5 +1,7 @@
 # sh train.sh root_folder cuda
 
+# TODO: DOUBLE CHECK CODE!
+
 ##########
 # Official training
 ##########

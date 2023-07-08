@@ -1,5 +1,7 @@
 # sh run_tests.sh root_folder cuda
 
+# TODO: DOUBLE CHECK CODE!
+
 SD302='/data/therealgabeguo/fingerprint_data/sd302_split'
 SD301='/data/therealgabeguo/fingerprint_data/sd301_split'
 SD300='/data/therealgabeguo/fingerprint_data/sd300a_split'
