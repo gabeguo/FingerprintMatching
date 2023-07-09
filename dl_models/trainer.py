@@ -3,6 +3,7 @@
 import torch
 import numpy as np
 import torch.nn as nn
+from tqdm import tqdm
 
 
 def fit(train_loader, val_loader, model, loss_fn, optimizer, scheduler, n_epochs, cuda, log_interval, metrics=[],
@@ -103,7 +104,7 @@ def train_epoch(train_loader, model, loss_fn, optimizer, cuda, log_interval, met
     individual_loss_fn = nn.TripletMarginLoss(margin=loss_fn.margin, reduction='none')
     # individual losses
 
-    for batch_idx, (data, target, filepaths) in enumerate(train_loader):        
+    for batch_idx, (data, target, filepaths) in tqdm(enumerate(train_loader)):        
         target = None #target if len(target) > 0 else None
         if not type(data) in (tuple, list):
             data = (data,)
