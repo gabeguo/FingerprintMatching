@@ -1,12 +1,6 @@
 import os
-import torch
-from torch.utils.data import Dataset, DataLoader
-from torchvision import models, transforms, utils
-from torchvision.io import read_image, ImageReadMode
-import numpy as np
-import torchvision.transforms.functional as F
-from siamese_datasets import my_transformation
-from PIL import Image
+from torch.utils.data import Dataset
+from torchvision import transforms
 
 class FingerprintDataset(Dataset):
     def is_image_filename(self, filename):
