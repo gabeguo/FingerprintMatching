@@ -61,14 +61,8 @@ def fit(train_loader, val_loader, model, loss_fn, optimizer, scheduler, n_epochs
             # load best weights
             model.load_state_dict(torch.load(temp_model_path))
             model.eval()
-            
-            with open('/data/therealgabeguo/results/train_res_{}.txt'.format(datetime_str), 'w') as fout:
-                fout.write('epoch: ' + str([epoch for epoch in range(start_epoch, epoch + 1)]) + '\n')
-                fout.write('train loss: ' + str(past_train_losses) + '\n')
-                fout.write('val loss: ' + str(past_val_losses) + '\n')
-                fout.write('stopped on epoch {}\n'.format(epoch))
 
-            return best_val_epoch, best_val_loss
+            break
 
         message += '\nEpoch: {}/{}. Validation set: Average loss: {:.4f}'.format(epoch + 1, n_epochs,
                                                                                  val_loss)

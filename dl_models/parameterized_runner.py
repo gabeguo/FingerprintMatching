@@ -1,9 +1,3 @@
-"""
-Version of runner for investigating inherent feature correlations, e.g., ridges, minutiae.
-By default, no pretraining, since that would introduce bias.
-Input dataset representing desired features. Also input CUDA you want.
-"""
-
 import torch
 import torch.nn as nn
 from torch.utils.data import Dataset
