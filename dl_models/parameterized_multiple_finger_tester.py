@@ -354,7 +354,7 @@ def load_data(the_data_folder, num_anchors, num_pos, num_neg, scale_factor, \
         acceptable_anchor_fgrps=possible_fgrps, acceptable_pos_fgrps=possible_fgrps, acceptable_neg_fgrps=possible_fgrps)
     print('loaded test dataset: {}'.format(the_data_folder))
     assert batch_size == 1
-    test_dataloader = DataLoader(test_dataset, batch_size=batch_size, shuffle=True)
+    test_dataloader = DataLoader(test_dataset, batch_size=batch_size, shuffle=True, num_workers=16)
     return fingerprint_dataset, test_dataset, test_dataloader
 
 def create_finger_by_finger_plot(f2f_data, the_title, the_cmap, the_fontsize, the_fmt):
