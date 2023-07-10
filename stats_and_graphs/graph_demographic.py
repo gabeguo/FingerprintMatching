@@ -37,10 +37,11 @@ plt.figure(figsize=(10, 6))
 bar_names = []
 bar_labels = []
 roc_aucs = []
+p_vals = []
 
 # Colors and hatches
-colors = ['#ff5555', '#cc8888', '#5555ff', '#8888cc']
-hatches = ['/', '\\', '-', '|']
+colors = ['#ff5555', '#dd7777', '#5555ff', '#7777dd']
+hatches = ['/', '\\', '/', '\\']
 
 # Get dataset stats
 num_samples = dict()
@@ -79,25 +80,26 @@ for idx, json_file in enumerate(json_files):
 
     # Get ROC AUC value
     roc_aucs.append(data['ROC AUC'])
+    p_vals.append(data['p-value'])
 
-print(bar_names)
+#print(bar_names)
 
 # Now, plot the bar graph with different colors and hatches
 bars = plt.barh(bar_names, roc_aucs, color=colors)
 for bar, hatch, label in zip(bars, hatches, bar_labels):
     bar.set_hatch(hatch)
     bar.set_label(label)
-plt.legend(bars, bar_labels, bbox_to_anchor=(1, 0), loc='lower right', fontsize=9)
+plt.legend(bars, bar_labels, bbox_to_anchor=(1, 1), loc='upper right', fontsize=10)
 #plt.xlabel('Group')
 #plt.ylabel('ROC AUC')
-plt.title('Gender Disparity Comparison')
+plt.title(f'{"Gender" if args.gender else "Racial"} Disparity Comparison')
 
 #plt.ylim(0, 1)
 
 # Add values above the bars
-for bar in bars:
+for bar, curr_p_val in zip(bars, p_vals):
     xval = bar.get_width()
-    plt.text(xval, bar.get_y() + bar.get_height() / 2, round(xval, 3), ha='left', va='center')
+    plt.text(xval, bar.get_y() + bar.get_height() / 2, f"{round(xval, 3)}\n{'p < 0.01' if curr_p_val < 0.01 else 'p >= 0.01'}", ha='left', va='center')
 plt.xlim(0, 1)
 
 #plt.show()
