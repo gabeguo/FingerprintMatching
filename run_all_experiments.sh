@@ -12,7 +12,7 @@ root_folder='/data/therealgabeguo/_reproduced_fingerprint_results'
 # cd ../
 
 ## Regular train
-cd dl-models
+cd dl_models
 sh train.sh $root_folder $1
 
 ## Test
