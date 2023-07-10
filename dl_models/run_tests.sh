@@ -30,81 +30,51 @@ MINDTCT_MINUTIAE_ROOT="/data/therealgabeguo/fingerprint_data/mindtct_minutiae/sd
 ##############################
 ### PROVE THE CORRELATION
 ###############
-### GENERAL CORRELATION
 PROVING_CORRELATION_FOLDER="$1/paper_results/proving_correlation"
 GENERAL_CORRELATION_FOLDER="$PROVING_CORRELATION_FOLDER/general"
-# General correlation: SD300 (full)
-python3 parameterized_multiple_finger_tester.py \
-    --dataset $SD300 \
-    --weights $BASED_MODEL \
-    --cuda "cuda:$2" \
-    --num_fingers 1 \
-    --output_root "${GENERAL_CORRELATION_FOLDER}/sd300" \
-    --scale_factor 2 \
-    --diff_fingers_across_sets \
-    --diff_fingers_within_set \
-    --diff_sensors_across_sets \
-    --same_sensor_within_set
-# General correlation: SD301 (full)
-python3 parameterized_multiple_finger_tester.py \
-    --dataset $SD301 \
-    --weights $BASED_MODEL \
-    --cuda "cuda:$2" \
-    --num_fingers 1 \
-    --output_root "${GENERAL_CORRELATION_FOLDER}/sd301" \
-    --scale_factor 4 \
-    --diff_fingers_across_sets \
-    --diff_fingers_within_set \
-    --diff_sensors_across_sets \
-    --same_sensor_within_set
-# General correlation: SD302 (full test)
-python3 parameterized_multiple_finger_tester.py \
-    --dataset $SD302 \
-    --weights $BASED_MODEL \
-    --cuda "cuda:$2" \
-    --num_fingers 1 \
-    --output_root "${GENERAL_CORRELATION_FOLDER}/sd302" \
-    --scale_factor 4 \
-    --diff_fingers_across_sets \
-    --diff_fingers_within_set \
-    --diff_sensors_across_sets \
-    --same_sensor_within_set
-###############
-### FINGER CORRELATION
 FINGER_CORRELATION_FOLDER="$PROVING_CORRELATION_FOLDER/finger-by-finger"
-# Finger-by-finger correlation: SD300 (balanced)
-python3 parameterized_multiple_finger_tester.py \
-    --dataset $SD300 \
-    --weights $BALANCED_MODEL \
-    --cuda "cuda:$2" \
-    --num_fingers 1 \
-    --output_root ${FINGER_CORRELATION_FOLDER}/sd300 \
-    --scale_factor 2 \
-    --diff_fingers_within_set \
-    --diff_sensors_across_sets \
-    --same_sensor_within_set
-# Finger-by-finger correlation: SD301 (balanced)
-python3 parameterized_multiple_finger_tester.py \
-    --dataset $SD301 \
-    --weights $BALANCED_MODEL \
-    --cuda "cuda:$2" \
-    --num_fingers 1 \
-    --output_root ${FINGER_CORRELATION_FOLDER}/sd301 \
-    --scale_factor 4 \
-    --diff_fingers_within_set \
-    --diff_sensors_across_sets \
-    --same_sensor_within_set
-# Finger-by-finger correlation: SD302 (balanced)
-python3 parameterized_multiple_finger_tester.py \
-    --dataset $SD302 \
-    --weights $BALANCED_MODEL \
-    --cuda "cuda:$2" \
-    --num_fingers 1 \
-    --output_root ${FINGER_CORRELATION_FOLDER}/sd302 \
-    --scale_factor 4 \
-    --diff_fingers_within_set \
-    --diff_sensors_across_sets \
-    --same_sensor_within_set
+
+# Array of datasets
+datasets=("$SD300" "$SD301" "$SD302")
+# Array of weights
+weights=("$BASED_MODEL" "$BALANCED_MODEL")
+# Array of output roots for general and finger correlation
+folder_names=("sd300" "sd301" "sd302")
+
+# Array of scale factors
+scale_factors=(2 4 4)
+
+# Cuda and number of fingers, assuming these are constants
+cuda="cuda:$2"
+num_fingers=1
+
+# Iterate through arrays
+for ((i=0; i<${#datasets[@]}; ++i)); do
+    # General correlation
+    python3 parameterized_multiple_finger_tester.py \
+        --dataset ${datasets[i]} \
+        --weights ${weights[0]} \
+        --cuda $cuda \
+        --num_fingers $num_fingers \
+        --output_root "${GENERAL_CORRELATION_FOLDER}"/${folder_names[i]} \
+        --scale_factor ${scale_factors[i]} \
+        --diff_fingers_across_sets \
+        --diff_fingers_within_set \
+        --diff_sensors_across_sets \
+        --same_sensor_within_set
+
+    # Finger correlation
+    python3 parameterized_multiple_finger_tester.py \
+        --dataset ${datasets[i]} \
+        --weights ${weights[1]} \
+        --cuda $cuda \
+        --num_fingers $num_fingers \
+        --output_root "${FINGER_CORRELATION_FOLDER}"/${folder_names[i]} \
+        --scale_factor ${scale_factors[i]} \
+        --diff_fingers_within_set \
+        --diff_sensors_across_sets \
+        --same_sensor_within_set
+done
 
 ##############################
 ### EXAMINE THE SPECIFIC FEATURES THAT ARE CORRELATED
@@ -185,44 +155,32 @@ done
 ### DEMOGRAPHIC FAIRNESS
 ###############
 FAIRNESS_OUTPUT_FOLDER=$1/paper_results/fairness
-### Race
-for train_group in $CAUCASIAN_DESCENT $NON_CAUCASIAN
-do
-    for test_group in $CAUCASIAN_DESCENT $NON_CAUCASIAN
-    do
-        demographic_model=$1/model_weights/demographic_model_${train_group}.pth
-        demographic_folder="${DEMOGRAPHICS_ROOT}/${test_group}"
-        python3 parameterized_multiple_finger_tester.py \
-            --dataset $demographic_folder \
-            --weights $demographic_model \
-            --cuda "cuda:$2" \
-            --num_fingers 1 \
-            --output_root "$FAIRNESS_OUTPUT_FOLDER/sd302/train_${train_group}_test_${test_group}" \
-            --scale_factor 2 \
-            --diff_fingers_across_sets \
-            --diff_fingers_within_set \
-            --diff_sensors_across_sets \
-            --same_sensor_within_set
-    done
-done
-### Gender
-for train_group in $MALE_GROUP $FEMALE_GROUP
-do
-    for test_group in $MALE_GROUP $FEMALE_GROUP
-    do
-        demographic_model=$1/model_weights/demographic_model_${train_group}.pth
-        demographic_folder="${DEMOGRAPHICS_ROOT}/${test_group}"
-        python3 parameterized_multiple_finger_tester.py \
-            --dataset $demographic_folder \
-            --weights $demographic_model \
-            --cuda "cuda:$2" \
-            --num_fingers 1 \
-            --output_root "$FAIRNESS_OUTPUT_FOLDER/sd302/train_${train_group}_test_${test_group}" \
-            --scale_factor 2 \
-            --diff_fingers_across_sets \
-            --diff_fingers_within_set \
-            --diff_sensors_across_sets \
-            --same_sensor_within_set
+
+# Array of groups
+groups=( "$CAUCASIAN_DESCENT" "$NON_CAUCASIAN" "$MALE_GROUP" "$FEMALE_GROUP" )
+
+# Cuda and number of fingers, assuming these are constants
+cuda="cuda:$2"
+num_fingers=1
+
+# Iterate over the groups
+for ((i=0; i<${#groups[@]}; i+=2)); do
+    for train_group in "${groups[i]}" "${groups[i+1]}"; do
+        for test_group in "${groups[i]}" "${groups[i+1]}"; do
+            demographic_model="$1/model_weights/demographic_model_${train_group}.pth"
+            demographic_folder="${DEMOGRAPHICS_ROOT}/${test_group}"
+            python3 parameterized_multiple_finger_tester.py \
+                --dataset $demographic_folder \
+                --weights $demographic_model \
+                --cuda $cuda \
+                --num_fingers $num_fingers \
+                --output_root "$FAIRNESS_OUTPUT_FOLDER/sd302/train_${train_group}_test_${test_group}" \
+                --scale_factor 2 \
+                --diff_fingers_across_sets \
+                --diff_fingers_within_set \
+                --diff_sensors_across_sets \
+                --same_sensor_within_set
+        done
     done
 done
 
