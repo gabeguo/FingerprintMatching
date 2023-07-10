@@ -67,20 +67,17 @@ FAIRNESS_OUTPUT_FOLDER=$1/paper_results/fairness
 #     done
 # done
 
-ORIG_TEST_SET_FEMALE='/data/verifiedanivray/sd302_test_demographic_split/female'
-ORIG_TEST_SET_MALE='/data/verifiedanivray/sd302_test_demographic_split/male'
-ORIG_TEST_SET_NON_WHITE='/data/verifiedanivray/sd302_test_demographic_split/non-white'
-ORIG_TEST_SET_WHITE='/data/verifiedanivray/sd302_test_demographic_split/white'
+ORIG_TEST_SET_ROOT='/data/verifiedanivray/sd302_test_demographic_split'
 
-for demographic_folder in $ORIG_TEST_SET_FEMALE $ORIG_TEST_SET_MALE $ORIG_TEST_SET_NON_WHITE $ORIG_TEST_SET_WHITE
+for group_name in 'female' 'male' 'non-white' 'white'
 do
     full_model=/data/therealgabeguo/most_recent_experiment_reports/jan_08_resnet18Final/weights_2023-01-07_11:06:28.pth
     python3 parameterized_multiple_finger_tester.py \
-        --dataset $demographic_folder \
+        --dataset $ORIG_TEST_SET_ROOT/$group_name \
         --weights $full_model \
         --cuda "cuda:$2" \
         --num_fingers 1 \
-        --output_root "$FAIRNESS_OUTPUT_FOLDER/full_model_sd302test/test_${demographic_folder}" \
+        --output_root "$FAIRNESS_OUTPUT_FOLDER/full_model_sd302test/test_${group_name}" \
         --scale_factor 2 \
         --diff_fingers_across_sets \
         --diff_fingers_within_set \

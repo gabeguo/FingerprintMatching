@@ -17,6 +17,8 @@ import seaborn as sns
 import argparse
 from scipy.stats import ttest_ind
 
+from tqdm import tqdm
+
 import json
 
 sys.path.append('../')
@@ -241,7 +243,7 @@ def run_test_loop(test_dataloader, embedder, cuda, num_anchors, num_pos, num_neg
     fn_names = list()
 
     # loop through all the data
-    for i in range(len(test_dataloader)):
+    for i in tqdm(range(len(test_dataloader))):
         # test_images is 3 (anchor, pos, neg) * N (number of sample images) * image_size (1*3*224*224)
         test_images, test_labels, test_filepaths = next(data_iter)
         assert len(test_images) == 3
@@ -307,7 +309,7 @@ def run_test_loop(test_dataloader, embedder, cuda, num_anchors, num_pos, num_neg
         _01_dist.append(np.mean(curr_anchor_pos_dists))
         _02_dist.append(np.mean(curr_anchor_neg_dists))
 
-        if i % 500 == 0:
+        if i % 100 == 0:
             print('Batch (item) {} out of {}'.format(i, len(test_dataloader)))
             print('\taverage, std squared L2 distance between positive pairs {:.3f}, {:.3f}'.format(np.mean(_01_dist), np.std(_01_dist)))
             print('\taverage, std squared L2 distance between negative pairs {:.3f}, {:.3f}'.format(np.mean(_02_dist), np.std(_02_dist)))
