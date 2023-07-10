@@ -3,6 +3,21 @@ import random
 import pandas as pd
 import argparse
 
+def demographicsTestSplit(csvPath, inputRoot, outputRoot):
+    demographicsDf = pd.read_csv(csvPath)
+    demographicVals = ["non-white", "white", "male", "female"]
+    for demographicVal in demographicVals:
+        if not os.path.exists(os.path.join(outputRoot, demographicVal)):
+            os.mkdir(os.path.join(outputRoot, demographicVal))
+    for personId in os.listdir(os.path.join(inputRoot, "test")):
+        raceVal = "non-white" if demographicsDf.loc[demographicsDf["id"] == int(personId), "race"].item() != "white" else "white"
+        genderVal = demographicsDf.loc[demographicsDf["id"] == int(personId), "gender"].item()
+        personPath = os.path.join(inputRoot, "test", personId)
+        outputRacePath = os.path.join(outputRoot, raceVal)
+        outputGenderPath = os.path.join(outputRoot, genderVal)
+        os.system("cp -r {} {}".format(personPath, outputRacePath))
+        os.system("cp -r {} {}".format(personPath, outputGenderPath))
+
 def getStats(demographicsDf):
     raceCol = set(demographicsDf["race"].tolist())
     print(raceCol)
@@ -42,8 +57,9 @@ def main(csvPath, cat, val, sampleSize, inputRoot, outputRoot, trainProp, valPro
     print(int(trainProp*100), int(valProp*100))
     os.system("python split_people.py --data_folder {} --train_percent {} --val_percent {}".format(outputDatasetPath, int(trainProp*100), int(valProp*100)))
 
-# python demographic_dataset_builder.py -d=/data/therealgabeguo/fingerprint_data/sd302_split -dc=race -dv=white -s=62 -c=/data/therealgabeguo/fingerprint_data/sd302_split/participants.csv -o/data/verifiedanivray/demographics_datasets -t=0.8 -v=0.1
+# python demographic_dataset_builder.py -d=/data/therealgabeguo/fingerprint_data/sd302_split -dc=race -dv=white -s=62 -c=/data/therealgabeguo/fingerprint_data/sd302_split/participants.csv -o=/data/verifiedanivray/demographics_datasets -t=0.8 -v=0.1
 
+# python demographic_dataset_builder.py -d=/data/therealgabeguo/fingerprint_data/sd302_split -c=/data/therealgabeguo/fingerprint_data/sd302_split/participants.csv -o=/data/verifiedanivray/sd302_test_demographic_split
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(prog="demographics.py")
@@ -57,8 +73,10 @@ if __name__ == "__main__":
     parser.add_argument('--val_prop', '-v', help='Proportion of samples in validation data', type=float)
     args = parser.parse_args()
     
-    assert args.train_prop + args.val_prop < 1.0
+    # assert args.train_prop + args.val_prop < 1.0
 
-    main(args.demographics_csv, args.demographic_cat, args.demographic_val, args.sample_size, args.dataset, args.output_root, args.train_prop, args.val_prop)
+    demographicsTestSplit(args.demographics_csv, args.dataset, args.output_root)
+
+    # main(args.demographics_csv, args.demographic_cat, args.demographic_val, args.sample_size, args.dataset, args.output_root, args.train_prop, args.val_prop)
 
     
