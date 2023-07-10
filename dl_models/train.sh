@@ -44,8 +44,9 @@ CUDA_VISIBLE_DEVICES=$2 python3 parameterized_runner.py \
     --val-datasets "${SD302_BALANCED} ${SD300}" \
     --posttrained-model-path $1/model_weights/balanced_model_sd302_sd300.pth \
     --temp_model_dir 'temp_weights' --results_dir "$1/results" \
-    --diff-fingers-across-sets-train --diff-sensors-across-sets-train --diff-fingers-across-sets-val --diff-sensors-across-sets-val \
+    --diff-sensors-across-sets-train --diff-fingers-across-sets-val --diff-sensors-across-sets-val \
     --scale-factor 1 --log-interval 100
+# When training balanced model, we're allowed to have the same finger in anchor and positive/negative set
 ######
 # Training demographic models
 ######
@@ -81,7 +82,7 @@ CUDA_VISIBLE_DEVICES=$2 python3 parameterized_runner.py \
     --posttrained-model-path $1/model_weights/unpretrained_model_sd302.pth \
     --temp_model_dir 'temp_weights' --results_dir "$1/results" \
     --diff-fingers-across-sets-train --diff-sensors-across-sets-train --diff-fingers-across-sets-val --diff-sensors-across-sets-val \
-    --scale-factor 2 --log-interval 100
+    --scale-factor 1 --log-interval 100
 # minutiae needs a separate one, because it was created with MINDTCT
 CUDA_VISIBLE_DEVICES=$2 python3 parameterized_runner.py \
     --datasets $MINDTCT_MINUTIAE_ROOT \
