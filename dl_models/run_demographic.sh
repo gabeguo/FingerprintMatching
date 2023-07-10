@@ -80,7 +80,7 @@ do
         --weights $full_model \
         --cuda "cuda:$2" \
         --num_fingers 1 \
-        --output_root "$FAIRNESS_OUTPUT_FOLDER/full_model_sd302test/test_${test_group}" \
+        --output_root "$FAIRNESS_OUTPUT_FOLDER/full_model_sd302test/test_${demographic_folder}" \
         --scale_factor 2 \
         --diff_fingers_across_sets \
         --diff_fingers_within_set \
