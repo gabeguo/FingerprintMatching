@@ -94,6 +94,7 @@ def main(args, cuda):
     print('best_val_epoch = {}\nbest_val_loss = {}\n'.format(best_val_epoch, best_val_loss))
 
     # SAVE MODEL
+    os.makedirs(os.path.dirname(args.posttrained_model_path), exist_ok=True)
     torch.save(embedder.state_dict(), args.posttrained_model_path)
 
     from datetime import datetime
