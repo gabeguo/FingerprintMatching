@@ -82,6 +82,7 @@ def main(args, cuda):
     print('max epochs = {}\n'.format(args.num_epochs))
 
     best_val_epoch, best_val_loss = 0, 0
+    all_epochs, past_train_losses, past_val_losses = [0], [0], [0]
 
     best_val_epoch, best_val_loss, all_epochs, past_train_losses, past_val_losses = fit(
         train_loader=train_dataloader, val_loader=val_dataloader, model=triplet_net,
@@ -99,6 +100,7 @@ def main(args, cuda):
 
     from datetime import datetime
     datetime_str = datetime.now().strftime("%Y-%m-%d_%H:%M:%S")
+    os.makedirs(args.results_dir, exist_ok=True)
     with open('{}/results_{}.txt'.format(args.results_dir, datetime_str), 'w') as fout:
         json.dump(args.__dict__, fout, indent=2)
         fout.write('\nbest_val_epoch = {}\nbest_val_loss = {}\n'.format(best_val_epoch, best_val_loss))
