@@ -1,8 +1,10 @@
+# bash redo_sd301_test.sh cuda
+
 # General correlation: SD301 (full)
 python3 parameterized_multiple_finger_tester.py \
     --dataset /data/therealgabeguo/fingerprint_data/sd301_split/ \
     --weights /data/therealgabeguo/most_recent_experiment_reports/jan_08_resnet18Final/weights_2023-01-07_11\:06\:28.pth \
-    --cuda 'cuda:2' \
+    --cuda "cuda:$1" \
     --num_fingers 1 \
     --output_root /data/therealgabeguo/paper_results/proving_correlation/general/sd301_UPDATED \
     --scale_factor 4 \
@@ -15,7 +17,7 @@ python3 parameterized_multiple_finger_tester.py \
 python3 parameterized_multiple_finger_tester.py \
     --dataset /data/therealgabeguo/fingerprint_data/sd301_split_balanced/ \
     --weights /data/therealgabeguo/fingerprint_weights/balanced_model_sd302_sd300.pth \
-    --cuda 'cuda:1' \
+    --cuda "cuda:$1" \
     --num_fingers 1 \
     --output_root /data/therealgabeguo/paper_results/proving_correlation/fingerByfinger_new/sd301_UPDATED \
     --scale_factor 4 \
@@ -31,7 +33,7 @@ do
         python3 parameterized_multiple_finger_tester.py \
             --dataset /data/therealgabeguo/fingerprint_data/sd301_split_balanced/ \
             --weights /data/therealgabeguo/most_recent_experiment_reports/jan_08_resnet18Final/weights_2023-01-07_11\:06\:28.pth \
-            --cuda 'cuda:2' \
+            --cuda "cuda:$1" \
             --num_fingers $i \
             --output_root /data/therealgabeguo/paper_results/multi_finger/sd301_UPDATED/${i} \
             --scale_factor 1 \
@@ -45,7 +47,7 @@ do
 python3 parameterized_multiple_finger_tester.py \
     --dataset /data/therealgabeguo/fingerprint_data/sd301_split/ \
     --weights /data/therealgabeguo/most_recent_experiment_reports/jan_08_resnet18Final/weights_2023-01-07_11\:06\:28.pth \
-    --cuda 'cuda:1' \
+    --cuda "cuda:$1" \
     --num_fingers 1 \
     --output_root /data/therealgabeguo/paper_results/confusion_diagram/sd301_UPDATED \
     --scale_factor 1 \
