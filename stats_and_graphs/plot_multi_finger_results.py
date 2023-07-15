@@ -20,6 +20,9 @@ for root, dirs, files in os.walk(DATA_FOLDER, topdown=False):
         if '.json' not in the_file:
             continue
         the_filepath = os.path.join(root, the_file)
+        if 'sd301' in the_filepath.lower() and 'updated' not in the_filepath.lower():
+            print(f'skipping {the_filepath}')
+            continue
         with open(the_filepath, 'r') as fin:
             the_info = json.load(fin)
             #print(json.dumps(the_info, indent=4))
