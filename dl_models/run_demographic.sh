@@ -87,7 +87,7 @@ FAIRNESS_OUTPUT_FOLDER=$1/paper_results/fairness
 
 ORIG_TEST_SET_ROOT='/data/verifiedanivray/sd301_test_demographic_split'
 
-for group_name in 'Female' 'Male'
+for group_name in 'female' 'male'
 do
     full_model=/data/therealgabeguo/most_recent_experiment_reports/jan_08_resnet18Final/weights_2023-01-07_11:06:28.pth
     python3 parameterized_multiple_finger_tester.py \
