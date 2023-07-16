@@ -44,7 +44,7 @@ def main():
 
     args = parser.parse_args()
 
-    print(f'Pairs of people with over {args.finger_threshold} matches:')
+    print(f'Pairs of people with at least {args.finger_threshold} matches:')
     matches, num_matches = count_matching_fingers(args.filename)
     for pair, curr_matching_fingers in matches.items():
         if len(curr_matching_fingers) >= args.finger_threshold:
