@@ -404,7 +404,13 @@ def main(the_data_folder, weights_path, cuda, output_dir, num_anchors, num_pos, 
 
     # LOAD MODEL
 
+    weights_dict = torch.load(weights_path)
+    model_dict = embedder.state_dict()
+    if set(model_dict.keys()) != set(weights_dict.keys()):
+        embedder = TripletNet(embedder)
     embedder.load_state_dict(torch.load(weights_path))
+    if isinstance(embedder, TripletNet):
+        embedder = embedder.embedding_net
     embedder.eval()
     embedder.to(cuda)
 
