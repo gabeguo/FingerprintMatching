@@ -11,6 +11,8 @@ SD301_BALANCED='/data/therealgabeguo/fingerprint_data/sd301_split_balanced/'
 SD300_BALANCED='/data/therealgabeguo/fingerprint_data/sd300a_split_balanced/'
 
 DEMOGRAPHICS_ROOT="/data/verifiedanivray/demographics_datasets"
+DEMOGRAPHICS_TEST_SPLIT_SD302='/data/verifiedanivray/sd302_test_demographic_split'
+DEMOGRAPHICS_TEST_SPLIT_SD301='/data/verifiedanivray/sd301_test_demographic_split'
 CAUCASIAN_DESCENT="sd302_white_split"
 NON_CAUCASIAN="sd302_non-white_split"
 MALE_GROUP="sd302_male_split"
@@ -175,13 +177,43 @@ for ((i=0; i<${#groups[@]}; i+=2)); do
                 --cuda $cuda \
                 --num_fingers $num_fingers \
                 --output_root "$FAIRNESS_OUTPUT_FOLDER/sd302/train_${train_group}_test_${test_group}" \
-                --scale_factor 2 \
+                --scale_factor 4 \
                 --diff_fingers_across_sets \
                 --diff_fingers_within_set \
                 --diff_sensors_across_sets \
                 --same_sensor_within_set
         done
     done
+done
+
+for group_name in 'female' 'male' 'non-white' 'white'
+do
+    python3 parameterized_multiple_finger_tester.py \
+        --dataset $DEMOGRAPHICS_TEST_SPLIT_SD302/$group_name \
+        --weights ${weights[0]} \
+        --cuda $cuda \
+        --num_fingers 1 \
+        --output_root "$FAIRNESS_OUTPUT_FOLDER/full_model_sd302test/test_${group_name}" \
+        --scale_factor 4 \
+        --diff_fingers_across_sets \
+        --diff_fingers_within_set \
+        --diff_sensors_across_sets \
+        --same_sensor_within_set
+done
+
+for group_name in 'Female' 'Male'
+do
+    python3 parameterized_multiple_finger_tester.py \
+        --dataset $DEMOGRAPHICS_TEST_SPLIT_SD301/$group_name \
+        --weights ${weights[0]} \
+        --cuda $cuda \
+        --num_fingers 1 \
+        --output_root "$FAIRNESS_OUTPUT_FOLDER/full_model_sd301test/test_${group_name}" \
+        --scale_factor 4 \
+        --diff_fingers_across_sets \
+        --diff_fingers_within_set \
+        --diff_sensors_across_sets \
+        --same_sensor_within_set
 done
 
 ##############################
