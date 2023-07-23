@@ -64,15 +64,17 @@ def move_all_items_to_train(data_folder):
             shutil.move(pid_full_old_path, pid_full_new_path)
     return
     
-def split_by_ratios(data_folder, train_percent, val_percent, test_percent):
+def split_by_ratios(data_folder, train_percent, val_percent, test_percent, n=0):
     pids = [x for x in os.listdir(os.path.join(data_folder, TRAIN))]
     #random.shuffle(pids)
+    assert n >= 0 and n < len(pids)
+    pids = pids[n:] + pids[:n]
     train_end_index = int(train_percent * len(pids) / 100)
     val_end_index = train_end_index + int(val_percent * len(pids) / 100)
     train_pids = pids[:train_end_index]
     val_pids = pids[train_end_index:val_end_index]
     test_pids = pids[val_end_index:]
-        
+
     train_dir_abs_path = os.path.join(data_folder, TRAIN)
     for subfolder in [VAL, TEST]:
         subdirectory_abs_path = os.path.join(data_folder, subfolder)
@@ -88,10 +90,10 @@ def split_by_ratios(data_folder, train_percent, val_percent, test_percent):
 """
 Given data_folder, splits items by train_percent-val_percent-test_percent
 """
-def split_files(data_folder, train_percent, val_percent, test_percent):
+def split_files(data_folder, train_percent, val_percent, test_percent, rotate=0):
     create_train_val_test_subfolders(data_folder)
     move_all_items_to_train(data_folder)
-    split_by_ratios(data_folder, train_percent, val_percent, test_percent)
+    split_by_ratios(data_folder, train_percent, val_percent, test_percent, n=rotate)
     return
 
 def main():
@@ -104,10 +106,10 @@ def main():
     argv = sys.argv[1:] 
 
     # help message
-    usage_msg = "Usage: split_people.py --data_folder <directory address> --train_percent <(0, 100)> --val_percent <(0, 100)>" + \
+    usage_msg = "Usage: split_people.py --data_folder <directory address> --train_percent <(0, 100)> --val_percent <(0, 100)> --rotate <(0, num people)>" + \
             "\nNote: 0 < train_percent + val_percent < 100, test_percent = 100 - (train_percent + val_percent)"
     try:
-        opts, args = getopt.getopt(argv, "h", ['help', 'data_folder=', 'train_percent=', 'val_percent='])
+        opts, args = getopt.getopt(argv, "h", ['help', 'data_folder=', 'train_percent=', 'val_percent=', 'rotate='])
     except getopt.GetoptError:
         print('incorrect usage:\n', usage_msg)
         sys.exit(1)
@@ -131,6 +133,14 @@ def main():
             except ValueError:
                 print('please give valid value for val_percent')
                 sys.exit(1)
+        elif opt in ('--rotate', '-r'):
+            try:
+                rotate = int(arg)
+            except ValueError:
+                print('please give valid value for rotate')
+                sys.exit(1)
+        else:
+            rotate = 0
         
     # validate arguments
     if data_folder is None:
@@ -146,7 +156,7 @@ def main():
     # calculate test_percent
     test_percent = 100 - (train_percent + val_percent)
 
-    split_files(data_folder, train_percent, val_percent, test_percent)
+    split_files(data_folder, train_percent, val_percent, test_percent, rotate=rotate)
 
     return
 
