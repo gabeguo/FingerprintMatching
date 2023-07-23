@@ -75,7 +75,8 @@ def split_by_ratios(data_folder, train_percent, val_percent, test_percent, rotat
     val_pids = pids[train_end_index:val_end_index]
     test_pids = pids[val_end_index:]
 
-    # print("Train pids:\n", train_pids, "\nVal pids:\n", val_pids, "\nTest pids:\n", test_pids)
+    print('\nRotate:', rotatePercent)
+    print("Train pids:\n", train_pids, "\nVal pids:\n", val_pids, "\nTest pids:\n", test_pids)
 
     train_dir_abs_path = os.path.join(data_folder, TRAIN)
     for subfolder in [VAL, TEST]:
