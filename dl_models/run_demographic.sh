@@ -8,12 +8,15 @@ NON_CAUCASIAN="sd302_non-white_split"
 MALE_GROUP="sd302_male_split"
 FEMALE_GROUP="sd302_female_split"
 
+mkdir -p output
+echo "starting demographic splitting" > output/splits.txt # overwrites old stuff
 for i in {0..9}
 do
+    echo -e "\n" >> output/splits.txt
     cd ../directory_organization
-    mkdir output
     for subdir in $CAUCASIAN_DESCENT $NON_CAUCASIAN $MALE_GROUP $FEMALE_GROUP
     do
+        echo $subdir >> output/splits.txt
         python3 split_people.py --data_folder "${DEMOGRAPHICS_ROOT}/${subdir}" \
             --train_percent 80 --val_percent 10 --rotate 10 >> output/splits.txt
     done
