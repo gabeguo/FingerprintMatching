@@ -17,7 +17,7 @@ do
     cd ../directory_organization
     for subdir in $CAUCASIAN_DESCENT $NON_CAUCASIAN $MALE_GROUP $FEMALE_GROUP
     do
-        #echo $subdir >> output/splits.txt
+        echo $subdir >> output/splits.txt
         python3 split_people.py --data_folder "${DEMOGRAPHICS_ROOT}/${subdir}" \
             --train_percent 80 --val_percent 10 --rotate 10 >> output/splits.txt
     done
