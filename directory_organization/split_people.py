@@ -67,13 +67,15 @@ def move_all_items_to_train(data_folder):
 def split_by_ratios(data_folder, train_percent, val_percent, test_percent, rotatePercent=0):
     pids = [x for x in os.listdir(os.path.join(data_folder, TRAIN))]
     #random.shuffle(pids)
-    n = int(len(pids) * rotatePercent)
+    n = int(len(pids) * (rotatePercent / 100.0))
     pids = pids[n:] + pids[:n]
     train_end_index = int(train_percent * len(pids) / 100)
     val_end_index = train_end_index + int(val_percent * len(pids) / 100)
     train_pids = pids[:train_end_index]
     val_pids = pids[train_end_index:val_end_index]
     test_pids = pids[val_end_index:]
+
+    # print("Train pids:\n", train_pids, "\nVal pids:\n", val_pids, "\nTest pids:\n", test_pids)
 
     train_dir_abs_path = os.path.join(data_folder, TRAIN)
     for subfolder in [VAL, TEST]:
