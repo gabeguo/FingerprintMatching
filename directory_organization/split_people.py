@@ -64,10 +64,10 @@ def move_all_items_to_train(data_folder):
             shutil.move(pid_full_old_path, pid_full_new_path)
     return
     
-def split_by_ratios(data_folder, train_percent, val_percent, test_percent, n=0):
+def split_by_ratios(data_folder, train_percent, val_percent, test_percent, rotatePercent=0):
     pids = [x for x in os.listdir(os.path.join(data_folder, TRAIN))]
     #random.shuffle(pids)
-    assert n >= 0 and n < len(pids)
+    n = int(len(pids) * rotatePercent)
     pids = pids[n:] + pids[:n]
     train_end_index = int(train_percent * len(pids) / 100)
     val_end_index = train_end_index + int(val_percent * len(pids) / 100)
@@ -93,7 +93,7 @@ Given data_folder, splits items by train_percent-val_percent-test_percent
 def split_files(data_folder, train_percent, val_percent, test_percent, rotate=0):
     create_train_val_test_subfolders(data_folder)
     move_all_items_to_train(data_folder)
-    split_by_ratios(data_folder, train_percent, val_percent, test_percent, n=rotate)
+    split_by_ratios(data_folder, train_percent, val_percent, test_percent, rotatePercent=rotate)
     return
 
 def main():
@@ -106,7 +106,7 @@ def main():
     argv = sys.argv[1:] 
 
     # help message
-    usage_msg = "Usage: split_people.py --data_folder <directory address> --train_percent <(0, 100)> --val_percent <(0, 100)> --rotate <(0, num people)>" + \
+    usage_msg = "Usage: split_people.py --data_folder <directory address> --train_percent <(0, 100)> --val_percent <(0, 100)> --rotate <(0, 100)>" + \
             "\nNote: 0 < train_percent + val_percent < 100, test_percent = 100 - (train_percent + val_percent)"
     try:
         opts, args = getopt.getopt(argv, "h", ['help', 'data_folder=', 'train_percent=', 'val_percent=', 'rotate='])
@@ -152,6 +152,8 @@ def main():
         print('need valid val_percent')
     if train_percent + val_percent > 100 or train_percent + val_percent < 0:
         print('train_percent + val_percent must be in [0, 100]')
+    if rotate < 0 or rotate > 100:
+        print("rotate percentage is invalid")
 
     # calculate test_percent
     test_percent = 100 - (train_percent + val_percent)
