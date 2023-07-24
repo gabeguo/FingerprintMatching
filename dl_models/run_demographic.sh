@@ -8,12 +8,12 @@ NON_CAUCASIAN="sd302_non-white_split"
 MALE_GROUP="sd302_male_split"
 FEMALE_GROUP="sd302_female_split"
 
-cd ../directory_organization
-mkdir -p output
-echo "starting demographic splitting" > output/splits.txt # overwrites old stuff
-for i in {0..9}
+# cd ../directory_organization
+# mkdir -p output
+# echo "starting demographic splitting" > output/splits.txt # overwrites old stuff
+for i in {1..9}
 do
-    echo "\n" >> output/splits.txt
+    echo "\n" >> ../directory_organization/output/splits.txt
     cd ../directory_organization
     for subdir in $CAUCASIAN_DESCENT $NON_CAUCASIAN $MALE_GROUP $FEMALE_GROUP
     do
