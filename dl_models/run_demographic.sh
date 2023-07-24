@@ -13,7 +13,7 @@ mkdir -p output
 echo "starting demographic splitting" > output/splits.txt # overwrites old stuff
 for i in {0..9}
 do
-    echo "\n" >> ../directory_organization/output/splits.txt
+    echo "" >> ../directory_organization/output/splits.txt
     cd ../directory_organization
     for subdir in $CAUCASIAN_DESCENT $NON_CAUCASIAN $MALE_GROUP $FEMALE_GROUP
     do
