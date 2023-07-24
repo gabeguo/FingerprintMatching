@@ -8,10 +8,10 @@ NON_CAUCASIAN="sd302_non-white_split"
 MALE_GROUP="sd302_male_split"
 FEMALE_GROUP="sd302_female_split"
 
-# cd ../directory_organization
-# mkdir -p output
-# echo "starting demographic splitting" > output/splits.txt # overwrites old stuff
-for i in {1..9}
+cd ../directory_organization
+mkdir -p output
+echo "starting demographic splitting" > output/splits.txt # overwrites old stuff
+for i in {0..9}
 do
     echo "\n" >> ../directory_organization/output/splits.txt
     cd ../directory_organization
@@ -38,7 +38,7 @@ do
             --posttrained-model-path $1/model_weights/demographic_model_${category}.pth \
             --temp_model_dir 'temp_weights' --results_dir "$1/results" \
             --diff-fingers-across-sets-train --diff-sensors-across-sets-train --diff-fingers-across-sets-val --diff-sensors-across-sets-val \
-            --scale-factor 2 --log-interval 100 --early_stopping_interval 25
+            --scale-factor 2 --log-interval 100 --early-stopping-interval 25
     done
     # Also train combined demographics
     folders="${DEMOGRAPHICS_ROOT}/${CAUCASIAN_DESCENT} ${DEMOGRAPHICS_ROOT}/${NON_CAUCASIAN}"
@@ -48,7 +48,7 @@ do
         --posttrained-model-path $1/model_weights/demographic_model_combined_race.pth \
         --temp_model_dir 'temp_weights' --results_dir "$1/results" \
         --diff-fingers-across-sets-train --diff-sensors-across-sets-train --diff-fingers-across-sets-val --diff-sensors-across-sets-val \
-        --scale-factor 2 --log-interval 100 --early_stopping_interval 25
+        --scale-factor 2 --log-interval 100 --early-stopping-interval 25
     folders="${DEMOGRAPHICS_ROOT}/${MALE_GROUP} ${DEMOGRAPHICS_ROOT}/${FEMALE_GROUP}"
     CUDA_VISIBLE_DEVICES=$2 python3 parameterized_runner.py \
         --datasets "${folders}" \
@@ -56,7 +56,7 @@ do
         --posttrained-model-path $1/model_weights/demographic_model_combined_gender.pth \
         --temp_model_dir 'temp_weights' --results_dir "$1/results" \
         --diff-fingers-across-sets-train --diff-sensors-across-sets-train --diff-fingers-across-sets-val --diff-sensors-across-sets-val \
-        --scale-factor 2 --log-interval 100 --early_stopping_interval 25     
+        --scale-factor 2 --log-interval 100 --early-stopping-interval 25     
 
     #########
     # Tests generalizability
