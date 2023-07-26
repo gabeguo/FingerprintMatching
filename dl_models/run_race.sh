@@ -8,18 +8,18 @@ NON_CAUCASIAN="sd302_non-white_split"
 
 cd ../directory_organization
 mkdir -p output
-echo "starting demographic splitting" > output/splits.txt # overwrites old stuff
+echo "starting demographic splitting" > output/race_splits.txt # overwrites old stuff
 for i in {0..9}
 do
     # Shuffle
-    echo "" >> ../directory_organization/output/splits.txt
+    echo "" >> ../directory_organization/output/race_splits.txt
     cd ../directory_organization
     for subdir in $CAUCASIAN_DESCENT $NON_CAUCASIAN
     do
-        echo $subdir >> output/splits.txt
+        echo $subdir >> output/race_splits.txt
         python3 split_people.py --data_folder "${DEMOGRAPHICS_ROOT}/${subdir}" \
-            --train_percent 80 --val_percent 10 --rotate 10 >> output/splits.txt
-        echo "" >> output/splits.txt
+            --train_percent 80 --val_percent 10 --rotate 10 >> output/race_splits.txt
+        echo "" >> output/race_splits.txt
     done
 
     cd ../dl_models

@@ -8,18 +8,18 @@ FEMALE_GROUP="sd302_female_split"
 
 cd ../directory_organization
 mkdir -p output
-echo "starting demographic splitting" > output/splits.txt # overwrites old stuff
+echo "starting demographic splitting" > output/gender_splits.txt # overwrites old stuff
 for i in {0..9}
 do
     # Shuffle
-    echo "" >> ../directory_organization/output/splits.txt
+    echo "" >> ../directory_organization/output/gender_splits.txt
     cd ../directory_organization
     for subdir in $MALE_GROUP $FEMALE_GROUP
     do
-        echo $subdir >> output/splits.txt
+        echo $subdir >> output/gender_splits.txt
         python3 split_people.py --data_folder "${DEMOGRAPHICS_ROOT}/${subdir}" \
-            --train_percent 80 --val_percent 10 --rotate 10 >> output/splits.txt
-        echo "" >> output/splits.txt
+            --train_percent 80 --val_percent 10 --rotate 10 >> output/gender_splits.txt
+        echo "" >> output/gender_splits.txt
     done
 
     cd ../dl_models
