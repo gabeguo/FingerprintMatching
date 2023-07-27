@@ -9,7 +9,7 @@ FEMALE_GROUP="sd302_female_split"
 cd ../directory_organization
 mkdir -p output
 echo "starting demographic splitting" > output/gender_splits.txt # overwrites old stuff
-for i in {0..9}
+for i in {0..80..20}
 do
     # Shuffle
     echo "" >> ../directory_organization/output/gender_splits.txt
@@ -18,7 +18,7 @@ do
     do
         echo $subdir >> output/gender_splits.txt
         python3 split_people.py --data_folder "${DEMOGRAPHICS_ROOT}/${subdir}" \
-            --train_percent 80 --val_percent 10 --rotate 10 >> output/gender_splits.txt
+            --train_percent 80 --val_percent 10 --rotate $i >> output/gender_splits.txt
         echo "" >> output/gender_splits.txt
     done
 
@@ -34,7 +34,7 @@ do
             --posttrained-model-path $1/model_weights/demographic_model_${category}.pth \
             --temp_model_dir 'temp_weights' --results_dir "$1/results" \
             --diff-fingers-across-sets-train --diff-sensors-across-sets-train --diff-fingers-across-sets-val --diff-sensors-across-sets-val \
-            --scale-factor 2 --log-interval 100 --early-stopping-interval 25 --num-epochs 150
+            --scale-factor 2 --log-interval 100 --early-stopping-interval 75 --num-epochs 150
     done
     # Also train combined demographics
     folders="${DEMOGRAPHICS_ROOT}/${MALE_GROUP} ${DEMOGRAPHICS_ROOT}/${FEMALE_GROUP}"
@@ -44,7 +44,7 @@ do
         --posttrained-model-path $1/model_weights/demographic_model_combined_gender.pth \
         --temp_model_dir 'temp_weights' --results_dir "$1/results" \
         --diff-fingers-across-sets-train --diff-sensors-across-sets-train --diff-fingers-across-sets-val --diff-sensors-across-sets-val \
-        --scale-factor 2 --log-interval 100 --early-stopping-interval 25 --num-epochs 150   
+        --scale-factor 2 --log-interval 100 --early-stopping-interval 75 --num-epochs 150   
 
     ### Test generalizability
     for train_group in $MALE_GROUP $FEMALE_GROUP "combined_gender"
