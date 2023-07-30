@@ -24,6 +24,8 @@ def capitalize(token):
     else:
         return token.capitalize()
 
+os.makedirs('demographic_diagrams', exist_ok=True)
+
 # Get a list of all subdirectories
 subdirs = glob.glob('/home/gabeguo/fingerprint_results/paper_results/fairness/sd302/*', recursive=False)
 
@@ -89,15 +91,19 @@ for curr_grouping_name in POSSIBLE_GROUPINGS:
             std_roc_auc[train_idx, test_idx] = roc_auc_scores[(train_group, test_group)]['std']
 
     # Create a heatmap with mean values, but annotations for both mean and std
-    plt.figure(figsize=(8, 12))
+    plt.figure(figsize=(9.5, 12))
     curr_test_groups = [' '.join([capitalize(token) for token in name.split('_')]) for name in curr_test_groups]
     curr_train_groups = [' '.join([capitalize(token) for token in name.split('_')]) for name in curr_train_groups]
     annot = [[f"{mean:.3f} ± {std:.3f}" for mean, std in zip(mean_row, std_row)] 
             for mean_row, std_row in zip(mean_roc_auc, std_roc_auc)]
     heatmap = sns.heatmap(mean_roc_auc, annot=annot, 
-                fmt='', annot_kws={'fontsize':15}, cmap='coolwarm',
+                fmt='', annot_kws={'fontsize':18}, cmap='coolwarm', vmin=min(0.6, mean_roc_auc.min()), vmax=max(0.8, mean_roc_auc.max()),
                 xticklabels=curr_test_groups, yticklabels=curr_train_groups)
-    heatmap.set_xlabel('Testing Group', fontsize=14)
-    heatmap.set_ylabel('Training Group', fontsize=14)
-    plt.title(f'ROC AUC (Mean ± Std Err): {curr_grouping_name} Demographics')
-    plt.show()
+    heatmap.set_xticklabels(curr_test_groups, size=14)
+    heatmap.set_yticklabels(curr_train_groups, size=14)
+    heatmap.set_xlabel('Testing Group', fontsize=16)
+    heatmap.set_ylabel('Training Group', fontsize=16)
+    plt.title(f'ROC-AUC (Mean ± Std Err): {curr_grouping_name} Demographics', fontsize=17)
+    plt.savefig(f'demographic_diagrams/{curr_grouping_name}_generalization.pdf')
+    plt.savefig(f'demographic_diagrams/{curr_grouping_name}_generalization.png')
+    #plt.show()
