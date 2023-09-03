@@ -20,7 +20,7 @@ sys.path.append('../dl_models')
 sys.path.append('../directory_organization')
 from directory_organization.fileProcessingUtil import get_fgrp, get_id, get_sensor
 from dl_models.embedding_models import EmbeddingNet
-from dl_models.parameterized_multiple_finger_tester import load_data, create_output_dir, DEFAULT_OUTPUT_ROOT, ALL_FINGERS
+from dl_models.parameterized_multiple_finger_tester import load_data, create_output_dir, euclideanDist, DEFAULT_OUTPUT_ROOT, ALL_FINGERS
 
 FGRP_TO_NAME = {'01':'Right Thumb',
                 '02':'Right Index',
@@ -37,9 +37,6 @@ FGRP_TO_NAME = {'01':'Right Thumb',
 # Thanks https://github.com/jacobgil/pytorch-grad-cam
 # Thanks https://jacobgil.github.io/pytorch-gradcam-book/Pixel%20Attribution%20for%20embeddings.html
 
-def dist(a, b):
-    return torch.sum(a - b).pow(2)
-
 class ContrastiveSaliency:
     def __init__(self, pos_features, neg_features):
         self.pos_features = pos_features
@@ -48,7 +45,8 @@ class ContrastiveSaliency:
     
     def __call__(self, model_output):
         # distance from negative example should be greater than distance from positive example
-        ret_val = torch.maximum(dist(model_output, self.neg_features) - dist(model_output, self.pos_features), torch.Tensor([0]).cuda())
+        ret_val = torch.maximum(euclideanDist(model_output.flatten(), self.neg_features.flatten()) - \
+                                euclideanDist(model_output.flatten(), self.pos_features.flatten()), torch.Tensor([0]).cuda())
         #print(ret_val)
         return ret_val
 
@@ -138,9 +136,15 @@ if __name__ == "__main__":
         test_filepaths = [curr_filepath[0] for curr_filepath in test_filepaths]
 
         # 0th image is anchor, 1st image is positive, 2nd image is negative
-        anchor_embedding = pretrained_model(test_images[0])
-        pos_embedding = pretrained_model(test_images[1])
-        neg_embedding = pretrained_model(test_images[2])
+        anchor_embedding = pretrained_model(test_images[0]).flatten()
+        pos_embedding = pretrained_model(test_images[1]).flatten()
+        neg_embedding = pretrained_model(test_images[2]).flatten()
+
+        print(torch.sum(anchor_embedding.pow(2)))
+        print(torch.sum(pos_embedding.pow(2)))
+        print(torch.sum(neg_embedding.pow(2)))
+        print(euclideanDist(anchor_embedding, pos_embedding), torch.sum(anchor_embedding - pos_embedding).pow(2))
+        print(euclideanDist(anchor_embedding, neg_embedding), torch.sum(anchor_embedding - neg_embedding).pow(2))
 
         # create images
         anchor_image_float = create_float_img(test_images[0])
@@ -149,12 +153,12 @@ if __name__ == "__main__":
 
         # TODO: need to get rid of scaling code
         # closeness to positive example (as opposed to negative example)
-        contrastive_targets = [ContrastiveSaliency(pos_features=pretrained_model(test_images[1]), neg_features=pretrained_model(test_images[2]))]
+        contrastive_targets = [ContrastiveSaliency(pos_features=pos_embedding, neg_features=neg_embedding)]
         grayscale_contrastive_cam = cam(input_tensor=test_images[0], targets=contrastive_targets, aug_smooth=True, eigen_smooth=True)[0, :]
         contrastive_cam_image = show_cam_on_image(anchor_image_float, grayscale_contrastive_cam, use_rgb=True, colormap=cv2.COLORMAP_JET)
         
         # closeness to negative example (as opposed to positive example)
-        reverse_contrastive_targets = [ContrastiveSaliency(pos_features=pretrained_model(test_images[2]), neg_features=pretrained_model(test_images[1]))]
+        reverse_contrastive_targets = [ContrastiveSaliency(pos_features=neg_embedding, neg_features=pos_embedding)]
         reverse_grayscale_contrastive_cam = cam(input_tensor=test_images[0], targets=reverse_contrastive_targets, aug_smooth=True, eigen_smooth=True)[0, :]
         reverse_contrastive_cam_image = show_cam_on_image(anchor_image_float, reverse_grayscale_contrastive_cam, use_rgb=True, colormap=cv2.COLORMAP_JET)
 
@@ -169,8 +173,8 @@ if __name__ == "__main__":
 
         filenames = [x.split('/')[-1] for x in test_filepaths]
 
-        anchor_pos_dist = dist(anchor_embedding, pos_embedding)
-        anchor_neg_dist = dist(anchor_embedding, neg_embedding)
+        anchor_pos_dist = euclideanDist(anchor_embedding, pos_embedding)
+        anchor_neg_dist = euclideanDist(anchor_embedding, neg_embedding)
 
         # keep track of stats
         if anchor_pos_dist < anchor_neg_dist:
@@ -180,8 +184,8 @@ if __name__ == "__main__":
         axes[0,1].imshow(pos_image_float); axes[0,1].set_title(f'Person {get_id(filenames[1])}: {FGRP_TO_NAME[get_fgrp(filenames[1])]}')
         axes[0,2].imshow(neg_image_float); axes[0,2].set_title(f'Person {get_id(filenames[2])}: {FGRP_TO_NAME[get_fgrp(filenames[2])]}')
         axes[1,0].imshow(anchor_image_float); axes[1,0].set_title(f'Person {get_id(filenames[0])}: {FGRP_TO_NAME[get_fgrp(filenames[0])]}')
-        axes[1,1].imshow(contrastive_cam_image); axes[1,1].set_title(f'Areas Contributing to Intra-Person Similarity\n(Distance = {round(anchor_pos_dist.item(), 2)})')
-        axes[1,2].imshow(reverse_contrastive_cam_image); axes[1,2].set_title(f'Areas Detracting from Intra-Person Similarity\n(Distance = {round(anchor_neg_dist.item(), 2)})')
+        axes[1,1].imshow(contrastive_cam_image); axes[1,1].set_title(f'Areas Contributing to Intra-Person Similarity\n(Distance = {round(anchor_pos_dist.item(), 3)})')
+        axes[1,2].imshow(reverse_contrastive_cam_image); axes[1,2].set_title(f'Areas Detracting from Intra-Person Similarity\n(Distance = {round(anchor_neg_dist.item(), 3)})')
 
         plt.savefig(os.path.join(output_dir, f'contrastive_img_{i}.png'))
         plt.close()
