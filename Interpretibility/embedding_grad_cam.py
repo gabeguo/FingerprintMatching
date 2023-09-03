@@ -151,14 +151,13 @@ if __name__ == "__main__":
         pos_image_float = create_float_img(test_images[1])
         neg_image_float = create_float_img(test_images[2])
 
-        # TODO: need to get rid of scaling code
         # closeness to positive example (as opposed to negative example)
         contrastive_targets = [ContrastiveSaliency(pos_features=pos_embedding, neg_features=neg_embedding)]
         grayscale_contrastive_cam = cam(input_tensor=test_images[0], targets=contrastive_targets, aug_smooth=True, eigen_smooth=True)[0, :]
         contrastive_cam_image = show_cam_on_image(anchor_image_float, grayscale_contrastive_cam, use_rgb=True, colormap=cv2.COLORMAP_JET)
         
         # closeness to negative example (as opposed to positive example)
-        reverse_contrastive_targets = [ContrastiveSaliency(pos_features=neg_embedding, neg_features=pos_embedding)]
+        reverse_contrastive_targets = [ContrastiveSaliency(pos_features=neg_embedding, neg_features=pos_embedding)] # reversed
         reverse_grayscale_contrastive_cam = cam(input_tensor=test_images[0], targets=reverse_contrastive_targets, aug_smooth=True, eigen_smooth=True)[0, :]
         reverse_contrastive_cam_image = show_cam_on_image(anchor_image_float, reverse_grayscale_contrastive_cam, use_rgb=True, colormap=cv2.COLORMAP_JET)
 
@@ -200,7 +199,3 @@ if __name__ == "__main__":
 
     with open(os.path.join(output_dir, '_output_summary.json'), 'w') as f:
         json.dump(output_summary, f, indent=4)
-
-
-
-
