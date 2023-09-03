@@ -140,11 +140,11 @@ if __name__ == "__main__":
         pos_embedding = pretrained_model(test_images[1]).flatten()
         neg_embedding = pretrained_model(test_images[2]).flatten()
 
-        print(torch.sum(anchor_embedding.pow(2)))
-        print(torch.sum(pos_embedding.pow(2)))
-        print(torch.sum(neg_embedding.pow(2)))
-        print(euclideanDist(anchor_embedding, pos_embedding), torch.sum(anchor_embedding - pos_embedding).pow(2))
-        print(euclideanDist(anchor_embedding, neg_embedding), torch.sum(anchor_embedding - neg_embedding).pow(2))
+        #print(torch.sum(anchor_embedding.pow(2)))
+        #print(torch.sum(pos_embedding.pow(2)))
+        #print(torch.sum(neg_embedding.pow(2)))
+        #print(euclideanDist(anchor_embedding, pos_embedding), torch.sum(anchor_embedding - pos_embedding).pow(2))
+        #print(euclideanDist(anchor_embedding, neg_embedding), torch.sum(anchor_embedding - neg_embedding).pow(2))
 
         # create images
         anchor_image_float = create_float_img(test_images[0])
