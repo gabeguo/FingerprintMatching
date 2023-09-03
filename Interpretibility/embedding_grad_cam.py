@@ -83,11 +83,18 @@ if __name__ == "__main__":
 
     print(pretrained_model.feature_extractor)
 
-    target_layers = [pretrained_model.feature_extractor[7][1],
-                     pretrained_model.feature_extractor[6][1]]
+    target_layers = [
+        pretrained_model.feature_extractor[7][1],
+        pretrained_model.feature_extractor[6][1]
+    ]
+    cam = GradCAM(
+        model=pretrained_model,
+        target_layers=target_layers,
+        use_cuda=True
+    )
 
     data_iter = iter(test_dataloader)
-    for i in range(1):#tqdm(range(len(test_dataloader))):
+    for i in range(5):#tqdm(range(len(test_dataloader))):
         # test_images is 3 (anchor, pos, neg) * N (number of sample images) * image_size (1*3*224*224)
         test_images, _, test_filepaths = next(data_iter)
         test_images = [torch.unsqueeze(curr_img[0], 0).cuda() for curr_img in test_images]
@@ -104,9 +111,6 @@ if __name__ == "__main__":
         pos_image_float = create_float_img(test_images[1])
         neg_image_float = create_float_img(test_images[2])
 
-        cam = GradCAM(model=pretrained_model,
-                     target_layers=target_layers,
-                     use_cuda=True)
         pos_grayscale_sim_cam = cam(input_tensor=test_images[0], targets=pos_sim_targets, aug_smooth=True, eigen_smooth=True)[0, :]
         pos_sim_cam_image = show_cam_on_image(anchor_image_float, pos_grayscale_sim_cam, use_rgb=True, colormap=cv2.COLORMAP_HOT)
 
@@ -123,7 +127,7 @@ if __name__ == "__main__":
         # plt.savefig('dummy.png')
         
         num_rows = 2
-        fig, axes = plt.subplots(num_rows + 1, 3, figsize=(12, 4 * (num_rows + 1)))
+        fig, axes = plt.subplots(num_rows + 1, 3, figsize=(3 * 5, 5 * (num_rows + 1)))
 
         for row_num in range(num_rows + 1):
             for col_num in range(3):
@@ -140,5 +144,5 @@ if __name__ == "__main__":
         axes[2, 2].imshow(neg_dis_cam_image)
         
 
-        plt.savefig('big_dummy.png')
+        plt.savefig('sample_saliency_map_{}.png'.format(i))
 
