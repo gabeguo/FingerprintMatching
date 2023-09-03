@@ -1,4 +1,5 @@
 import torch
+import torch.nn as nn
 import torch.functional as F
 import numpy as np
 import torchvision
@@ -31,7 +32,7 @@ class ContrastiveSaliency:
     
     def __call__(self, model_output):
         # distance from negative example should be greater than distance from positive example
-        return dist(model_output, self.neg_features) - dist(model_output, self.pos_features)
+        return torch.maximum(dist(model_output, self.neg_features) - dist(model_output, self.pos_features), torch.Tensor([0]).cuda())
 
 class SimilarityToConceptTarget:
     def __init__(self, features):
