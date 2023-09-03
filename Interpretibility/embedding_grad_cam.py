@@ -20,6 +20,19 @@ from dl_models.parameterized_multiple_finger_tester import load_data, create_out
 # Thanks https://github.com/jacobgil/pytorch-grad-cam
 # Thanks https://jacobgil.github.io/pytorch-gradcam-book/Pixel%20Attribution%20for%20embeddings.html
 
+def dist(a, b):
+    return torch.sum(a - b).pow(2)
+
+class ContrastiveSaliency:
+    def __init__(self, pos_features, neg_features):
+        self.pos_features = pos_features
+        self.neg_features = neg_features
+        return
+    
+    def __call__(self, model_output):
+        # distance from negative example should be greater than distance from positive example
+        return dist(model_output, self.neg_features) - dist(model_output, self.pos_features)
+
 class SimilarityToConceptTarget:
     def __init__(self, features):
         self.features = features
@@ -84,8 +97,7 @@ if __name__ == "__main__":
     print(pretrained_model.feature_extractor)
 
     target_layers = [
-        pretrained_model.feature_extractor[7][1],
-        pretrained_model.feature_extractor[6][1]
+        pretrained_model.feature_extractor[7][1]
     ]
     cam = GradCAM(
         model=pretrained_model,
@@ -102,47 +114,38 @@ if __name__ == "__main__":
         # 0th image is anchor, 1st image is positive, 2nd image is negative
         anchor_embedding = pretrained_model(test_images[0])
         print(anchor_embedding.shape)
-        pos_sim_targets = [SimilarityToConceptTarget(pretrained_model(test_images[1]))]
-        neg_sim_targets = [SimilarityToConceptTarget(pretrained_model(test_images[2]))]
-        pos_dis_targets = [DissimilarityToConceptTarget(pretrained_model(test_images[1]))]
-        neg_dis_targets = [DissimilarityToConceptTarget(pretrained_model(test_images[2]))]
 
+        # create images
         anchor_image_float = create_float_img(test_images[0])
         pos_image_float = create_float_img(test_images[1])
         neg_image_float = create_float_img(test_images[2])
 
-        pos_grayscale_sim_cam = cam(input_tensor=test_images[0], targets=pos_sim_targets, aug_smooth=True, eigen_smooth=True)[0, :]
-        pos_sim_cam_image = show_cam_on_image(anchor_image_float, pos_grayscale_sim_cam, use_rgb=True, colormap=cv2.COLORMAP_HOT)
-
-        neg_grayscale_sim_cam = cam(input_tensor=test_images[0], targets=neg_sim_targets, aug_smooth=True, eigen_smooth=True)[0, :]
-        neg_sim_cam_image = show_cam_on_image(anchor_image_float, neg_grayscale_sim_cam, use_rgb=True, colormap=cv2.COLORMAP_HOT)
-
-        pos_grayscale_dis_cam = cam(input_tensor=test_images[0], targets=pos_dis_targets, aug_smooth=True, eigen_smooth=True)[0, :]
-        pos_dis_cam_image = show_cam_on_image(anchor_image_float, pos_grayscale_dis_cam, use_rgb=True, colormap=cv2.COLORMAP_OCEAN)
-
-        neg_grayscale_dis_cam = cam(input_tensor=test_images[0], targets=neg_dis_targets, aug_smooth=True, eigen_smooth=True)[0, :]
-        neg_dis_cam_image = show_cam_on_image(anchor_image_float, neg_grayscale_dis_cam, use_rgb=True, colormap=cv2.COLORMAP_OCEAN)
+        # TODO: need to get rid of scaling code
+        # closeness to positive example (as opposed to negative example)
+        contrastive_targets = [ContrastiveSaliency(pos_features=pretrained_model(test_images[1]), neg_features=pretrained_model(test_images[2]))]
+        grayscale_contrastive_cam = cam(input_tensor=test_images[0], targets=contrastive_targets, aug_smooth=True, eigen_smooth=True)[0, :]
+        contrastive_cam_image = show_cam_on_image(anchor_image_float, grayscale_contrastive_cam, use_rgb=True, colormap=cv2.COLORMAP_JET)
         
-        # plt.imshow(pos_heatmap)
-        # plt.savefig('dummy.png')
-        
-        num_rows = 2
-        fig, axes = plt.subplots(num_rows + 1, 3, figsize=(3 * 5, 5 * (num_rows + 1)))
+        # closeness to negative example (as opposed to positive example)
+        reverse_contrastive_targets = [ContrastiveSaliency(pos_features=pretrained_model(test_images[2]), neg_features=pretrained_model(test_images[1]))]
+        reverse_grayscale_contrastive_cam = cam(input_tensor=test_images[0], targets=reverse_contrastive_targets, aug_smooth=True, eigen_smooth=True)[0, :]
+        reverse_contrastive_cam_image = show_cam_on_image(anchor_image_float, reverse_grayscale_contrastive_cam, use_rgb=True, colormap=cv2.COLORMAP_JET)
 
-        for row_num in range(num_rows + 1):
+        # plt.imshow(contrastive_cam_image)
+        # plt.savefig('contrastive_img.png')
+
+        fig, axes = plt.subplots(2, 3, figsize=(3 * 5, 2 * 5))
+
+        for row_num in range(2):
             for col_num in range(3):
                 axes[row_num, col_num].axis('off')
 
-        axes[0, 1].imshow(pos_image_float); axes[0, 1].set_title('Same Person:\nComparison Fingerprint')
-        axes[0, 2].imshow(neg_image_float); axes[0, 2].set_title('Different Person\n:Comparison Fingerprint')
+        axes[0,1].imshow(pos_image_float); axes[0,1].set_title('same person example')
+        axes[0,2].imshow(neg_image_float); axes[0,2].set_title('different person example')
+        axes[1,0].imshow(anchor_image_float); axes[1,0].set_title('reference fingerprint')
+        axes[1,1].imshow(contrastive_cam_image); axes[1,1].set_title('areas that contribute to intra-person similarity')
+        axes[1,2].imshow(reverse_contrastive_cam_image); axes[1,2].set_title('areas that detract from intra-person similarity')
 
-        axes[1, 0].imshow(anchor_image_float); axes[1, 0].set_title('Reference Fingerprint:\nSimilarity Heatmap')
-        axes[1, 1].imshow(pos_sim_cam_image)
-        axes[1, 2].imshow(neg_sim_cam_image)
-        axes[2, 0].imshow(anchor_image_float); axes[2, 0].set_title('Reference Fingerprint:\nDissimilarity Heatmap')
-        axes[2, 1].imshow(pos_dis_cam_image)
-        axes[2, 2].imshow(neg_dis_cam_image)
-        
+        plt.savefig(f'contrastive_img_{i}.png')
 
-        plt.savefig('sample_saliency_map_{}.png'.format(i))
 
