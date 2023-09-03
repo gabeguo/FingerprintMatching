@@ -2,9 +2,10 @@ import torch
 import torch.functional as F
 import numpy as np
 import torchvision
+import cv2
 from PIL import Image
 import matplotlib.pyplot as plt
-from pytorch_grad_cam.utils.image import show_cam_on_image, preprocess_image
+from pytorch_grad_cam.utils.image import preprocess_image, show_cam_on_image
 from pytorch_grad_cam import GradCAM, AblationCAM
 
 import argparse
@@ -28,6 +29,18 @@ class SimilarityToConceptTarget:
         #cos = torch.nn.CosineSimilarity(dim=0)
         #res = cos(model_output.squeeze(), self.features.squeeze())
         res = -torch.sqrt(torch.sum((model_output - self.features).pow(2)))
+        #print(res)
+        return res
+    
+class DissimilarityToConceptTarget:
+    def __init__(self, features):
+        self.features = features
+        return
+    
+    def __call__(self, model_output):
+        #cos = torch.nn.CosineSimilarity(dim=0)
+        #res = cos(model_output.squeeze(), self.features.squeeze())
+        res = torch.sqrt(torch.sum((model_output - self.features).pow(2)))
         #print(res)
         return res
 
@@ -70,7 +83,8 @@ if __name__ == "__main__":
 
     print(pretrained_model.feature_extractor)
 
-    target_layers = [pretrained_model.feature_extractor[7], pretrained_model.feature_extractor[6]]
+    target_layers = [pretrained_model.feature_extractor[7][1],
+                     pretrained_model.feature_extractor[6][1]]
 
     data_iter = iter(test_dataloader)
     for i in range(1):#tqdm(range(len(test_dataloader))):
@@ -81,8 +95,10 @@ if __name__ == "__main__":
         # 0th image is anchor, 1st image is positive, 2nd image is negative
         anchor_embedding = pretrained_model(test_images[0])
         print(anchor_embedding.shape)
-        pos_targets = [SimilarityToConceptTarget(pretrained_model(test_images[1]))]
-        neg_targets = [SimilarityToConceptTarget(pretrained_model(test_images[2]))]
+        pos_sim_targets = [SimilarityToConceptTarget(pretrained_model(test_images[1]))]
+        neg_sim_targets = [SimilarityToConceptTarget(pretrained_model(test_images[2]))]
+        pos_dis_targets = [DissimilarityToConceptTarget(pretrained_model(test_images[1]))]
+        neg_dis_targets = [DissimilarityToConceptTarget(pretrained_model(test_images[2]))]
 
         anchor_image_float = create_float_img(test_images[0])
         pos_image_float = create_float_img(test_images[1])
@@ -91,30 +107,37 @@ if __name__ == "__main__":
         cam = GradCAM(model=pretrained_model,
                      target_layers=target_layers,
                      use_cuda=True)
-        pos_grayscale_cam = cam(input_tensor=test_images[0], targets=pos_targets, aug_smooth=True, eigen_smooth=True)[0, :]
-        pos_cam_image = show_cam_on_image(anchor_image_float, pos_grayscale_cam, use_rgb=True)
-        #pos_heatmap = Image.fromarray(pos_cam_image)
+        pos_grayscale_sim_cam = cam(input_tensor=test_images[0], targets=pos_sim_targets, aug_smooth=True, eigen_smooth=True)[0, :]
+        pos_sim_cam_image = show_cam_on_image(anchor_image_float, pos_grayscale_sim_cam, use_rgb=True, colormap=cv2.COLORMAP_HOT)
 
-        neg_grayscale_cam = cam(input_tensor=test_images[0], targets=neg_targets, aug_smooth=True, eigen_smooth=True)[0, :]
-        neg_cam_image = show_cam_on_image(anchor_image_float, neg_grayscale_cam, use_rgb=True)
-        #neg_heatmap = Image.fromarray(neg_cam_image)
+        neg_grayscale_sim_cam = cam(input_tensor=test_images[0], targets=neg_sim_targets, aug_smooth=True, eigen_smooth=True)[0, :]
+        neg_sim_cam_image = show_cam_on_image(anchor_image_float, neg_grayscale_sim_cam, use_rgb=True, colormap=cv2.COLORMAP_HOT)
+
+        pos_grayscale_dis_cam = cam(input_tensor=test_images[0], targets=pos_dis_targets, aug_smooth=True, eigen_smooth=True)[0, :]
+        pos_dis_cam_image = show_cam_on_image(anchor_image_float, pos_grayscale_dis_cam, use_rgb=True, colormap=cv2.COLORMAP_OCEAN)
+
+        neg_grayscale_dis_cam = cam(input_tensor=test_images[0], targets=neg_dis_targets, aug_smooth=True, eigen_smooth=True)[0, :]
+        neg_dis_cam_image = show_cam_on_image(anchor_image_float, neg_grayscale_dis_cam, use_rgb=True, colormap=cv2.COLORMAP_OCEAN)
         
         # plt.imshow(pos_heatmap)
         # plt.savefig('dummy.png')
         
-        num_rows = 1
+        num_rows = 2
         fig, axes = plt.subplots(num_rows + 1, 3, figsize=(12, 4 * (num_rows + 1)))
 
         for row_num in range(num_rows + 1):
             for col_num in range(3):
                 axes[row_num, col_num].axis('off')
 
-        axes[0, 1].imshow(pos_image_float); axes[0, 1].set_title('Same Class')
-        axes[0, 2].imshow(neg_image_float); axes[0, 2].set_title('Diff Class')
+        axes[0, 1].imshow(pos_image_float); axes[0, 1].set_title('Same Person:\nComparison Fingerprint')
+        axes[0, 2].imshow(neg_image_float); axes[0, 2].set_title('Different Person\n:Comparison Fingerprint')
 
-        axes[1, 0].imshow(anchor_image_float); axes[1, 0].set_title('Anchor')
-        axes[1, 1].imshow(pos_cam_image)
-        axes[1, 2].imshow(neg_cam_image)
+        axes[1, 0].imshow(anchor_image_float); axes[1, 0].set_title('Reference Fingerprint:\nSimilarity Heatmap')
+        axes[1, 1].imshow(pos_sim_cam_image)
+        axes[1, 2].imshow(neg_sim_cam_image)
+        axes[2, 0].imshow(anchor_image_float); axes[2, 0].set_title('Reference Fingerprint:\nDissimilarity Heatmap')
+        axes[2, 1].imshow(pos_dis_cam_image)
+        axes[2, 2].imshow(neg_dis_cam_image)
         
 
         plt.savefig('big_dummy.png')
