@@ -12,11 +12,27 @@ from pytorch_grad_cam import GradCAM, AblationCAM
 import argparse
 from tqdm import tqdm
 
+import json
+import os
 import sys
 sys.path.append("../")
 sys.path.append('../dl_models')
+sys.path.append('../directory_organization')
+from directory_organization.fileProcessingUtil import get_fgrp, get_id, get_sensor
 from dl_models.embedding_models import EmbeddingNet
 from dl_models.parameterized_multiple_finger_tester import load_data, create_output_dir, DEFAULT_OUTPUT_ROOT, ALL_FINGERS
+
+FGRP_TO_NAME = {'01':'Right Thumb',
+                '02':'Right Index',
+                '03':'Right Middle',
+                '04':'Right Ring',
+                '05':'Right Little',
+                '06':'Left Thumb',
+                '07':'Left Index',
+                '08':'Left Middle',
+                '09':'Left Ring',
+                '10':'Left Little'
+                }
 
 # Thanks https://github.com/jacobgil/pytorch-grad-cam
 # Thanks https://jacobgil.github.io/pytorch-gradcam-book/Pixel%20Attribution%20for%20embeddings.html
@@ -32,7 +48,9 @@ class ContrastiveSaliency:
     
     def __call__(self, model_output):
         # distance from negative example should be greater than distance from positive example
-        return torch.maximum(dist(model_output, self.neg_features) - dist(model_output, self.pos_features), torch.Tensor([0]).cuda())
+        ret_val = torch.maximum(dist(model_output, self.neg_features) - dist(model_output, self.pos_features), torch.Tensor([0]).cuda())
+        #print(ret_val)
+        return ret_val
 
 class SimilarityToConceptTarget:
     def __init__(self, features):
@@ -72,8 +90,11 @@ if __name__ == "__main__":
                         default='/data/therealgabeguo/most_recent_experiment_reports/jan_08_resnet18Final/weights_2023-01-07_11:06:28.pth',
                         type=str)
     parser.add_argument('--output_root', help='Root directory for output',
-                        default='/data/therealgabeguo/gradcam_outputs', nargs='?', \
+                        default='/data/therealgabeguo/fingerprint_gradcam_outputs', nargs='?', \
                         type=str)
+    parser.add_argument('--num_triplets', help='Number of contrastive triplets to go through',
+                        default=50,
+                        type=int)
 
     args = parser.parse_args()
 
@@ -106,15 +127,20 @@ if __name__ == "__main__":
         use_cuda=True
     )
 
+    total_correct = 0
+    all_data = list()
+
     data_iter = iter(test_dataloader)
-    for i in range(5):#tqdm(range(len(test_dataloader))):
+    for i in tqdm(range(args.num_triplets)):#tqdm(range(len(test_dataloader))):
         # test_images is 3 (anchor, pos, neg) * N (number of sample images) * image_size (1*3*224*224)
         test_images, _, test_filepaths = next(data_iter)
         test_images = [torch.unsqueeze(curr_img[0], 0).cuda() for curr_img in test_images]
         test_filepaths = [curr_filepath[0] for curr_filepath in test_filepaths]
+
         # 0th image is anchor, 1st image is positive, 2nd image is negative
         anchor_embedding = pretrained_model(test_images[0])
-        print(anchor_embedding.shape)
+        pos_embedding = pretrained_model(test_images[1])
+        neg_embedding = pretrained_model(test_images[2])
 
         # create images
         anchor_image_float = create_float_img(test_images[0])
@@ -141,12 +167,36 @@ if __name__ == "__main__":
             for col_num in range(3):
                 axes[row_num, col_num].axis('off')
 
-        axes[0,1].imshow(pos_image_float); axes[0,1].set_title('same person example')
-        axes[0,2].imshow(neg_image_float); axes[0,2].set_title('different person example')
-        axes[1,0].imshow(anchor_image_float); axes[1,0].set_title('reference fingerprint')
-        axes[1,1].imshow(contrastive_cam_image); axes[1,1].set_title('areas that contribute to intra-person similarity')
-        axes[1,2].imshow(reverse_contrastive_cam_image); axes[1,2].set_title('areas that detract from intra-person similarity')
+        filenames = [x.split('/')[-1] for x in test_filepaths]
 
-        plt.savefig(f'contrastive_img_{i}.png')
+        anchor_pos_dist = dist(anchor_embedding, pos_embedding)
+        anchor_neg_dist = dist(anchor_embedding, neg_embedding)
+
+        # keep track of stats
+        if anchor_pos_dist < anchor_neg_dist:
+            total_correct += 1
+        all_data.append(test_filepaths)
+
+        axes[0,1].imshow(pos_image_float); axes[0,1].set_title(f'Person {get_id(filenames[1])}: {FGRP_TO_NAME[get_fgrp(filenames[1])]}')
+        axes[0,2].imshow(neg_image_float); axes[0,2].set_title(f'Person {get_id(filenames[2])}: {FGRP_TO_NAME[get_fgrp(filenames[2])]}')
+        axes[1,0].imshow(anchor_image_float); axes[1,0].set_title(f'Person {get_id(filenames[0])}: {FGRP_TO_NAME[get_fgrp(filenames[0])]}')
+        axes[1,1].imshow(contrastive_cam_image); axes[1,1].set_title(f'Areas Contributing to Intra-Person Similarity\n(Distance = {round(anchor_pos_dist.item(), 2)})')
+        axes[1,2].imshow(reverse_contrastive_cam_image); axes[1,2].set_title(f'Areas Detracting from Intra-Person Similarity\n(Distance = {round(anchor_neg_dist.item(), 2)})')
+
+        plt.savefig(os.path.join(output_dir, f'contrastive_img_{i}.png'))
+        plt.close()
+    
+    print(f'{total_correct} of {args.num_triplets} correct')
+
+    output_summary = {
+        'files': all_data,
+        'num_correct': total_correct
+    }
+    output_summary.update(vars(args))
+
+    with open(os.path.join(output_dir, '_output_summary.json'), 'w') as f:
+        json.dump(output_summary, f, indent=4)
+
+
 
 
