@@ -102,6 +102,8 @@ if __name__ == "__main__":
 
     print(args)
 
+    plt.rcParams.update({'font.size': 15})
+
     fingerprint_dataset, test_dataset, test_dataloader = load_data(
         the_data_folder=args.dataset, \
         num_anchors=1, num_pos=1, num_neg=1, scale_factor=1, \
@@ -180,13 +182,14 @@ if __name__ == "__main__":
             total_correct += 1
         all_data.append(test_filepaths)
 
-        axes[0,1].imshow(pos_image_float); axes[0,1].set_title(f'Person {get_id(filenames[1])}: {FGRP_TO_NAME[get_fgrp(filenames[1])]}')
-        axes[0,2].imshow(neg_image_float); axes[0,2].set_title(f'Person {get_id(filenames[2])}: {FGRP_TO_NAME[get_fgrp(filenames[2])]}')
-        axes[1,0].imshow(anchor_image_float); axes[1,0].set_title(f'Person {get_id(filenames[0])}: {FGRP_TO_NAME[get_fgrp(filenames[0])]}')
-        axes[1,1].imshow(contrastive_cam_image); axes[1,1].set_title(f'Areas Contributing to Intra-Person Similarity\n(Distance = {round(anchor_pos_dist.item(), 3)})')
-        axes[1,2].imshow(reverse_contrastive_cam_image); axes[1,2].set_title(f'Areas Detracting from Intra-Person Similarity\n(Distance = {round(anchor_neg_dist.item(), 3)})')
+        axes[0,1].imshow(pos_image_float); axes[0,1].set_title(f'Person {get_id(filenames[1])}:\n{FGRP_TO_NAME[get_fgrp(filenames[1])]}')
+        axes[0,2].imshow(neg_image_float); axes[0,2].set_title(f'Person {get_id(filenames[2])}:\n{FGRP_TO_NAME[get_fgrp(filenames[2])]}')
+        axes[1,0].imshow(anchor_image_float); axes[1,0].set_title(f'Person {get_id(filenames[0])}:\n{FGRP_TO_NAME[get_fgrp(filenames[0])]}')
+        axes[1,1].imshow(contrastive_cam_image); axes[1,1].set_title(f'Intra-Person Similarity\n(Distance = {round(anchor_pos_dist.item(), 3)})')
+        axes[1,2].imshow(reverse_contrastive_cam_image); axes[1,2].set_title(f'Inter-Person Similarity\n(Distance = {round(anchor_neg_dist.item(), 3)})')
 
-        plt.savefig(os.path.join(output_dir, f'contrastive_img_{i}.png'))
+        plt.savefig(os.path.join(output_dir, f'contrastive_img_{i}.pdf'), bbox_inches='tight')
+        plt.savefig(os.path.join(output_dir, f'contrastive_img_{i}.png'), bbox_inches='tight')
         plt.close()
     
     print(f'{total_correct} of {args.num_triplets} correct')
