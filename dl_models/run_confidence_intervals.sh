@@ -1,4 +1,4 @@
-# sh run_tests.sh root_folder cuda
+# sh run_confidence_intervals.sh root_folder cuda
 
 # TODO: DOUBLE CHECK CODE!
 
@@ -18,7 +18,7 @@ NON_CAUCASIAN="sd302_non-white_split"
 MALE_GROUP="sd302_male_split"
 FEMALE_GROUP="sd302_female_split"
 
-BASED_MODEL="$1/model_weights/based_model.pth"
+BASED_MODEL="/data/therealgabeguo/most_recent_experiment_reports/jan_08_resnet18Final/weights_2023-01-07_11:06:28.pth"
 BALANCED_MODEL="$1/model_weights/balanced_model_sd302_sd300.pth"
 DUAL_MODEL="$1/model_weights/dual_02_03.pth"
 
@@ -71,7 +71,7 @@ FEATURE_CORRELATION_FOLDER="$1/paper_results/confidence_intervals/feature_correl
 # Specific correlation: SD302 (un-pretrained)
 python3 parameterized_multiple_finger_tester.py \
     --dataset $SD302 \
-    --weights $1/model_weights/unpretrained_model_sd302.pth \
+    --weights /data/therealgabeguo/fingerprint_weights/embedding_net_weights_sd302_split.pth \
     --cuda "cuda:$2" \
     --num_fingers 1 \
     --output_root $FEATURE_CORRELATION_FOLDER/baseline_noPretrain \
@@ -83,7 +83,7 @@ python3 parameterized_multiple_finger_tester.py \
 # Specific correlation: SD302 (minutiae)
 python3 parameterized_multiple_finger_tester.py \
     --dataset $MINDTCT_MINUTIAE_ROOT \
-    --weights $1/model_weights/feature_model_minutiae.pth \
+    --weights /data/therealgabeguo/fingerprint_weights/mindtct_minutiae_sd302.pth \
     --cuda "cuda:$2" \
     --num_fingers 1 \
     --output_root $FEATURE_CORRELATION_FOLDER/minutiae \
@@ -97,7 +97,7 @@ for feature in $ENHANCED $FREQUENCY $ORIENTATION
 do
     python3 parameterized_multiple_finger_tester.py \
         --dataset ${FEATURE_EXTRACTIONS_ROOT}/${feature} \
-        --weights $1/model_weights/feature_model_${feature}.pth \
+        --weights /data/therealgabeguo/fingerprint_weights/embedding_net_weights_${feature}.pth \
         --cuda "cuda:$2" \
         --num_fingers 1 \
         --output_root $FEATURE_CORRELATION_FOLDER/$feature \
