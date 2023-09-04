@@ -406,11 +406,11 @@ def main(the_data_folder, weights_path, cuda, output_dir, num_anchors, num_pos, 
 
     # LOAD MODEL
 
-    weights_dict = torch.load(weights_path)
+    weights_dict = torch.load(weights_path, map_location=torch.device(cuda))
     model_dict = embedder.state_dict()
     if set(model_dict.keys()) != set(weights_dict.keys()):
         embedder = TripletNet(embedder)
-    embedder.load_state_dict(torch.load(weights_path))
+    embedder.load_state_dict(torch.load(weights_path, map_location=torch.device(cuda)))
     if isinstance(embedder, TripletNet):
         embedder = embedder.embedding_net
     embedder.eval()
@@ -459,7 +459,7 @@ def main(the_data_folder, weights_path, cuda, output_dir, num_anchors, num_pos, 
         NUM_POS_PAIRS_KEY: len(_01_dist), NUM_NEG_PAIRS_KEY: len(_02_dist), 
         MEAN_POS_DIST_KEY: np.mean(_01_dist), STD_POS_DIST_KEY: np.std(_01_dist),
         MEAN_NEG_DIST_KEY: np.mean(_02_dist), STD_NEG_DIST_KEY: np.std(_02_dist),
-        MEAN_TRIPLET_DIST_KEY: np.mean(_02_dist - _01_dist), STD_TRIPLET_DIST_KEY: np.std(_02_dist - _01_dist),
+        MEAN_TRIPLET_DIST_KEY: np.mean(np.array(_02_dist) - np.array(_01_dist)), STD_TRIPLET_DIST_KEY: np.std(np.array(_02_dist) - np.array(_01_dist)),
         ACC_KEY: max(accs), ROC_AUC_KEY: auc,
         T_VAL_KEY: welch_t, P_VAL_KEY: p_val,
         DF_KEY: calc_dof_welch(s1=np.std(_01_dist), n1=len(_01_dist), s2=np.std(_02_dist), n2=len(_02_dist)),
