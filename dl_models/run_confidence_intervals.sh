@@ -51,7 +51,7 @@ num_fingers=1
 # Iterate through arrays
 for ((i=0; i<${#datasets[@]}; ++i)); do
     # General correlation
-    python3 parameterized_multiple_finger_tester.py \
+    CUDA_VISIBLE_DEVICES=$2 python3 parameterized_multiple_finger_tester.py \
         --dataset ${datasets[i]} \
         --weights ${weights[0]} \
         --cuda $cuda \
@@ -69,7 +69,7 @@ done
 ###############
 FEATURE_CORRELATION_FOLDER="$1/paper_results/confidence_intervals/feature_correlation/sd302"
 # Specific correlation: SD302 (un-pretrained)
-python3 parameterized_multiple_finger_tester.py \
+CUDA_VISIBLE_DEVICES=$2 python3 parameterized_multiple_finger_tester.py \
     --dataset $SD302 \
     --weights /data/therealgabeguo/fingerprint_weights/embedding_net_weights_sd302_split.pth \
     --cuda "cuda:$2" \
@@ -81,7 +81,7 @@ python3 parameterized_multiple_finger_tester.py \
     --diff_sensors_across_sets \
     --same_sensor_within_set
 # Specific correlation: SD302 (minutiae)
-python3 parameterized_multiple_finger_tester.py \
+CUDA_VISIBLE_DEVICES=$2 python3 parameterized_multiple_finger_tester.py \
     --dataset $MINDTCT_MINUTIAE_ROOT \
     --weights /data/therealgabeguo/fingerprint_weights/mindtct_minutiae_sd302.pth \
     --cuda "cuda:$2" \
@@ -95,7 +95,7 @@ python3 parameterized_multiple_finger_tester.py \
 # Specific correlations: SD302 (enhanced, frequency, orientation)
 for feature in $ENHANCED $FREQUENCY $ORIENTATION
 do
-    python3 parameterized_multiple_finger_tester.py \
+    CUDA_VISIBLE_DEVICES=$2 python3 parameterized_multiple_finger_tester.py \
         --dataset ${FEATURE_EXTRACTIONS_ROOT}/${feature} \
         --weights /data/therealgabeguo/fingerprint_weights/embedding_net_weights_${feature}.pth \
         --cuda "cuda:$2" \
