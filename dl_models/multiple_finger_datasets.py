@@ -24,6 +24,8 @@ class SquarePad:
         return
     def __call__(self, image):
         max_wh = max(image.size())
+        # TODO: invert padding direction (it's height & width, not width & height)
+        # study conclusion is still the same, tho, and model may have adapted to it anyways
         p_left, p_top = [(max_wh - s) // 2 for s in image.size()[1:]] # first channel is just colors
         p_right, p_bottom = [max_wh - (s+pad) for s, pad in zip(image.size()[1:], [p_left, p_top])]
         padding = (p_left, p_top, p_right, p_bottom)
