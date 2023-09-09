@@ -18,6 +18,8 @@ from embedding_models import *
 
 from common_filepaths import *
 
+import wandb
+
 def main(args, cuda):    
     datasets = args.datasets.split()
     val_datasets = args.val_datasets.split()
@@ -82,6 +84,10 @@ def main(args, cuda):
 
     best_val_epoch, best_val_loss = 0, 0
     all_epochs, past_train_losses, past_val_losses = [0], [0], [0]
+
+    if args.wandb_project:
+        wandb.summary['model'] = str(triplet_net)
+        wandb.watch(triplet_net, log='all', log_freq=500)
 
     best_val_epoch, best_val_loss, all_epochs, past_train_losses, past_val_losses = fit(
         train_loader=train_dataloader, val_loader=val_dataloader, model=triplet_net,
@@ -156,6 +162,9 @@ if __name__ == "__main__":
                         help='random seed (default: 1)')
     parser.add_argument('--log-interval', type=int, default=300,
                         help='How many batches to go through before logging in training')
+    # wandb arguments
+    parser.add_argument('--wandb_project', type=str, default='fingerprint_correlation', \
+                        help='database name for wandb')
         
     args = parser.parse_args()
     use_cuda = not args.no_cuda and torch.cuda.is_available()
@@ -166,5 +175,15 @@ if __name__ == "__main__":
         device = torch.device("cuda")
     else:
         device = torch.device("cpu")
+
+    if args.wandb_project:
+        wandb.login()
+        run = wandb.init(
+            # Set the project where this run will be logged
+            project=args.wandb_project,
+            name=args.model_path.split('/')[-1],
+            # Track hyperparameters and run metadata
+            config=vars(args)
+        )
 
     main(args, device)
