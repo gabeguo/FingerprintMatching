@@ -72,8 +72,10 @@ def main():
     # TRAIN
 
     learning_rate = 0.001
-    scheduler=None # not needed for Adam
+    n_epochs = 25
     optimizer = optim.Adam(triplet_net.parameters(), lr=learning_rate)
+    scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=n_epochs, 
+                                                     eta_min=learning_rate*1e-3, last_epoch=- 1, verbose=False)
     tripletLoss_margin = 0.2
 
     log += 'learning rate = {}\ntriplet loss margin = {}\n'.format(learning_rate, tripletLoss_margin)
@@ -83,7 +85,7 @@ def main():
     best_val_epoch, best_val_loss, all_epochs, train_losses, val_losses = fit(
         train_loader=train_dataloader, val_loader=val_dataloader, model=triplet_net, \
         loss_fn=nn.TripletMarginLoss(margin=tripletLoss_margin), optimizer=optimizer, scheduler=scheduler, \
-        n_epochs=25, cuda='cuda', log_interval=1000, metrics=[], start_epoch=0, early_stopping_interval=5
+        n_epochs=n_epochs, cuda='cuda', log_interval=1000, metrics=[], start_epoch=0, early_stopping_interval=5
     )
 
     log += 'best_val_epoch = {}\nbest_val_loss = {}\n'.format(best_val_epoch, best_val_loss)

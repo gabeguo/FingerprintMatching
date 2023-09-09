@@ -74,9 +74,8 @@ def main(args, cuda):
 
     # TRAIN
     optimizer = optim.Adam(triplet_net.parameters(), lr=args.lr)
-    scheduler = optim.lr_scheduler.ExponentialLR(optimizer, args.gamma, last_epoch=- 1, verbose=False) if \
-        (args.lr_step is not None and args.gamma is not None) \
-        else None
+    scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=args.num_epochs, 
+                                                     eta_min=args.lr*1e-3, last_epoch=- 1, verbose=False)
 
     print('learning rate = {}\ntriplet loss margin = {}\n'.format(args.lr, args.tripletLoss_margin))
     print('max epochs = {}\n'.format(args.num_epochs))
@@ -115,16 +114,12 @@ if __name__ == "__main__":
                         help='input batch size for training (default: 64)')
     parser.add_argument('--num-accumulated-batches', type=int, default=1,
                         help='number of accumulated batches before weight update (default: 1)')
-    parser.add_argument('--num-epochs', type=int, default=200,
-                        help='number of epochs to train (default: 200)')
-    parser.add_argument('--early-stopping-interval', type=int, default=65,
+    parser.add_argument('--num-epochs', type=int, default=250,
+                        help='number of epochs to train (default: 250)')
+    parser.add_argument('--early-stopping-interval', type=int, default=85,
                         help='how long to train model before early stopping, if no improvement')
     parser.add_argument('--lr', type=float, default=0.001,
                         help='learning rate (default: 0.001)')
-    parser.add_argument('--lr_step', type=int, default=None,
-                        help='learning rate step interval (default: None)')
-    parser.add_argument('--gamma', type=float, default=None,
-                        help='Learning rate step gamma (default: None)')
     parser.add_argument('--tripletLoss-margin', type=float, default=0.2,
                         help='Margin for triplet loss (default: 0.2)')
     # model arguments
