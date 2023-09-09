@@ -181,7 +181,7 @@ if __name__ == "__main__":
         run = wandb.init(
             # Set the project where this run will be logged
             project=args.wandb_project,
-            name=args.model_path.split('/')[-1],
+            name=args.posttrained_model_path.split('/')[-1],
             # Track hyperparameters and run metadata
             config=vars(args)
         )

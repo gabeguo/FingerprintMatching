@@ -41,7 +41,7 @@ def my_transformation(the_image, train=False, target_image_size=(224, 224)):
     # common transforms - these are the only transforms for test
     transform=transforms.Compose([
         SquarePad(fill_val=fill_val),
-        transforms.Resize(target_image_size),
+        transforms.Resize(target_image_size, antialias=True),
         transforms.Grayscale(num_output_channels=3)
     ])
     if train and torch.rand(1).item() < 0.65: # randomly apply the train transforms
@@ -49,7 +49,7 @@ def my_transformation(the_image, train=False, target_image_size=(224, 224)):
             transforms.RandomHorizontalFlip(p=0.3),
             transforms.RandomAffine(degrees=12.5, translate=(0.075, 0.075), scale=(0.925, 1.075), shear=(-7.5, 7.5), fill=fill_val),
             transform, # original transform
-            transforms.RandomResizedCrop(size=target_image_size, scale=(0.9, 1), ratio=(0.95, 1.05)),
+            transforms.RandomResizedCrop(size=target_image_size, scale=(0.9, 1), ratio=(0.95, 1.05), antialias=True),
             transforms.GaussianBlur(kernel_size=(5, 5), sigma=(0.01, 0.75)),
         ])
         the_image = transform(the_image.float())
