@@ -81,7 +81,7 @@ def fit(train_loader, val_loader, model, loss_fn, optimizer, scheduler, n_epochs
             'val_loss' : val_loss,
             'best_val_loss' : best_val_loss,
             'best_val_epoch' : best_val_epoch,
-            'learning rate': scheduler.get_lr()
+            'learning rate': scheduler.get_last_lr()
         })
 
     all_epochs = [epoch for epoch in range(start_epoch, n_epochs)]
