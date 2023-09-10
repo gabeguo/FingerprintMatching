@@ -16,12 +16,18 @@ tbd
 
 filepaths will need to be changed in the .sh scripts
 
+Do not slash \\ at the end for folder inputs to bash scripts
+
+## Finger-by-Finger Correlation
+    cd dl_models
+    bash run_finger_by_finger_balanced.sh \[desired output folder (no slash at end)\] \[cuda num\]
+
 ## Demographics (Generalizability)
 
 ### Race
 
     cd dl_models
-    bash run_race.sh \[desired_output_folder (no slash at end)\] \[cuda_num\]
+    bash run_race.sh \[desired_output_folder\] \[cuda_num\]
 
 ### Gender (Generalizability)
 
