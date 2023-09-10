@@ -34,7 +34,7 @@ do
             --posttrained-model-path $1/model_weights/demographic_model_${category}.pth \
             --temp_model_dir 'temp_weights' --results_dir "$1/results" \
             --diff-fingers-across-sets-train --diff-sensors-across-sets-train --diff-fingers-across-sets-val --diff-sensors-across-sets-val \
-            --scale-factor 2 --log-interval 100 --early-stopping-interval 75 --num-epochs 150
+            --scale-factor 2 --log-interval 100
     done
     # Also train combined demographics
     folders="${DEMOGRAPHICS_ROOT}/${CAUCASIAN_DESCENT} ${DEMOGRAPHICS_ROOT}/${NON_CAUCASIAN}"
@@ -44,7 +44,7 @@ do
         --posttrained-model-path $1/model_weights/demographic_model_combined_race.pth \
         --temp_model_dir 'temp_weights' --results_dir "$1/results" \
         --diff-fingers-across-sets-train --diff-sensors-across-sets-train --diff-fingers-across-sets-val --diff-sensors-across-sets-val \
-        --scale-factor 2 --log-interval 100 --early-stopping-interval 75 --num-epochs 150
+        --scale-factor 2 --log-interval 100
 
     ### Test
     for train_group in $CAUCASIAN_DESCENT $NON_CAUCASIAN "combined_race"
