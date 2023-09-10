@@ -31,27 +31,27 @@ do
         CUDA_VISIBLE_DEVICES=$2 python3 parameterized_runner.py \
             --datasets "${folder}" \
             --val-datasets "${folder}" \
-            --posttrained-model-path $1/model_weights/demographic_model_${category}.pth \
+            --posttrained-model-path $1/model_weights/demographic_model_${category}_${i}.pth \
             --temp_model_dir 'temp_weights' --results_dir "$1/results" \
             --diff-fingers-across-sets-train --diff-sensors-across-sets-train --diff-fingers-across-sets-val --diff-sensors-across-sets-val \
-            --scale-factor 2 --log-interval 100 --early-stopping-interval 75 --num-epochs 150
+            --scale-factor 2 --log-interval 100
     done
     # Also train combined demographics
     folders="${DEMOGRAPHICS_ROOT}/${MALE_GROUP} ${DEMOGRAPHICS_ROOT}/${FEMALE_GROUP}"
     CUDA_VISIBLE_DEVICES=$2 python3 parameterized_runner.py \
         --datasets "${folders}" \
         --val-datasets "${folders}" \
-        --posttrained-model-path $1/model_weights/demographic_model_combined_gender.pth \
+        --posttrained-model-path $1/model_weights/demographic_model_combined_gender_${i}.pth \
         --temp_model_dir 'temp_weights' --results_dir "$1/results" \
         --diff-fingers-across-sets-train --diff-sensors-across-sets-train --diff-fingers-across-sets-val --diff-sensors-across-sets-val \
-        --scale-factor 2 --log-interval 100 --early-stopping-interval 75 --num-epochs 150   
+        --scale-factor 2 --log-interval 100 
 
     ### Test generalizability
     for train_group in $MALE_GROUP $FEMALE_GROUP "combined_gender"
     do
         for test_group in $MALE_GROUP $FEMALE_GROUP
         do
-            demographic_model=$1/model_weights/demographic_model_${train_group}.pth
+            demographic_model=$1/model_weights/demographic_model_${train_group}_${i}.pth
             demographic_folder="${DEMOGRAPHICS_ROOT}/${test_group}"
             python3 parameterized_multiple_finger_tester.py \
                 --dataset $demographic_folder \
