@@ -8,7 +8,13 @@ OR, if your hardware does not support it:
 
 Python 3.10.0 with requirements_python_3_10_0.txt
 
+# Getting Dataset
+
+tbd
+
 # Replicating Experiments
+
+filepaths will need to be changed in the .sh scripts
 
 ## Demographics (Generalizability)
 
