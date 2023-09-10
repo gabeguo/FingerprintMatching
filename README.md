@@ -30,10 +30,12 @@ Do not slash \\ at the end for folder inputs to bash scripts
 tbd
 
 ### Without Pretraining
+    cd dl_models
+    bash run_base_model_no_pretrain.sh [desired output folder (no slash at end)] [cuda_num]
 
 ## Finger-by-Finger Correlation
     cd dl_models
-    bash run_finger_by_finger_balanced.sh [desired output folder (no slash at end)] [cuda num]
+    bash run_finger_by_finger_balanced.sh [desired output folder] [cuda num]
 
 ## Feature Correlations
     cd dl_models
