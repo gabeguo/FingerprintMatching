@@ -4,6 +4,8 @@ import torch
 from torch.utils.data import Dataset
 from torchvision.io import read_image, ImageReadMode
 
+from tqdm import tqdm
+
 import sys
 sys.path.append('../dl_models')
 from dl_models.multiple_finger_datasets import my_transformation
@@ -43,7 +45,7 @@ class TripletDataset(Dataset):
                                                  )
                                              ])
                          ]
-                        for i in range(len(self.test_data))]
+                        for i in tqdm(range(len(self.test_data)))]
             self.test_triplets = triplets
 
     # returns image triplet, class labels of images, filepaths of images
