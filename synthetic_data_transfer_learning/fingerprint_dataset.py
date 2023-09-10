@@ -1,6 +1,7 @@
 import os
 import torch
 from torch.utils.data import Dataset
+from tqdm import tqdm
 
 class FingerprintDataset(Dataset):
     def is_image_filename(self, filename):
@@ -19,7 +20,7 @@ class FingerprintDataset(Dataset):
         self.images = list()
         self.class_to_images = list()
 
-        for pid in os.listdir(root_dir):
+        for pid in tqdm(os.listdir(root_dir)):
             self.classes.append(pid)
             self.class_to_images.append(list())
             curr_person_folder = os.path.join(root_dir, pid)
