@@ -20,6 +20,10 @@ Do not slash \\ at the end for folder inputs to bash scripts
     cd dl_models
     bash run_finger_by_finger_balanced.sh \[desired output folder (no slash at end)\] \[cuda num\]
 
+## Feature Correlations
+    cd dl_models
+    bash run_feature_correlation.sh \[desired output folder\] \[cuda num\]
+
 ## Demographics (Generalizability)
 
 ### Race
