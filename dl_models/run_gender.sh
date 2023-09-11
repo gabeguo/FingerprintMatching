@@ -34,7 +34,8 @@ do
             --posttrained-model-path $1/model_weights/demographic_model_${category}_${i}.pth \
             --temp_model_dir 'temp_weights' --results_dir "$1/results" \
             --diff-fingers-across-sets-train --diff-sensors-across-sets-train --diff-fingers-across-sets-val --diff-sensors-across-sets-val \
-            --scale-factor 2 --log-interval 100
+            --scale-factor 2 --log-interval 100 \
+            --early_stopping_interval 105
     done
     # Also train combined demographics
     folders="${DEMOGRAPHICS_ROOT}/${MALE_GROUP} ${DEMOGRAPHICS_ROOT}/${FEMALE_GROUP}"
@@ -44,7 +45,8 @@ do
         --posttrained-model-path $1/model_weights/demographic_model_combined_gender_${i}.pth \
         --temp_model_dir 'temp_weights' --results_dir "$1/results" \
         --diff-fingers-across-sets-train --diff-sensors-across-sets-train --diff-fingers-across-sets-val --diff-sensors-across-sets-val \
-        --scale-factor 2 --log-interval 100 
+        --scale-factor 2 --log-interval 100 \
+        --early_stopping_interval 105 
 
     ### Test generalizability
     for train_group in $MALE_GROUP $FEMALE_GROUP "combined_gender"
