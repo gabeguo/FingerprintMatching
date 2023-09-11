@@ -20,6 +20,7 @@ CUDA_VISIBLE_DEVICES=$2 python3 parameterized_runner.py \
     --diff-sensors-across-sets-val \
     --scale-factor 4 \
     --log-interval 20
+# allow same sensor across training sets, so it can load
 
 python3 parameterized_multiple_finger_tester.py \
     --dataset $SD302 \
