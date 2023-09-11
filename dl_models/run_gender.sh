@@ -35,7 +35,7 @@ do
             --temp_model_dir 'temp_weights' --results_dir "$1/results" \
             --diff-fingers-across-sets-train --diff-sensors-across-sets-train --diff-fingers-across-sets-val --diff-sensors-across-sets-val \
             --scale-factor 2 --log-interval 100 \
-            --early_stopping_interval 105
+            --early-stopping-interval 105
     done
     # Also train combined demographics
     folders="${DEMOGRAPHICS_ROOT}/${MALE_GROUP} ${DEMOGRAPHICS_ROOT}/${FEMALE_GROUP}"
@@ -46,7 +46,7 @@ do
         --temp_model_dir 'temp_weights' --results_dir "$1/results" \
         --diff-fingers-across-sets-train --diff-sensors-across-sets-train --diff-fingers-across-sets-val --diff-sensors-across-sets-val \
         --scale-factor 2 --log-interval 100 \
-        --early_stopping_interval 105 
+        --early-stopping-interval 105 
 
     ### Test generalizability
     for train_group in $MALE_GROUP $FEMALE_GROUP "combined_gender"
