@@ -17,7 +17,6 @@ CUDA_VISIBLE_DEVICES=$2 python3 parameterized_runner.py \
     --posttrained-model-path $DUAL_MODEL \
     --temp_model_dir 'temp_weights_ablation' \
     --results_dir "$1/results" \
-    --diff-sensors-across-sets-train \
     --diff-sensors-across-sets-val \
     --scale-factor 4 \
     --log-interval 20
