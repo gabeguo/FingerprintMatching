@@ -15,7 +15,7 @@ CUDA_VISIBLE_DEVICES=$2 python3 parameterized_runner.py \
     --val-datasets "${SD302}" \
     --possible-fgrps '02 03' \
     --posttrained-model-path $DUAL_MODEL \
-    --temp_model_dir 'temp_weights' \
+    --temp_model_dir 'temp_weights_ablation' \
     --results_dir "$1/results" \
     --diff-sensors-across-sets-train \
     --diff-sensors-across-sets-val \
