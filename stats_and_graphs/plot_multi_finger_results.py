@@ -65,6 +65,8 @@ colors = ['deepskyblue', 'salmon', 'goldenrod']
 
 for key in dataset_to_roc:
     curr_data = dataset_to_roc[key]
+    for finger_data in curr_data:
+        assert len(curr_data[finger_data]) == 3
 
     curr_num_distinct_fingerprints = dataset_to_num_samples[key]
     assert len(curr_num_distinct_fingerprints) == 1
