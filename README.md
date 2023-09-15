@@ -56,6 +56,13 @@ Do not slash \\ at the end for folder inputs to bash scripts
 
 ## Performance
 
+### Multi-Finger Testing
+
+Must train (pretrained) base model first!
+
+    cd dl_models
+    bash test_multi_fingers.sh [desired_output_folder] [cuda_num]
+
 ## Supplements
 
 ### Two-Finger Ablation
