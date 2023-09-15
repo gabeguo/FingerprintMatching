@@ -1,8 +1,6 @@
 # Usage: test_multi_fingers.sh output_dir cuda_num
 # Purpose: To see how our identification performance improves when we add more fingers
 
-BASED_WEIGHTS=$1/model_weights/full_based_model_PRETRAINED.pth # saved to a different path than un-pretrained
-
 SD302_BALANCED='/data/therealgabeguo/fingerprint_data/sd302_split_balanced'
 SD301_BALANCED='/data/therealgabeguo/fingerprint_data/sd301_split_balanced'
 SD300_BALANCED='/data/therealgabeguo/fingerprint_data/sd300a_split_balanced'
@@ -23,9 +21,10 @@ do
         do
             curr_dataset=${datasets[idx]}
             curr_name=${names[idx]}
+            # use pretrained full model
             python3 parameterized_multiple_finger_tester.py \
                 --dataset $curr_dataset \
-                --weights $BASED_MODEL \
+                --weights $1/model_weights/full_based_model_PRETRAINED.pth \
                 --cuda "cuda:$2" \
                 --num_fingers $i \
                 --output_root $MULTIPLE_FINGER_FOLDER/$curr_name/$i \
