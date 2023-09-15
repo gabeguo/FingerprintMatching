@@ -85,7 +85,7 @@ if __name__ == "__main__":
     parser.add_argument('--dataset', help='Path to folders containing images', 
                         default='/data/therealgabeguo/fingerprint_data/sd302_split', type=str)
     parser.add_argument('--weights', help='Path to model weights', 
-                        default='/data/therealgabeguo/most_recent_experiment_reports/jan_08_resnet18Final/weights_2023-01-07_11:06:28.pth',
+                        default='/data/therealgabeguo/updated_fingerprint_results_fall23/model_weights/full_based_model_PRETRAINED.pth',
                         type=str)
     parser.add_argument('--output_root', help='Root directory for output',
                         default='/data/therealgabeguo/fingerprint_gradcam_outputs', nargs='?', \
