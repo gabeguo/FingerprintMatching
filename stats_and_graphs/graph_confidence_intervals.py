@@ -75,6 +75,9 @@ def plot_confidence_intervals(dataset_directory, savename):
     fig, ax = plt.subplots()
     plt.errorbar(labels, means, marker='.', markersize=15, color='blue',
                  yerr=errors, alpha=0.9, ecolor='black', capsize=15, linestyle='none')
+    for i in range(len(means)):
+        plt.text(i, means[i] + 0.03, r'${} \pm {}$'.format(round(means[i], 3), round(errors[i], 3)), 
+                 horizontalalignment='center')
     plt.ylabel(r'$d_{diff \ person} - d_{same \ person}$', fontsize=14)
     plt.xlabel('Dataset')
     #plt.ylabel(r'$\bar{x} \pm 1.96 \times \frac{s}{\sqrt{n}}$')
@@ -87,8 +90,8 @@ def plot_confidence_intervals(dataset_directory, savename):
     # set limits
     y_max = max(means[i] + errors[i] for i in range(len(means)))
     y_min = -y_max
-    y_tick_min = (int(y_min / 0.1) - 1) * 0.1
-    y_tick_max = (int(y_max / 0.1) + 1) * 0.1
+    y_tick_min = (int(y_min / 0.1) - 3) * 0.1
+    y_tick_max = (int(y_max / 0.1) + 3) * 0.1
     plt.yticks(np.arange(y_tick_min, y_tick_max, 0.1))
     plt.ylim(y_tick_min, y_tick_max)
 
@@ -97,17 +100,21 @@ def plot_confidence_intervals(dataset_directory, savename):
 
     # Show what is good and bad region
     x_min, x_max = ax.get_xlim()
-    x_min -= 0.1
-    x_max += 0.1
+    x_min -= 0.3
+    x_max += 0.3
     x = np.arange(x_min, x_max + 0.1, 0.1)
-    ax.fill_between(x, 0, y_tick_max, color=(0.9, 1, 0.9, 0.5))
-    ax.fill_between(x, y_tick_min, 0, color=(1, 0.9, 0.9, 0.5))
+    ax.fill_between(x, 0, y_tick_max, color=(0.9, 1, 0.9), alpha=0.6, label='Same Person Pairs More Similar')
+    ax.fill_between(x, y_tick_min, 0, color=(1, 0.9, 0.9), alpha=0.6, label='Different Person Pairs More Similar')
     plt.xlim(x_min, x_max)
+    plt.legend(labelcolor=[(0.1, 0.4, 0.1), (0.45, 0.15, 0.15)], framealpha=0.95)
+    leg = ax.get_legend()
+    leg.legend_handles[0].set_color('green')
+    leg.legend_handles[1].set_color('red')
 
-    plt.text((x_max + x_min) / 2, y_tick_max / 4, r'Same Person Pairs More Similar', 
-             color=(0.1, 0.3, 0.1), fontsize=12.5, fontweight='bold', horizontalalignment='center')
-    plt.text((x_max + x_min) / 2, y_tick_min / 4, r'Different Person Pairs More Similar', 
-             color=(0.3, 0.1, 0.1), fontsize=12.5, fontweight='bold', horizontalalignment='center')
+    # plt.text((x_max + x_min) / 2, y_tick_max * 0.25, r'Same Person Pairs More Similar', 
+    #          color=(0.1, 0.3, 0.1), fontsize=12.5, fontweight='bold', horizontalalignment='center')
+    # plt.text((x_max + x_min) / 2, y_tick_min * 0.25, r'Different Person Pairs More Similar', 
+    #          color=(0.3, 0.1, 0.1), fontsize=12.5, fontweight='bold', horizontalalignment='center')
 
     # Display plot
     plt.savefig(f'{savename}.png')
