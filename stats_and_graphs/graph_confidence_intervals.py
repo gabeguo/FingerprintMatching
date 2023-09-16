@@ -104,9 +104,9 @@ def plot_confidence_intervals(dataset_directory, savename):
     ax.fill_between(x, y_tick_min, 0, color=(1, 0.9, 0.9, 0.5))
     plt.xlim(x_min, x_max)
 
-    plt.text((x_max + x_min) / 2, y_tick_max / 4, r'Same Person Similarity', 
+    plt.text((x_max + x_min) / 2, y_tick_max / 4, r'Same Person Pairs More Similar', 
              color=(0.1, 0.3, 0.1), fontsize=12.5, fontweight='bold', horizontalalignment='center')
-    plt.text((x_max + x_min) / 2, y_tick_min / 4, r'Different Person Similarity', 
+    plt.text((x_max + x_min) / 2, y_tick_min / 4, r'Different Person Pairs More Similar', 
              color=(0.3, 0.1, 0.1), fontsize=12.5, fontweight='bold', horizontalalignment='center')
 
     # Display plot
