@@ -40,8 +40,8 @@ def plot_visualizations(img_directory, num_visualizations=(8, 8), desired_iter=3
     print('save file name:', src_name)
     print('save dir:', save_dir)
     os.makedirs(save_dir, exist_ok=True)
-    plt.savefig(os.path.join(save_dir, '{}.pdf'.format(src_name + "4x4")), bbox_inches='tight')
-    plt.savefig(os.path.join(save_dir, '{}.png'.format(src_name + "4x4")), bbox_inches='tight')
+    plt.savefig(os.path.join(save_dir, '{}.pdf'.format(src_name + "_4x4")), bbox_inches='tight')
+    plt.savefig(os.path.join(save_dir, '{}.png'.format(src_name + "_4x4")), bbox_inches='tight')
     
     # show image
     plt.show()
