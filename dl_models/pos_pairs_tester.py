@@ -202,14 +202,15 @@ def run_test_loop(test_dataloader, num_anchors, num_pos, num_neg):
 Saves a ROC curve
 """
 def plot_roc_auc(fpr, tpr, dataset_name, num_anchors, num_pos, num_neg):
-    plt.plot([100 * val for val in fpr], [100 * val for val in tpr])
-    plt.plot([0.0, 100.0], [0.0, 100.0])
+    plt.plot([100 * val for val in fpr], [100 * val for val in tpr], label='NBIS Exact Fingerprint Matcher')
+    plt.plot([0.0, 100.0], [0.0, 100.0], label='Baseline: Same-Person Fingerprints Indistinguishable', linestyle='--')
     plt.xlabel('FPR: % of different-finger pairs misidentified as the same finger')
     plt.ylabel('TPR: % of same-finger pairs correctly matched')
     plt.title('ROC Curve: Exact Fingerprint Matching of Same-Person Pairs Only')
     plt.gca().set_xticks([i * 10 for i in range(11)])
     plt.gca().set_yticks([i * 10 for i in range(11)])
     plt.grid()
+    plt.legend()
     plt.savefig(os.path.join(output_dir, 'roc_curve_{}_{}_{}_{}.pdf'.format(\
         dataset_name, num_anchors, num_pos, num_neg)))
     plt.savefig(os.path.join(output_dir, 'roc_curve_{}_{}_{}_{}.png'.format(\
@@ -412,4 +413,4 @@ if __name__ == "__main__":
         possible_fgrps=possible_fgrps)
 
     # TESTED - pass!
-    # Default command python gt_pairs_generator.py -d /data/therealgabeguo/fingerprint_data/sd302_split -o /data/verifiedanivray/results
+    # Default command python pos_pairs_tester.py -d /data/therealgabeguo/fingerprint_data/sd302_split -o /data/verifiedanivray/results
