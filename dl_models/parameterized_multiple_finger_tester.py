@@ -17,6 +17,8 @@ import seaborn as sns
 import argparse
 from scipy.stats import ttest_ind
 
+from tqdm import tqdm
+
 import json
 
 sys.path.append('../')
@@ -61,6 +63,8 @@ MEAN_POS_DIST_KEY = 'average squared L2 distance between positive pairs'
 STD_POS_DIST_KEY = 'std of  squared L2 distance between positive pairs'
 MEAN_NEG_DIST_KEY = 'average squared L2 distance between negative pairs'
 STD_NEG_DIST_KEY = 'std of  squared L2 distance between negative pairs'
+MEAN_TRIPLET_DIST_KEY = 'average difference between distance of negative pairs and distance of positive pairs'
+STD_TRIPLET_DIST_KEY = 'std of difference between distance of negative pairs and distance of positive pairs'
 ACC_KEY = 'best accuracy'
 ROC_AUC_KEY = 'ROC AUC'
 T_VAL_KEY = 'Welch\'s t'
@@ -241,7 +245,7 @@ def run_test_loop(test_dataloader, embedder, cuda, num_anchors, num_pos, num_neg
     fn_names = list()
 
     # loop through all the data
-    for i in range(len(test_dataloader)):
+    for i in tqdm(range(len(test_dataloader))):
         # test_images is 3 (anchor, pos, neg) * N (number of sample images) * image_size (1*3*224*224)
         test_images, test_labels, test_filepaths = next(data_iter)
         assert len(test_images) == 3
@@ -352,7 +356,7 @@ def load_data(the_data_folder, num_anchors, num_pos, num_neg, scale_factor, \
         acceptable_anchor_fgrps=possible_fgrps, acceptable_pos_fgrps=possible_fgrps, acceptable_neg_fgrps=possible_fgrps)
     print('loaded test dataset: {}'.format(the_data_folder))
     assert batch_size == 1
-    test_dataloader = DataLoader(test_dataset, batch_size=batch_size, shuffle=True)
+    test_dataloader = DataLoader(test_dataset, batch_size=batch_size, shuffle=True, num_workers=16)
     return fingerprint_dataset, test_dataset, test_dataloader
 
 def create_finger_by_finger_plot(f2f_data, the_title, the_cmap, the_fontsize, the_fmt):
@@ -402,7 +406,13 @@ def main(the_data_folder, weights_path, cuda, output_dir, num_anchors, num_pos, 
 
     # LOAD MODEL
 
-    embedder.load_state_dict(torch.load(weights_path))
+    weights_dict = torch.load(weights_path, map_location=torch.device(cuda))
+    model_dict = embedder.state_dict()
+    if set(model_dict.keys()) != set(weights_dict.keys()):
+        embedder = TripletNet(embedder)
+    embedder.load_state_dict(torch.load(weights_path, map_location=torch.device(cuda)))
+    if isinstance(embedder, TripletNet):
+        embedder = embedder.embedding_net
     embedder.eval()
     embedder.to(cuda)
 
@@ -449,6 +459,7 @@ def main(the_data_folder, weights_path, cuda, output_dir, num_anchors, num_pos, 
         NUM_POS_PAIRS_KEY: len(_01_dist), NUM_NEG_PAIRS_KEY: len(_02_dist), 
         MEAN_POS_DIST_KEY: np.mean(_01_dist), STD_POS_DIST_KEY: np.std(_01_dist),
         MEAN_NEG_DIST_KEY: np.mean(_02_dist), STD_NEG_DIST_KEY: np.std(_02_dist),
+        MEAN_TRIPLET_DIST_KEY: np.mean(np.array(_02_dist) - np.array(_01_dist)), STD_TRIPLET_DIST_KEY: np.std(np.array(_02_dist) - np.array(_01_dist)),
         ACC_KEY: max(accs), ROC_AUC_KEY: auc,
         T_VAL_KEY: welch_t, P_VAL_KEY: p_val,
         DF_KEY: calc_dof_welch(s1=np.std(_01_dist), n1=len(_01_dist), s2=np.std(_02_dist), n2=len(_02_dist)),

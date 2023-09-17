@@ -5,6 +5,8 @@ import numpy as np
 import torch.nn as nn
 from tqdm import tqdm
 
+import wandb
+
 
 def fit(train_loader, val_loader, model, loss_fn, optimizer, scheduler, n_epochs, cuda, log_interval, metrics=[],
         start_epoch=0, early_stopping_interval=10, temp_model_path='temp.pth', \
@@ -73,6 +75,14 @@ def fit(train_loader, val_loader, model, loss_fn, optimizer, scheduler, n_epochs
         
         if scheduler is not None:
             scheduler.step()
+
+        wandb.log({
+            'train_loss' : train_loss,
+            'val_loss' : val_loss,
+            'best_val_loss' : best_val_loss,
+            'best_val_epoch' : best_val_epoch,
+            'learning rate': scheduler.get_last_lr()[0]
+        })
 
     all_epochs = [epoch for epoch in range(start_epoch, n_epochs)]
 

@@ -24,10 +24,14 @@ class SquarePad:
         return
     def __call__(self, image):
         max_wh = max(image.size())
-        p_left, p_top = [(max_wh - s) // 2 for s in image.size()[1:]] # first channel is just colors
-        p_right, p_bottom = [max_wh - (s+pad) for s, pad in zip(image.size()[1:], [p_left, p_top])]
+        p_top, p_left = [(max_wh - s) // 2 for s in image.size()[1:]] # first channel is just colors, (3xHxW)
+        p_bottom, p_right = [max_wh - (s+pad) for s, pad in zip(image.size()[1:], [p_top, p_left])]
         padding = (p_left, p_top, p_right, p_bottom)
-        return F.pad(image, padding, self.fill_val, 'constant')
+        ret_val = F.pad(image, padding, self.fill_val, 'constant')
+        assert ret_val.size()[1] == ret_val.size()[2]
+        assert ret_val.size()[1] == max_wh
+        assert ret_val.size()[0] == 3 or ret_val.size()[0] == 1
+        return ret_val
 
 # returns the image as a normalized square with standard size
 def my_transformation(the_image, train=False, target_image_size=(224, 224)):
@@ -37,18 +41,15 @@ def my_transformation(the_image, train=False, target_image_size=(224, 224)):
     # common transforms - these are the only transforms for test
     transform=transforms.Compose([
         SquarePad(fill_val=fill_val),
-        transforms.Resize(target_image_size),
-        transforms.Grayscale(num_output_channels=3),
-        # transforms.RandomInvert(p=1.0), # TODO: remove this after the experiment
-        transforms.Normalize([0, 0, 0], [1, 1, 1]),
-        #transforms.Normalize([210, 210, 210], [70, 70, 70]),
+        transforms.Resize(target_image_size, antialias=True),
+        transforms.Grayscale(num_output_channels=3)
     ])
     if train and torch.rand(1).item() < 0.65: # randomly apply the train transforms
         transform = transforms.Compose([
+            transforms.RandomHorizontalFlip(p=0.3),
             transforms.RandomAffine(degrees=12.5, translate=(0.075, 0.075), scale=(0.925, 1.075), shear=(-7.5, 7.5), fill=fill_val),
-            transform,
-            transforms.RandomResizedCrop(size=target_image_size, scale=(0.9, 1), ratio=(0.95, 1.05)),
-            #transforms.RandomInvert(p=0.3),
+            transform, # original transform
+            transforms.RandomResizedCrop(size=target_image_size, scale=(0.9, 1), ratio=(0.95, 1.05), antialias=True),
             transforms.GaussianBlur(kernel_size=(5, 5), sigma=(0.01, 0.75)),
         ])
         the_image = transform(the_image.float())

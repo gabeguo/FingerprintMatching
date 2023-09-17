@@ -18,6 +18,8 @@ from embedding_models import *
 
 from common_filepaths import *
 
+import wandb
+
 def main(args, cuda):    
     datasets = args.datasets.split()
     val_datasets = args.val_datasets.split()
@@ -64,7 +66,9 @@ def main(args, cuda):
 
     # load saved weights!
     if args.pretrained_model_path:
+        print('loading pretrain state dict')
         embedder.load_state_dict(torch.load(args.pretrained_model_path))
+        print('successfully loaded pretrain state dict')
 
     pretrained_other_msg = 'pretrained on other data: {}\n'.format(args.pretrained_model_path)
     print(pretrained_other_msg)
@@ -74,15 +78,18 @@ def main(args, cuda):
 
     # TRAIN
     optimizer = optim.Adam(triplet_net.parameters(), lr=args.lr)
-    scheduler = optim.lr_scheduler.ExponentialLR(optimizer, args.gamma, last_epoch=- 1, verbose=False) if \
-        (args.lr_step is not None and args.gamma is not None) \
-        else None
+    scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=args.num_epochs, 
+                                                     eta_min=args.lr*1e-3, last_epoch=- 1, verbose=False)
 
     print('learning rate = {}\ntriplet loss margin = {}\n'.format(args.lr, args.tripletLoss_margin))
     print('max epochs = {}\n'.format(args.num_epochs))
 
     best_val_epoch, best_val_loss = 0, 0
     all_epochs, past_train_losses, past_val_losses = [0], [0], [0]
+
+    if args.wandb_project:
+        wandb.summary['model'] = str(triplet_net)
+        wandb.watch(triplet_net, log='all', log_freq=500)
 
     best_val_epoch, best_val_loss, all_epochs, past_train_losses, past_val_losses = fit(
         train_loader=train_dataloader, val_loader=val_dataloader, model=triplet_net,
@@ -115,16 +122,12 @@ if __name__ == "__main__":
                         help='input batch size for training (default: 64)')
     parser.add_argument('--num-accumulated-batches', type=int, default=1,
                         help='number of accumulated batches before weight update (default: 1)')
-    parser.add_argument('--num-epochs', type=int, default=200,
-                        help='number of epochs to train (default: 200)')
-    parser.add_argument('--early-stopping-interval', type=int, default=65,
+    parser.add_argument('--num-epochs', type=int, default=250,
+                        help='number of epochs to train (default: 250)')
+    parser.add_argument('--early-stopping-interval', type=int, default=85,
                         help='how long to train model before early stopping, if no improvement')
     parser.add_argument('--lr', type=float, default=0.001,
                         help='learning rate (default: 0.001)')
-    parser.add_argument('--lr_step', type=int, default=None,
-                        help='learning rate step interval (default: None)')
-    parser.add_argument('--gamma', type=float, default=None,
-                        help='Learning rate step gamma (default: None)')
     parser.add_argument('--tripletLoss-margin', type=float, default=0.2,
                         help='Margin for triplet loss (default: 0.2)')
     # model arguments
@@ -161,6 +164,9 @@ if __name__ == "__main__":
                         help='random seed (default: 1)')
     parser.add_argument('--log-interval', type=int, default=300,
                         help='How many batches to go through before logging in training')
+    # wandb arguments
+    parser.add_argument('--wandb_project', type=str, default='fingerprint_correlation', \
+                        help='database name for wandb')
         
     args = parser.parse_args()
     use_cuda = not args.no_cuda and torch.cuda.is_available()
@@ -171,5 +177,15 @@ if __name__ == "__main__":
         device = torch.device("cuda")
     else:
         device = torch.device("cpu")
+
+    if args.wandb_project:
+        wandb.login()
+        run = wandb.init(
+            # Set the project where this run will be logged
+            project=args.wandb_project,
+            name=args.posttrained_model_path.split('/')[-1],
+            # Track hyperparameters and run metadata
+            config=vars(args)
+        )
 
     main(args, device)

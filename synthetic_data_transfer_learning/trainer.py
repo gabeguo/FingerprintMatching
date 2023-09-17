@@ -3,6 +3,8 @@
 import torch
 import numpy as np
 
+import wandb
+
 
 def fit(train_loader, val_loader, model, loss_fn, optimizer, scheduler, n_epochs, cuda, log_interval, metrics=[],
         start_epoch=0, early_stopping_interval=10, temp_model_path='temp.pth'):
@@ -50,20 +52,7 @@ def fit(train_loader, val_loader, model, loss_fn, optimizer, scheduler, n_epochs
         past_val_losses.append(val_loss)
         if len(past_val_losses) > early_stopping_interval and val_loss > sum(past_val_losses[-early_stopping_interval:]) / len(past_val_losses[-early_stopping_interval:]):
             print('val loss no longer decreasing - stop training')
-
-            # load best weights
-            model.load_state_dict(torch.load(temp_model_path))
-            model.eval()
-            
-            from datetime import datetime
-            datetime_str = datetime.now().strftime("%Y-%m-%d_%H:%M:%S")
-            with open('/data/therealgabeguo/pretrain_results/train_res_{}.txt'.format(datetime_str), 'w') as fout:
-                fout.write('epoch: ' + str([epoch for epoch in range(start_epoch, epoch + 1)]) + '\n')
-                fout.write('train loss: ' + str(past_train_losses) + '\n')
-                fout.write('val loss: ' + str(past_val_losses) + '\n')
-                fout.write('stopped on epoch {}\n'.format(epoch))
-
-            return best_val_epoch, best_val_loss
+            break
 
         message += '\nEpoch: {}/{}. Validation set: Average loss: {:.4f}'.format(epoch + 1, n_epochs,
                                                                                  val_loss)
@@ -74,18 +63,19 @@ def fit(train_loader, val_loader, model, loss_fn, optimizer, scheduler, n_epochs
         
         if scheduler is not None:
             scheduler.step()
-
-    from datetime import datetime
-    datetime_str = datetime.now().strftime("%Y-%m-%d_%H:%M:%S")
-    with open('/data/therealgabeguo/pretrain_results/train_res_{}.txt'.format(datetime_str), 'w') as fout:
-        fout.write('epoch: ' + str([epoch for epoch in range(start_epoch, n_epochs)]) + '\n')
-        fout.write('train loss: ' + str(past_train_losses) + '\n')
-        fout.write('val loss: ' + str(past_val_losses) + '\n')
+        
+        wandb.log({
+            'train_loss' : train_loss,
+            'val_loss' : val_loss,
+            'best_val_loss' : best_val_loss,
+            'best_val_epoch' : best_val_epoch,
+            'learning rate': scheduler.get_last_lr()[0]
+        })
 
     # load best weights
     model.load_state_dict(torch.load(temp_model_path))
     model.eval()
-    return best_val_epoch, best_val_loss
+    return best_val_epoch, best_val_loss, [epoch for epoch in range(start_epoch, epoch + 1)], past_train_losses, past_val_losses
 
 
 def train_epoch(train_loader, model, loss_fn, optimizer, cuda, log_interval, metrics):

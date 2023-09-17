@@ -7,9 +7,9 @@ from parameterized_multiple_finger_tester import NUM_SAMPLES_KEY, NUM_POS_PAIRS_
 import json
 
 datasetName_2_resultPath = {
-    'SD300': '/data/therealgabeguo/paper_results/proving_correlation/general/sd300/2023-03-17_22:30:17/test_results_sd300a_split_weights_2023-01-07_11:06:28_1_1_1.json',
-    'SD301\n(true\nholdout)': '/data/therealgabeguo/paper_results/proving_correlation/general/sd301/2023-02-04_01:59:23/test_results_sd301_split_weights_2023-01-07_11:06:28_1_1_1.json',
-    'SD302': '/data/therealgabeguo/paper_results/proving_correlation/general/sd302/2023-02-04_02:04:52/test_results_sd302_split_weights_2023-01-07_11:06:28_1_1_1.json'
+    'SD300': '/data/therealgabeguo/updated_fingerprint_results_fall23/paper_results/proving_correlation/general_PRETRAINED/sd300_full/2023-09-14_00:28:41/test_results_sd300a_split_full_based_model_PRETRAINED_1_1_1.json',
+    'SD301\n(true\nholdout)': '/data/therealgabeguo/updated_fingerprint_results_fall23/paper_results/proving_correlation/general_PRETRAINED/sd301_full/2023-09-14_00:29:57/test_results_sd301_split_full_based_model_PRETRAINED_1_1_1.json',
+    'SD302': '/data/therealgabeguo/updated_fingerprint_results_fall23/paper_results/proving_correlation/general_PRETRAINED/sd302_full/2023-09-14_00:33:42/test_results_sd302_split_full_based_model_PRETRAINED_1_1_1.json'
 }
 
 name_2_rocAuc = dict()

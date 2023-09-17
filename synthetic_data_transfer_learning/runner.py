@@ -18,6 +18,8 @@ from common_filepaths import SYNTHETIC_DATA_FOLDER
 
 import argparse
 
+import wandb
+
 print('synthetic data pretraining')
 
 def main():
@@ -29,8 +31,20 @@ def main():
                         help='Where the PrintsGAN data is')
     parser.add_argument('--output_folder', type=str, default='/data/therealgabeguo/pretrain_results',
                         help='Path to the output folder')
+    parser.add_argument('--wandb_project', type=str, default='fingerprint_correlation', \
+                        help='database name for wandb')
 
     args = parser.parse_args()
+
+    if args.wandb_project:
+        wandb.login()
+        run = wandb.init(
+            # Set the project where this run will be logged
+            project=args.wandb_project,
+            name=args.model_path.split('/')[-1],
+            # Track hyperparameters and run metadata
+            config=vars(args)
+        )
 
     # You can now access the values as:
     # args.model_path and args.output_folder
@@ -69,11 +83,17 @@ def main():
     # CREATE TRIPLET NET
     triplet_net = TripletNet(embedder)
 
+    if args.wandb_project:
+        wandb.summary['model'] = str(triplet_net)
+        wandb.watch(triplet_net, log='all', log_freq=500)
+
     # TRAIN
 
     learning_rate = 0.001
-    scheduler=None # not needed for Adam
+    n_epochs = 25
     optimizer = optim.Adam(triplet_net.parameters(), lr=learning_rate)
+    scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=n_epochs, 
+                                                     eta_min=learning_rate*1e-3, last_epoch=- 1, verbose=False)
     tripletLoss_margin = 0.2
 
     log += 'learning rate = {}\ntriplet loss margin = {}\n'.format(learning_rate, tripletLoss_margin)
@@ -83,7 +103,7 @@ def main():
     best_val_epoch, best_val_loss, all_epochs, train_losses, val_losses = fit(
         train_loader=train_dataloader, val_loader=val_dataloader, model=triplet_net, \
         loss_fn=nn.TripletMarginLoss(margin=tripletLoss_margin), optimizer=optimizer, scheduler=scheduler, \
-        n_epochs=25, cuda='cuda', log_interval=1000, metrics=[], start_epoch=0, early_stopping_interval=5
+        n_epochs=n_epochs, cuda='cuda', log_interval=1000, metrics=[], start_epoch=0, early_stopping_interval=5
     )
 
     log += 'best_val_epoch = {}\nbest_val_loss = {}\n'.format(best_val_epoch, best_val_loss)

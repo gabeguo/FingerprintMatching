@@ -5,7 +5,7 @@ import numpy as np
 from scipy.stats import sem
 from parameterized_multiple_finger_tester import *
 
-DATA_FOLDER = '/data/therealgabeguo/paper_results/multi_finger'
+DATA_FOLDER = '/data/therealgabeguo/updated_fingerprint_results_fall23/paper_results/multi_finger'
 SD300_KEY = 'SD 300'
 SD301_KEY = 'SD 301'
 SD302_KEY = 'SD 302'
@@ -20,6 +20,9 @@ for root, dirs, files in os.walk(DATA_FOLDER, topdown=False):
         if '.json' not in the_file:
             continue
         the_filepath = os.path.join(root, the_file)
+        if 'sd301' in the_filepath.lower() and 'updated' not in the_filepath.lower():
+            print(f'skipping {the_filepath}')
+            continue
         with open(the_filepath, 'r') as fin:
             the_info = json.load(fin)
             #print(json.dumps(the_info, indent=4))
@@ -60,10 +63,10 @@ n_trials = list(n_trials)[0]
 
 colors = ['deepskyblue', 'salmon', 'goldenrod']
 
-already_written_roc = set()
-
 for key in dataset_to_roc:
     curr_data = dataset_to_roc[key]
+    for finger_data in curr_data:
+        assert len(curr_data[finger_data]) == 3
 
     curr_num_distinct_fingerprints = dataset_to_num_samples[key]
     assert len(curr_num_distinct_fingerprints) == 1
@@ -83,18 +86,13 @@ for key in dataset_to_roc:
         color = colors.pop())
     for num_fingers in curr_data:
         roc_auc = np.mean(curr_data[num_fingers])
-        if int(100 * round(roc_auc, 2)) in already_written_roc:
-            plt.text(num_fingers - 0.15, roc_auc + 0.015, str(round(roc_auc, 3)))
-        else:
-            plt.text(num_fingers - 0.15, roc_auc + 0.005, str(round(roc_auc, 3)))
-
-        already_written_roc.add(int(100 * round(roc_auc, 2)))
+        plt.text(num_fingers - 0.15, roc_auc + 0.005, str(round(roc_auc, 3)))
 
 plt.legend()
 plt.xlim(0.75, 5.25)
 plt.xticks([i for i in range(1, 6)], ['1-to-1', '2-to-2', '3-to-3', '4-to-4', '5-to-5'])
 plt.xlabel('Number of Fingers')
-plt.ylim(0.70, 0.95)
+plt.ylim(0.70, 0.975)
 plt.ylabel('ROC AUC ({} trials)'.format(n_trials))
 plt.title('N-to-N Disjoint Finger Matching Results')
 plt.grid()
