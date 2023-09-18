@@ -55,7 +55,7 @@ class CNNLayerVisualization():
             # Assign create image to a variable to move forward in the model
             x = processed_image
             for index, layer in enumerate(self.model):
-                print("At index ", index, " processing layer ", layer)
+                # print("At index ", index, " processing layer ", layer)
                 # Forward pass layer by layer
                 # x is not used after this point because it is only needed to trigger
                 # the forward hook function
@@ -126,24 +126,32 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='CNN layer visualization')
 
     parser.add_argument('--model_path', type=str,
-                        default='/data/therealgabeguo/most_recent_experiment_reports/jan_08_resnet18Final/weights_2023-01-07_11:06:28.pth',
+                        default='/data/therealgabeguo/updated_fingerprint_results_fall23/model_weights/full_based_model_PRETRAINED.pth',
                         help='Path to the model file')
     parser.add_argument('--output_folder', type=str,
-                        default='/data/verifiedanivray/generated_end',
+                        default='/data/verifiedanivray/generated_end2',
                         help='Path to the output folder')
+    parser.add_argument('--conv_layer', type=str,
+                        default='7.1.conv2',
+                        help='Which convolutional layer to visualize')
 
     args = parser.parse_args()
 
-    for filter_pos in range(0, 512):
-        stop_index = 7
-        # Perform network surgery to "flatten" the layer heirarchy of the model
-        pretrained_model = EmbeddingNet()
-        pretrained_model.load_state_dict(torch.load(args.model_path))
-        print(pretrained_model)
-        cnn_layer = pretrained_model.feature_extractor[7][1].conv2
-        print(cnn_layer)
-        pretrained_model = pretrained_model.feature_extractor
+    index1, index2, index3 = args.conv_layer.split('.')
+    index1, index2 = int(index1), int(index2)
+
+    pretrained_model = EmbeddingNet()
+    pretrained_model.load_state_dict(torch.load(args.model_path, map_location='cuda'))
+    print(pretrained_model)
+    pretrained_model = pretrained_model.feature_extractor
+    cnn_layer = pretrained_model[index1][index2].conv2 if index3 == "conv2" else pretrained_model[index1][index2].conv1
+    print(cnn_layer)
+
+    for filter_pos in range(0, cnn_layer.out_channels):
+        # Early = 4.1.conv2, Middle = 6.0.conv2, End = 7.1.conv2
+        stop_index = index1
         '''
+        # Perform network surgery to "flatten" the layer heirarchy of the model
         pretrained_model = pretrained_model.feature_extractor
         modules = []
         for layer in pretrained_model:
@@ -158,7 +166,7 @@ if __name__ == '__main__':
                 modules.append(layer)
         print(modules)
         '''
-        layer_vis = CNNLayerVisualization(pretrained_model, cnn_layer, filter_pos, "7.1.conv2", stop_index, args.output_folder)
+        layer_vis = CNNLayerVisualization(pretrained_model, cnn_layer, filter_pos, args.conv_layer, stop_index, args.output_folder)
 
         # Layer visualization with pytorch hooks
         layer_vis.visualise_layer_with_hooks()
