@@ -15,7 +15,7 @@ import math
 import matplotlib.pyplot as plt
 import seaborn as sns
 import argparse
-from scipy.stats import ttest_ind
+from scipy.stats import ttest_rel
 
 from tqdm import tqdm
 
@@ -131,8 +131,8 @@ def get_metrics(_01_dist, _02_dist):
         assert fpr[i] >= fpr[i - 1]
         assert tpr[i] >= tpr[i - 1]
 
-    # Welch's t-test
-    welch_t, p_val = ttest_ind(_01_dist, _02_dist, equal_var=False)
+    # One-sided paired t-test that diff-person pairs are more dissimilar than same-person pairs
+    welch_t, p_val = ttest_rel(_02_dist, _01_dist, alternative='greater')
 
     return acc, fpr, tpr, auc, threshold, welch_t, p_val
 
