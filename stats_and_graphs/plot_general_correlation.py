@@ -3,7 +3,7 @@ import numpy as np
 
 import sys
 sys.path.append('../dl_models')
-from parameterized_multiple_finger_tester import NUM_SAMPLES_KEY, NUM_POS_PAIRS_KEY, NUM_NEG_PAIRS_KEY, ROC_AUC_KEY, P_VAL_KEY
+from parameterized_multiple_finger_tester import NUM_SAMPLES_KEY, NUM_POS_PAIRS_KEY, NUM_NEG_PAIRS_KEY, ROC_AUC_KEY, PAIRED_P_VAL_KEY
 import json
 
 datasetName_2_resultPath = {
