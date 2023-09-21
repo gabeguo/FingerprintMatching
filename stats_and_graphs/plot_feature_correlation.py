@@ -15,11 +15,11 @@ MINUTIAE_FULL = 'Minutiae\nMap'
 
 datasetNames = [ORIGINAL, BINARIZED, RIDGE_ORIENT, RIDGE_FREQ, MINUTIAE_FULL]
 datasetName_2_resultPath = {
-    ORIGINAL: '/data/therealgabeguo/updated_fingerprint_results_fall23/paper_results/feature_correlation/sd302/unpretrained_sd302/2023-09-13_01:24:47/test_results_sd302_split_feature_model_unpretrained_sd302_1_1_1.json',
-    BINARIZED: '/data/therealgabeguo/updated_fingerprint_results_fall23/paper_results/feature_correlation/sd302/enhanced/2023-09-13_01:15:49/test_results_enhanced_feature_model_enhanced_1_1_1.json',
-    RIDGE_ORIENT: '/data/therealgabeguo/updated_fingerprint_results_fall23/paper_results/feature_correlation/sd302/orient/2023-09-13_01:18:53/test_results_orient_feature_model_orient_1_1_1.json',
-    RIDGE_FREQ: '/data/therealgabeguo/updated_fingerprint_results_fall23/paper_results/feature_correlation/sd302/freq/2023-09-13_01:21:53/test_results_freq_feature_model_freq_1_1_1.json',
-    MINUTIAE_FULL: '/data/therealgabeguo/updated_fingerprint_results_fall23/paper_results/feature_correlation/sd302/minutiae/2023-09-13_01:28:05/test_results_sd302_feature_model_minutiae_1_1_1.json',
+    ORIGINAL: '/data/therealgabeguo/updated_fingerprint_results_fall23/paper_results/feature_correlation/sd302/unpretrained_sd302/2023-09-20_23:21:33/test_results_sd302_split_feature_model_unpretrained_sd302_1_1_1.json',
+    BINARIZED: '/data/therealgabeguo/updated_fingerprint_results_fall23/paper_results/feature_correlation/sd302/enhanced/2023-09-20_23:11:51/test_results_enhanced_feature_model_enhanced_1_1_1.json',
+    RIDGE_ORIENT: '/data/therealgabeguo/updated_fingerprint_results_fall23/paper_results/feature_correlation/sd302/orient/2023-09-20_23:15:19/test_results_orient_feature_model_orient_1_1_1.json',
+    RIDGE_FREQ: '/data/therealgabeguo/updated_fingerprint_results_fall23/paper_results/feature_correlation/sd302/freq/2023-09-20_23:18:31/test_results_freq_feature_model_freq_1_1_1.json',
+    MINUTIAE_FULL: '/data/therealgabeguo/updated_fingerprint_results_fall23/paper_results/feature_correlation/sd302/minutiae/2023-09-20_23:24:43/test_results_sd302_feature_model_minutiae_1_1_1.json',
 }
 datasetName_2_representativeImage = {
     ORIGINAL: '/data/therealgabeguo/fingerprint_data/sd302_split/test/00002332/00002332_A_roll_05.png',
