@@ -66,7 +66,9 @@ def main(args, cuda):
 
     # load saved weights!
     if args.pretrained_model_path:
+        print('loading pretrain state dict')
         embedder.load_state_dict(torch.load(args.pretrained_model_path))
+        print('successfully loaded pretrain state dict')
 
     pretrained_other_msg = 'pretrained on other data: {}\n'.format(args.pretrained_model_path)
     print(pretrained_other_msg)

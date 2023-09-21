@@ -15,7 +15,7 @@ import math
 import matplotlib.pyplot as plt
 import seaborn as sns
 import argparse
-from scipy.stats import ttest_ind
+from scipy.stats import ttest_rel, ttest_ind
 
 from tqdm import tqdm
 
@@ -69,6 +69,8 @@ ACC_KEY = 'best accuracy'
 ROC_AUC_KEY = 'ROC AUC'
 T_VAL_KEY = 'Welch\'s t'
 P_VAL_KEY = 'p-value'
+PAIRED_T_VAL_KEY = 'Paired one-sided t-value'
+PAIRED_P_VAL_KEY = 'Paired one-sided p-value'
 DF_KEY = 'degrees of freedom (Welch)'
 TP_NAMES_KEY = 'some true positives'
 FN_NAMES_KEY = 'some false negatives'
@@ -131,8 +133,8 @@ def get_metrics(_01_dist, _02_dist):
         assert fpr[i] >= fpr[i - 1]
         assert tpr[i] >= tpr[i - 1]
 
-    # Welch's t-test
-    welch_t, p_val = ttest_ind(_01_dist, _02_dist, equal_var=False)
+    # One-sided Welch's t-test that diff-person pairs are more dissimilar than same-person pairs
+    welch_t, p_val = ttest_ind(_01_dist, _02_dist, equal_var=False, alternative='less')
 
     return acc, fpr, tpr, auc, threshold, welch_t, p_val
 
@@ -447,6 +449,9 @@ def main(the_data_folder, weights_path, cuda, output_dir, num_anchors, num_pos, 
     else:
         tp_names, fp_names, tn_names, fn_names = [], [], [], []
 
+    # paired one-sided t-test
+    paired_one_sided_t, paired_one_sided_p = ttest_rel(_02_dist, _01_dist, alternative='greater')
+
     # do the output
     final_results = {
         DATASET_KEY: the_data_folder, WEIGHTS_KEY: weights_path, CUDA_KEY: cuda,
@@ -460,6 +465,7 @@ def main(the_data_folder, weights_path, cuda, output_dir, num_anchors, num_pos, 
         MEAN_POS_DIST_KEY: np.mean(_01_dist), STD_POS_DIST_KEY: np.std(_01_dist),
         MEAN_NEG_DIST_KEY: np.mean(_02_dist), STD_NEG_DIST_KEY: np.std(_02_dist),
         MEAN_TRIPLET_DIST_KEY: np.mean(np.array(_02_dist) - np.array(_01_dist)), STD_TRIPLET_DIST_KEY: np.std(np.array(_02_dist) - np.array(_01_dist)),
+        PAIRED_T_VAL_KEY: paired_one_sided_t, PAIRED_P_VAL_KEY: paired_one_sided_p, 
         ACC_KEY: max(accs), ROC_AUC_KEY: auc,
         T_VAL_KEY: welch_t, P_VAL_KEY: p_val,
         DF_KEY: calc_dof_welch(s1=np.std(_01_dist), n1=len(_01_dist), s2=np.std(_02_dist), n2=len(_02_dist)),

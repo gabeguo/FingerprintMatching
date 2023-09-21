@@ -3,13 +3,13 @@ import numpy as np
 
 import sys
 sys.path.append('../dl_models')
-from parameterized_multiple_finger_tester import NUM_SAMPLES_KEY, NUM_POS_PAIRS_KEY, NUM_NEG_PAIRS_KEY, ROC_AUC_KEY, P_VAL_KEY
+from parameterized_multiple_finger_tester import NUM_SAMPLES_KEY, NUM_POS_PAIRS_KEY, NUM_NEG_PAIRS_KEY, ROC_AUC_KEY, PAIRED_P_VAL_KEY
 import json
 
 datasetName_2_resultPath = {
-    'SD300': '/data/therealgabeguo/paper_results/proving_correlation/general/sd300/2023-03-17_22:30:17/test_results_sd300a_split_weights_2023-01-07_11:06:28_1_1_1.json',
-    'SD301\n(true\nholdout)': '/data/therealgabeguo/paper_results/proving_correlation/general/sd301_UPDATED/2023-07-11_13:49:21/test_results_sd301_split_weights_2023-01-07_11:06:28_1_1_1.json',
-    'SD302': '/data/therealgabeguo/paper_results/proving_correlation/general/sd302/2023-02-04_02:04:52/test_results_sd302_split_weights_2023-01-07_11:06:28_1_1_1.json'
+    'SD300': '/data/therealgabeguo/updated_fingerprint_results_fall23/paper_results/proving_correlation/general_PRETRAINED/sd300_full/2023-09-20_23:08:12/test_results_sd300a_split_full_based_model_PRETRAINED_1_1_1.json',
+    'SD301\n(true\nholdout)': '/data/therealgabeguo/updated_fingerprint_results_fall23/paper_results/proving_correlation/general_PRETRAINED/sd301_full/2023-09-20_23:09:19/test_results_sd301_split_full_based_model_PRETRAINED_1_1_1.json',
+    'SD302': '/data/therealgabeguo/updated_fingerprint_results_fall23/paper_results/proving_correlation/general_PRETRAINED/sd302_full/2023-09-20_23:13:08/test_results_sd302_split_full_based_model_PRETRAINED_1_1_1.json'
 }
 
 name_2_rocAuc = dict()
@@ -27,7 +27,7 @@ for datasetName in datasetName_2_resultPath:
     with open(resultPath, 'r') as fin:
         the_results = json.load(fin)
         name_2_rocAuc[datasetName] = the_results[ROC_AUC_KEY]
-        name_2_pVal[datasetName] = the_results[P_VAL_KEY]
+        name_2_pVal[datasetName] = the_results[PAIRED_P_VAL_KEY]
         name_2_size[datasetName] = the_results[NUM_SAMPLES_KEY]
         name_2_numSamples[datasetName] = the_results[NUM_POS_PAIRS_KEY] + the_results[NUM_NEG_PAIRS_KEY]
 

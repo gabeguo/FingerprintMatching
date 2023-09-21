@@ -41,7 +41,7 @@ DEFAULT_LEADS_FILE = 'geometric_analysis_results'
 DEFAULT_CUDA = 'cuda:2'
 
 # Batch Size constant
-batch_size=32
+batch_size=32*3
 assert batch_size > 1 # can't be 1, has to be more (otherwise, squeezing tensors bugs out)
 
 # JSON Keys
@@ -228,7 +228,12 @@ def run_test_loop(test_dataloader, embedder, cuda, num_anchors, num_pos, num_neg
         # test_images is 3 (anchor, pos, neg) * N (number of sample images) * image_size (1*3*224*224)
         test_images, test_labels, test_filepaths = next(data_iter)
         assert len(test_images) == 3
-        #print(len(test_images[0]), len(test_images[1]), len(test_images[2]), num_anchors, num_pos, num_neg)
+        # print(test_images[0][0].size(), " ", test_images[1][0].size(), " ", test_images[2][0].size())
+        # print(len(test_images[0]), len(test_images[1]), len(test_images[2]), num_anchors, num_pos, num_neg)
+        if num_anchors == 1:
+            test_images = [[test_image] for test_image in test_images]
+            test_filepaths = [[test_filepath] for test_filepath in test_filepaths]
+        
         assert len(test_images[0]) == num_anchors and len(test_images[1]) == num_pos and len(test_images[2]) == num_neg
 
         curr_anchor_pos_dists_by_batch = [[] for i in range(batch_size)]
@@ -377,6 +382,38 @@ def graph_geo_analysis(fpr, fnr, f1scores, alpha, num_fingers, leads_filename):
     num_trials_needed = geometric_distribution(fp, fn, prior, alpha)
 
     # update results file
+    if not os.path.exists(os.path.join(output_root, leads_filename)):
+        with open(os.path.join(output_root, leads_filename), 'w') as outFile:
+            initData = {
+                "data": {
+                    "1": {
+                        "prior": [],
+                        "prob_A": [],
+                        "num_fp": []
+                    },
+                    "2": {
+                        "prior": [],
+                        "prob_A": [],
+                        "num_fp": []
+                    },
+                    "3": {
+                        "prior": [],
+                        "prob_A": [],
+                        "num_fp": []
+                    },
+                    "4": {
+                        "prior": [],
+                        "prob_A": [],
+                        "num_fp": []
+                    },
+                    "5": {
+                        "prior": [],
+                        "prob_A": [],
+                        "num_fp": []
+                    }
+                }
+            }
+            json.dump(initData, outFile)
     with open(os.path.join(output_root, leads_filename), 'r') as inFile:
         data = json.load(inFile)
     priors = data["data"][str(num_fingers)]["prior"]
@@ -462,7 +499,7 @@ def main(the_data_folder, weights_path, cuda, output_dir, num_anchors, num_pos, 
 
     # LOAD MODEL
 
-    embedder.load_state_dict(torch.load(weights_path))
+    embedder.load_state_dict(torch.load(weights_path, map_location=cuda))
     embedder.eval()
     embedder.to(cuda)
 

@@ -6,9 +6,8 @@ from PIL import Image
 import math
 
 def plot_visualizations(img_directory, num_visualizations=(8, 8), desired_iter=30, the_title='Layer Visualizations', \
-        zoom_factor=1, the_figsize=(10, 10), save_dir='/data/therealgabeguo/nn_visualizations/'):
+        zoom_factor=1, the_figsize=(10, 10), save_dir='/data/therealgabeguo/updated_fingerprint_results_fall23/nn_filter_visualizations/'):
     imgs = list()
-    zoom_factor = zoom_factor * 2
     for item in os.listdir(img_directory):
         if ('.jpg' in item.lower() or '.png' in item.lower()) \
                 and '_iter{}.'.format(desired_iter) in item:
@@ -19,7 +18,7 @@ def plot_visualizations(img_directory, num_visualizations=(8, 8), desired_iter=3
                 w / 2 + w / zoom_factor, h / 2 + h / zoom_factor))
             curr_img = curr_img.resize((w, h))
             imgs.append(curr_img)
-    plt.rcParams.update({'font.size': 24})
+    plt.rcParams.update({'font.size': 20})
     fig = plt.figure(figsize=the_figsize)
     side_len = int(math.sqrt(len(imgs)))
     grid = ImageGrid(fig, 111,  # similar to subplot(111)
@@ -41,8 +40,8 @@ def plot_visualizations(img_directory, num_visualizations=(8, 8), desired_iter=3
     print('save file name:', src_name)
     print('save dir:', save_dir)
     os.makedirs(save_dir, exist_ok=True)
-    plt.savefig(os.path.join(save_dir, '{}.pdf'.format(src_name + "4x4")))
-    plt.savefig(os.path.join(save_dir, '{}.png'.format(src_name + "4x4")))
+    plt.savefig(os.path.join(save_dir, '{}.pdf'.format(src_name + "_4x4")), bbox_inches='tight')
+    plt.savefig(os.path.join(save_dir, '{}.png'.format(src_name + "_4x4")), bbox_inches='tight')
     
     # show image
     plt.show()
@@ -50,9 +49,9 @@ def plot_visualizations(img_directory, num_visualizations=(8, 8), desired_iter=3
     return
 
 if __name__ == "__main__":
-    plot_visualizations('/data/verifiedanivray/generated_early', num_visualizations=(4, 4), zoom_factor=4, the_figsize=(8, 8),\
-        save_dir='/data/verifiedanivray/', the_title='ResNet-18, Layer 5: Visualizations')
-    plot_visualizations('/data/verifiedanivray/generated_middle', num_visualizations=(4, 4), zoom_factor=4, the_figsize=(8, 8),\
-        save_dir='/data/verifiedanivray/', the_title='ResNet-18, Layer 11: Visualizations')
-    plot_visualizations('/data/verifiedanivray/generated_end', num_visualizations=(4, 4), zoom_factor=4, the_figsize=(8, 8),\
-        save_dir='/data/verifiedanivray/', the_title='ResNet-18, Layer 17: Visualizations')
+    plot_visualizations('/data/verifiedanivray/generated_early2', num_visualizations=(4, 4), zoom_factor=4, the_figsize=(8, 8),\
+        the_title='ResNet-18, Layer 5: Visualizations')
+    plot_visualizations('/data/verifiedanivray/generated_middle2', num_visualizations=(4, 4), zoom_factor=4, the_figsize=(8, 8),\
+        the_title='ResNet-18, Layer 11: Visualizations')
+    plot_visualizations('/data/verifiedanivray/generated_end2', num_visualizations=(4, 4), zoom_factor=4, the_figsize=(8, 8),\
+        the_title='ResNet-18, Layer 17: Visualizations')

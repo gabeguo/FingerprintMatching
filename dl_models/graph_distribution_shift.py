@@ -142,7 +142,7 @@ def update_graph(data, errors=None):
         else:
             plt.plot(Xs, Ys, marker=markers.pop(), label="{} to {}".format(finger_num, finger_num))
     # calculate and plot the baseline
-    Xs = data["data"][str(num_fingers)]["prior"].copy()
+    Xs = data["data"]["1"]["prior"].copy()
     baselines = []
     for i in range(len(Xs)):
         baselines.append(1 / Xs[i])
@@ -178,11 +178,8 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser('graph_distribution_shift.py')
     parser.add_argument('--output_root', '-o', nargs='?', help='Root directory for output', \
         const=DEFAULT_OUTPUT_ROOT, default=DEFAULT_OUTPUT_ROOT, type=str)
-    parser.add_argument('--num_fingers', '-n', nargs='?', help='Number of fingers to test', \
-        const=1, default=1, type=int)
 
     args = parser.parse_args()
-    num_fingers = args.num_fingers
 
     print(args)
 

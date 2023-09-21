@@ -27,7 +27,8 @@ Do not slash \\ at the end for folder inputs to bash scripts
 
 ### With Pretraining
 
-tbd
+    cd dl_models
+    bash run_base_model_pretrained.sh [desired output_folder (must be same as PrintsGAN weights)] [cuda_num]
 
 ### Without Pretraining
     cd dl_models
@@ -52,3 +53,19 @@ tbd
 
     cd dl_models
     bash run_gender.sh [desired_output_folder] [cuda_num]
+
+## Performance
+
+### Multi-Finger Testing
+
+Must train (pretrained) base model first!
+
+    cd dl_models
+    bash test_multi_fingers.sh [desired_output_folder] [cuda_num]
+
+## Supplements
+
+### Two-Finger Ablation
+
+    cd dl_models
+    bash run_two_finger.sh [desired_output_folder] [cuda_num]
