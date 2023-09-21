@@ -44,7 +44,7 @@ for datasetName in datasetNames:
     with open(resultPath, 'r') as fin:
         the_results = json.load(fin)
         name_2_rocAuc[datasetName] = the_results[ROC_AUC_KEY]
-        name_2_pVal[datasetName] = the_results[P_VAL_KEY]
+        name_2_pVal[datasetName] = the_results[PAIRED_P_VAL_KEY]
         name_2_size[datasetName] = the_results[NUM_SAMPLES_KEY]
         name_2_numSamples[datasetName] = the_results[NUM_POS_PAIRS_KEY] + the_results[NUM_NEG_PAIRS_KEY]
 
