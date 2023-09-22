@@ -8,7 +8,9 @@ Python 3.10.0 with requirements_python_3_10_0.txt
 
 # Getting Dataset
 
-tbd
+Get [SD302](https://www.nist.gov/itl/iad/image-group/nist-special-database-302), [SD301](https://www.nist.gov/itl/iad/image-group/nist-special-database-301), [SD300](https://www.nist.gov/itl/iad/image-group/nist-special-database-301), [RidgeBase](https://www.buffalo.edu/cubs/research/datasets/ridgebase-benchmark-dataset.html).
+
+Data splits available in [data_split_info](data_split_info).
 
 # Feature Extraction
 
@@ -17,18 +19,25 @@ tbd
     python extract_minutiae.py --src [source image folder path]
 
 The output will be in a folder in the same directory level as the orignal image folder, named:
+
     [source image root directory]/img_l2_feature_extractions_[source image foldername]/enhance
 
 Do NOT use the minutiae. (That is legacy code.)
 
 ## Frequency and Orientation Maps
 Make sure you already extracted enhanced images. 
+
     cd level1FeatureExtraction
     python main.py --src [orig root directory]/img_l2_feature_extractions_[source image foldername]/enhance
 
 The output will be in:
+
     [orig root directory]/img_l2_feature_extractions_[source image foldername]/img_l1_feature_extractions/freq
     [orig root directory]/img_l2_feature_extractions_[source image foldername]/img_l1_feature_extractions/orient
+
+## Minutiae
+
+Use [MindTCT](https://tsapps.nist.gov/publication/get_pdf.cfm?pub_id=51097).
 
 # Replicating Experiments
 
