@@ -39,6 +39,8 @@ The output will be in:
 
 Use [MindTCT](https://tsapps.nist.gov/publication/get_pdf.cfm?pub_id=51097).
 
+Then run tbd
+
 # Replicating Experiments
 
 filepaths will need to be changed in the .sh scripts
