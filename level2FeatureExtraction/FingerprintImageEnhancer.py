@@ -89,8 +89,8 @@ class FingerprintImageEnhancer(object):
         rows, cols = img.shape
         im = self.__normalise(img, 0, 1)  # normalise to get zero mean and unit standard deviation
 
-        new_rows = np.int(self.ridge_segment_blksze * np.ceil((np.float(rows)) / (np.float(self.ridge_segment_blksze))))
-        new_cols = np.int(self.ridge_segment_blksze * np.ceil((np.float(cols)) / (np.float(self.ridge_segment_blksze))))
+        new_rows = np.int_(self.ridge_segment_blksze * np.ceil((np.float64(rows)) / (np.float64(self.ridge_segment_blksze))))
+        new_cols = np.int_(self.ridge_segment_blksze * np.ceil((np.float64(cols)) / (np.float64(self.ridge_segment_blksze))))
 
         padded_img = np.zeros((new_rows, new_cols))
         stddevim = np.zeros((new_rows, new_cols))
@@ -160,7 +160,7 @@ class FingerprintImageEnhancer(object):
         if np.remainder(sze,2) == 0:
             sze = sze+1
 
-        gauss = cv2.getGaussianKernel(np.int(sze),self.gradient_sigma)
+        gauss = cv2.getGaussianKernel(np.int_(sze),self.gradient_sigma)
         f = gauss * gauss.T
 
         fy,fx = np.gradient(f)                               #Gradient of Gaussian
@@ -175,7 +175,7 @@ class FingerprintImageEnhancer(object):
         #Now smooth the covariance data to perform a weighted summation of the data.
         sze = np.fix(6*self.block_sigma)
 
-        gauss = cv2.getGaussianKernel(np.int(sze), self.block_sigma)
+        gauss = cv2.getGaussianKernel(np.int_(sze), self.block_sigma)
         f = gauss * gauss.T
 
         Gxx = ndimage.convolve(Gxx,f)
@@ -193,7 +193,7 @@ class FingerprintImageEnhancer(object):
             sze = np.fix(6*self.orient_smooth_sigma)
             if np.remainder(sze,2) == 0:
                 sze = sze+1
-            gauss = cv2.getGaussianKernel(np.int(sze), self.orient_smooth_sigma)
+            gauss = cv2.getGaussianKernel(np.int_(sze), self.orient_smooth_sigma)
             f = gauss * gauss.T
             cos2theta = ndimage.convolve(cos2theta,f)                   # Smoothed sine and cosine of
             sin2theta = ndimage.convolve(sin2theta,f)                   # doubled angles
@@ -263,7 +263,7 @@ class FingerprintImageEnhancer(object):
                 freq[r:r + self.ridge_freq_blksze][:, c:c + self.ridge_freq_blksze] = self.__frequest(blkim, blkor)
 
         self._freq = freq * self._mask
-        if self._freq == []:
+        if self._freq.shape == (0, 0):#self._freq == []:
             return False
         freq_1d = np.reshape(self._freq, (1, rows * cols))
         ind = np.where(freq_1d > 0)
@@ -446,7 +446,7 @@ class FingerprintImageEnhancer(object):
             return False
             raise e
 
-        sze = np.int(np.round(3 * np.max([sigmax, sigmay])))
+        sze = np.int_(np.round(3 * np.max([sigmax, sigmay])))
 
         x, y = np.meshgrid(np.linspace(-sze, sze, (2 * sze + 1)), np.linspace(-sze, sze, (2 * sze + 1)))
 
@@ -455,7 +455,7 @@ class FingerprintImageEnhancer(object):
 
         filt_rows, filt_cols = reffilter.shape
 
-        angleRange = np.int(180 / self.angleInc)
+        angleRange = np.int_(180 / self.angleInc)
 
         gabor_filter = np.array(np.zeros((angleRange, filt_rows, filt_cols)))
 
@@ -528,7 +528,7 @@ class FingerprintImageEnhancer(object):
             aspect_ratio = np.double(rows) / np.double(cols)
             new_rows = 350                      # randomly selected number
             new_cols = new_rows / aspect_ratio
-            img = cv2.resize(img, (np.int(new_cols), np.int(new_rows)))
+            img = cv2.resize(img, (np.int_(new_cols), np.int_(new_rows)))
 
         self.__ridge_segment(img)   # normalise the image and find a ROI
         self.__ridge_orient()       # compute orientation image
