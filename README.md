@@ -10,7 +10,7 @@ Python 3.10.0 with requirements_python_3_10_0.txt
 
 Get [SD302](https://www.nist.gov/itl/iad/image-group/nist-special-database-302), [SD301](https://www.nist.gov/itl/iad/image-group/nist-special-database-301), [SD300](https://www.nist.gov/itl/iad/image-group/nist-special-database-301), [RidgeBase](https://www.buffalo.edu/cubs/research/datasets/ridgebase-benchmark-dataset.html).
 
-Data splits available in [data_split_info](data_split_info).
+The person-wise train, test, and val splits are available in [data_split_info](data_split_info).
 
 # Feature Extraction
 
