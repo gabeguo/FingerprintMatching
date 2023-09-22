@@ -244,6 +244,7 @@ Finger-balanced versions (i.e., version where every person has even numbers of s
 00002368  00002383  00002398  00002412  00002472  00002501  00002554  00002615  00002640  00002650
 ~~~
 Finger-balanced versions (i.e., version where every person has even numbers of samples of all 10 fingers) have same PIDs.
+
 Same splits for feature maps.
 
 ## RidgeBase Splits
