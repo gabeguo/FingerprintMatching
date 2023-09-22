@@ -14,7 +14,7 @@ tbd
 
 filepaths will need to be changed in the .sh scripts
 
-Do not slash \\ at the end for folder inputs to bash scripts
+Do not slash / at the end for folder inputs to bash scripts
 
 ## Pretraining
     cd synthetic_data_transfer_learning
