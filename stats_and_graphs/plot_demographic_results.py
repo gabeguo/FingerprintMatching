@@ -35,6 +35,8 @@ roc_auc_scores = {}
 all_train_groups = set()
 all_test_groups = set()
 
+print('\n\n\n\n\n')
+
 # Iterate through each subdirectory
 for subdir in subdirs:
     print(subdir.split('/')[-1])
@@ -53,12 +55,15 @@ for subdir in subdirs:
             scores.append(data['ROC AUC'])
             weights.add(data['weights'])
             datasets.add(data['dataset'])
-
+    # print('\n\t', '\n\t'.join([x.split('/')[-1] for x in weights]))
+    # print('\n\t', '\n\t'.join([x.split('/')[-1] for x in datasets]))
     # Check that all 'weights' and 'dataset' fields are the same in each directory
     if len(weights) != 5:
         print(f"Warning: Found wrong number of 'weights' values in {subdir}")
-    if len(datasets) != 5:
+        raise ValueError('weights')
+    if len(datasets) != 1:
         print(f"Warning: Found wrong number 'dataset' values in {subdir}")
+        raise ValueError('datasets')
 
     train_group = get_group_name(list(weights)[0], is_weights_path=True)
     test_group = get_group_name(list(datasets)[0], is_weights_path=False)
