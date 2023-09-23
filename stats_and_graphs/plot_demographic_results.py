@@ -55,10 +55,10 @@ for subdir in subdirs:
             datasets.add(data['dataset'])
 
     # Check that all 'weights' and 'dataset' fields are the same in each directory
-    if len(weights) > 5:
-        print(f"Warning: Found multiple 'weights' values in {subdir}")
-    if len(datasets) > 5:
-        print(f"Warning: Found multiple 'dataset' values in {subdir}")
+    if len(weights) != 5:
+        print(f"Warning: Found wrong number of 'weights' values in {subdir}")
+    if len(datasets) != 5:
+        print(f"Warning: Found wrong number 'dataset' values in {subdir}")
 
     train_group = get_group_name(list(weights)[0], is_weights_path=True)
     test_group = get_group_name(list(datasets)[0], is_weights_path=False)
