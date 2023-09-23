@@ -113,7 +113,7 @@ for curr_grouping_name in POSSIBLE_GROUPINGS:
     heatmap.set_xticklabels(curr_train_groups, size=17)
     heatmap.set_ylabel('Testing Group', fontsize=19)
     heatmap.set_xlabel('Training Group', fontsize=19)
-    plt.title(f'ROC-AUC (Mean ± Std Err): {curr_grouping_name} Demographics', fontsize=24)
+    plt.title(f'ROC-AUC (Mean ± Std): {curr_grouping_name} Demographics', fontsize=24)
     plt.savefig(f'demographic_diagrams/{curr_grouping_name}_generalization.pdf', bbox_inches='tight')
     plt.savefig(f'demographic_diagrams/{curr_grouping_name}_generalization.png', bbox_inches='tight')
     #plt.show()
