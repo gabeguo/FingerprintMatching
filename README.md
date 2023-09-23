@@ -36,6 +36,10 @@ This will give you COPIED data in a folder named as: whatever you put for ```--d
 
 Use only SD300a (other parts are higher resolution, which introduces duplicates).
 
+For ```split_people.py```, make sure to include ```--max_fgrp 12``` at the end, so we can include thumbs (they have a different code, due to the collection protocol).
+
+For ```get_all_10_finger_samples.py```, make sure to include option ```--all_sensors_need_10_samples```, so that data is perfectly balanced (otherwise, since there are only two modalities, triplet generation will not converge).
+
 ### SD301
 
 Use only SD301a (other datasets are latent images or other stuff). Make sure to move Person 00002239 into train, since that overlaps with SD302.
