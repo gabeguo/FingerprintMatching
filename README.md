@@ -48,6 +48,10 @@ Use only SD301a (other datasets are latent images or other stuff). Make sure to 
 
 Use only SD302a-d (other datasets are latent images or other stuff).
 
+### RidgeBase
+
+Use only ```Task1/Train``` (from the original directory structure). Before running the other steps, you need to run ```convert_ub_dataset_to_nist_format.py``` (and make sure to change filepaths in the script accordingly).
+
 # Feature Extraction
 
 ## Enhanced Images
