@@ -29,6 +29,9 @@ def plot_confidence_intervals(dataset_directory, savename):
         for filename in filenames:
             if '.json' in filename:
                 filepath = os.path.join(dirpath, filename)
+                if '2023-09-20_' not in filepath:
+                    print('exclude', filepath)
+                    continue
                 with open(filepath, 'r') as f:
                     data = json.load(f)
 

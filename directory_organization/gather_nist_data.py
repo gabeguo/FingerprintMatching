@@ -4,16 +4,18 @@ gather_nist_data.py
 Given source and destination directories, filters the relevant image files from
 the source and stores them in the destination organized in folders by person.
 
-If no destination is given creates a folder named 'train' in the current one to
-use as the destination.
+USAGE NOTICE: MAKE A BLANK DUMMY FOLDER TO BE USED AS TEST!
+All data folders should be in the training argument, 
+even if you later plan to use some of for testing.
 
-USAGE NOTICE: Make a blank dummy folder to input as test.
-Specify all the desired folders to be training.
-Because for this project, we're doing image matching (Siamese architecture). 
-A separate script will split training people from testing people. 
-This script is a holdover from the proof-of-concept project that proved correlation - 
+Reason for this weirdness is legacy: 
+this script is a holdover from the proof-of-concept project that proved correlation - 
 in that one, we had same people in train and test. 
-In this one, different people will be in train and test.
+
+But, for this project, we're doing image matching (Siamese architecture),
+so a separate script will split training people from testing people. 
+
+In this one, DIFFERENT people will be in train and test.
 '''
 
 import sys, getopt, os, shutil

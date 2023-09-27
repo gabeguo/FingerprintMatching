@@ -14,6 +14,7 @@ def get_group_name(filepath, is_weights_path):
     name = filepath.split('/')[-1]
     if is_weights_path:
         name = name[len('demographic_model_'):-4]
+    name = '_'.join(name.split('_')[:-1]) # remove cycle number from end
     return name
 
 def capitalize(token):
@@ -27,17 +28,18 @@ def capitalize(token):
 os.makedirs('demographic_diagrams', exist_ok=True)
 
 # Get a list of all subdirectories
-subdirs = glob.glob('/home/gabeguo/fingerprint_results/paper_results/fairness/sd302/*', recursive=False)
+subdirs = glob.glob('/home/gabeguo/updated_fingerprint_results_fall23/paper_results/fairness/sd302/*', recursive=False)
 
 roc_auc_scores = {}
 
 all_train_groups = set()
 all_test_groups = set()
 
+print('\n\n\n\n\n')
+
 # Iterate through each subdirectory
 for subdir in subdirs:
-    #print(subdir)
-
+    print(subdir.split('/')[-1])
     # Get a list of all JSON files in the subdirectory (and its subdirectories)
     json_files = glob.glob(os.path.join(subdir, '**/*.json'), recursive=True)
 
@@ -47,18 +49,21 @@ for subdir in subdirs:
 
     # Read each JSON file and extract the relevant information
     for json_file in json_files:
-        #print(f'\t{json_file}')
+        print(f"\t{json_file.split('/')[-1]}")
         with open(json_file) as file:
             data = json.load(file)
             scores.append(data['ROC AUC'])
             weights.add(data['weights'])
             datasets.add(data['dataset'])
-
+    # print('\n\t', '\n\t'.join([x.split('/')[-1] for x in weights]))
+    # print('\n\t', '\n\t'.join([x.split('/')[-1] for x in datasets]))
     # Check that all 'weights' and 'dataset' fields are the same in each directory
-    if len(weights) > 1:
-        print(f"Warning: Found multiple 'weights' values in {subdir}")
-    if len(datasets) > 1:
-        print(f"Warning: Found multiple 'dataset' values in {subdir}")
+    if len(weights) != 5:
+        print(f"Warning: Found wrong number of 'weights' values in {subdir}")
+        raise ValueError('weights')
+    if len(datasets) != 1:
+        print(f"Warning: Found wrong number 'dataset' values in {subdir}")
+        raise ValueError('datasets')
 
     train_group = get_group_name(list(weights)[0], is_weights_path=True)
     test_group = get_group_name(list(datasets)[0], is_weights_path=False)
@@ -72,13 +77,14 @@ for subdir in subdirs:
 
     roc_auc_scores[(train_group, test_group)] = {'mean': mean_score, 'std': std_score}
 
+print('possible groupings:', POSSIBLE_GROUPINGS)
 for curr_grouping_name in POSSIBLE_GROUPINGS:
     curr_grouping = POSSIBLE_GROUPINGS[curr_grouping_name]
     curr_train_groups = [x for x in all_train_groups if any(y in x for y in curr_grouping)]
     curr_test_groups = [x for x in all_test_groups if any(y in x for y in curr_grouping)]
     curr_train_groups.sort()
     curr_test_groups.sort(); curr_test_groups.reverse()
-    print(curr_train_groups, curr_test_groups)
+    print('\t', curr_train_groups, curr_test_groups)
 
     mean_roc_auc = np.zeros((len(curr_train_groups), len(curr_test_groups)))
     std_roc_auc = np.zeros((len(curr_train_groups), len(curr_test_groups)))
@@ -90,20 +96,24 @@ for curr_grouping_name in POSSIBLE_GROUPINGS:
             mean_roc_auc[train_idx, test_idx] = roc_auc_scores[(train_group, test_group)]['mean']
             std_roc_auc[train_idx, test_idx] = roc_auc_scores[(train_group, test_group)]['std']
 
+    # transpose them to have test as rows, train as columns
+    mean_roc_auc = mean_roc_auc.T
+    std_roc_auc = std_roc_auc.T
+
     # Create a heatmap with mean values, but annotations for both mean and std
-    plt.figure(figsize=(9.5, 12))
+    plt.figure(figsize=(15, 8))
     curr_test_groups = [' '.join([capitalize(token) for token in name.split('_')]) for name in curr_test_groups]
     curr_train_groups = [' '.join([capitalize(token) for token in name.split('_')]) for name in curr_train_groups]
     annot = [[f"{mean:.3f} ± {std:.3f}" for mean, std in zip(mean_row, std_row)] 
             for mean_row, std_row in zip(mean_roc_auc, std_roc_auc)]
     heatmap = sns.heatmap(mean_roc_auc, annot=annot, 
-                fmt='', annot_kws={'fontsize':18}, cmap='coolwarm', vmin=min(0.6, mean_roc_auc.min()), vmax=max(0.8, mean_roc_auc.max()),
-                xticklabels=curr_test_groups, yticklabels=curr_train_groups)
-    heatmap.set_xticklabels(curr_test_groups, size=14)
-    heatmap.set_yticklabels(curr_train_groups, size=14)
-    heatmap.set_xlabel('Testing Group', fontsize=16)
-    heatmap.set_ylabel('Training Group', fontsize=16)
-    plt.title(f'ROC-AUC (Mean ± Std Err): {curr_grouping_name} Demographics', fontsize=17)
-    plt.savefig(f'demographic_diagrams/{curr_grouping_name}_generalization.pdf')
-    plt.savefig(f'demographic_diagrams/{curr_grouping_name}_generalization.png')
+                fmt='', annot_kws={'fontsize':24}, cmap='coolwarm', vmin=min(0.65, mean_roc_auc.min()), vmax=max(0.8, mean_roc_auc.max()),
+                yticklabels=curr_test_groups, xticklabels=curr_train_groups)
+    heatmap.set_yticklabels(curr_test_groups, size=17)
+    heatmap.set_xticklabels(curr_train_groups, size=17)
+    heatmap.set_ylabel('Testing Group', fontsize=19)
+    heatmap.set_xlabel('Training Group', fontsize=19)
+    plt.title(f'ROC-AUC (Mean ± Std): {curr_grouping_name} Demographics', fontsize=24)
+    plt.savefig(f'demographic_diagrams/{curr_grouping_name}_generalization.pdf', bbox_inches='tight')
+    plt.savefig(f'demographic_diagrams/{curr_grouping_name}_generalization.png', bbox_inches='tight')
     #plt.show()

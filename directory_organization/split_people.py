@@ -105,6 +105,7 @@ def main():
     train_percent = None
     val_percent = None
     test_percent = None
+    rotate = 0
 
     argv = sys.argv[1:] 
 
