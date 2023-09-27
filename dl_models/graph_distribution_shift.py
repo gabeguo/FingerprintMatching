@@ -161,7 +161,7 @@ def update_graph(data, errors=None):
             if len(data["data"][finger_num]["num_fp"]) >= i:
                 #print(data["data"][finger_num]["num_fp"][-i])
                 avg += data["data"][finger_num]["num_fp"][-i]
-        avg /= 5
+        avg /= len(data["data"])
         avgs.insert(0, avg)
     plt.plot(Xs, avgs, label="average", color="black", linewidth=3, zorder=7)
     # # #

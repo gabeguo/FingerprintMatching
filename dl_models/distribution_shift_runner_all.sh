@@ -1,10 +1,8 @@
 #!/bin/bash
 source ../venv/bin/activate
 
-#finger_array=(1 2 3 4 5)
-#prior_array=(0.50 0.25 0.10 0.075 0.050 0.025 0.01 0.0075 0.0050 0.0025 0.001)
-finger_array=(1 2 3)
-prior_array=(0.50 0.25 0.10 0.025 0.01 0.0025 0.001)
+finger_array=(1 2 3 4 5)
+prior_array=(0.50 0.25 0.10 0.075 0.050 0.025 0.01 0.0075 0.0050 0.0025 0.001)
 cuda=$1
 
 for finger in ${finger_array[@]}; do

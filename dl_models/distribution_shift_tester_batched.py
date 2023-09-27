@@ -41,7 +41,7 @@ DEFAULT_LEADS_FILE = 'geometric_analysis_results'
 DEFAULT_CUDA = 'cuda:2'
 
 # Batch Size constant
-batch_size=32*3
+batch_size=32
 assert batch_size > 1 # can't be 1, has to be more (otherwise, squeezing tensors bugs out)
 
 # JSON Keys
