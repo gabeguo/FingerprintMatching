@@ -79,7 +79,7 @@ The output will be in:
 
 Use [MindTCT](https://tsapps.nist.gov/publication/get_pdf.cfm?pub_id=51097).
 
-Then run tbd
+$\color{red}{\text{Aniv: add}}$
 
 # Replicating Experiments
 
@@ -134,12 +134,24 @@ Must train (pretrained) base model first!
     cd dl_models
     bash test_multi_fingers.sh [desired_output_folder] [cuda_num]
 
+### Lead Efficiency Analysis
+
+    cd dl_models
+
+$\color{red}{\text{Aniv: add}}$
+
 ## Interpretability
 
 ### Saliency Maps
 
     cd Interpretability
     CUDA_VISIBLE_DEVICES=x bash run_gradcam.sh
+
+### Convolutional Filter Visualization
+
+    cd Interpretability
+
+$\color{red}{\text{Aniv: add}}$
 
 ## Supplements
 
