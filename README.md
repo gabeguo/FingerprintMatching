@@ -134,6 +134,13 @@ Must train (pretrained) base model first!
     cd dl_models
     bash test_multi_fingers.sh [desired_output_folder] [cuda_num]
 
+## Interpretability
+
+### Saliency Maps
+
+    cd Interpretability
+    CUDA_VISIBLE_DEVICES=x bash run_gradcam.sh
+
 ## Supplements
 
 ### Two-Finger Ablation
