@@ -79,8 +79,8 @@ The output will be in:
 
 Use [MindTCT](https://tsapps.nist.gov/publication/get_pdf.cfm?pub_id=51097).
 
-cd level2FeatureExtraction
-python myLevelTwoExtraction.py --dataset_name [name of dataset] --dataset_root [root of fingerprint image datasets] --mindtct_root [root of mindtct output datasets]
+    cd level2FeatureExtraction
+    python myLevelTwoExtraction.py --dataset_name [name of dataset] --dataset_root [root of fingerprint image datasets] --mindtct_root [root of mindtct output datasets]
 
 Note: Each root should have a subdirectory with name dataset_name that contains the images/mindtct output.
 
@@ -142,11 +142,12 @@ Must train (pretrained) base model first!
     cd dl_models
     bash distribution_shift_runner_all.sh [cuda_num]
 
-    Note: change the line 18 and 19 as follows:
+Note: change the line 18 and 19 as follows:
+
     results_filename="geometric_analysis_results_1.json"
     python distribution_shift_tester_batched.py -d /data/therealgabeguo/fingerprint_data/sd302_split_balanced -w /data/therealgabeguo/embedding_net_weights.pth -p $prior -c $cuda -n $finger -o /data/verifiedanivray/results -s $scale_factor -a 0.95 -dfs -dws -dss -sss -l $results_filename
 
-    Change results_filename to your desired output filename. Change -d to your dataset directory, change -w to your embedding weights path, and change -o to your desired output directory    
+Change results_filename to your desired output filename. Change -d to your dataset directory, change -w to your embedding weights path, and change -o to your desired output directory    
 
 ## Interpretability
 
@@ -160,7 +161,7 @@ Must train (pretrained) base model first!
     cd Interpretability
     python cnn_layer_visualization.py --model_path [path to embedder weights] --output_folder [folder where you want output] --conv_layer [convolutional layer id]
 
-    The convolutional layer id is given from the ResNet1-18 architecture as follows: x.y.convz where x = block #, y = sub-block (1 or 2), and z = first or second conv layer (1 or 2)
+The convolutional layer id is given from the ResNet1-18 architecture as follows: x.y.convz where x = block #, y = sub-block (1 or 2), and z = first or second conv layer (1 or 2). For example "7.1.conv2" would represent the 7th block, first sub-block, and second conv2 layer within the sub-block.
 
 ## Supplements
 
