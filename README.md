@@ -86,7 +86,7 @@ Note: Each root should have a subdirectory with name dataset_name that contains 
 
 # Replicating Experiments
 
-filepaths will need to be changed in the .sh scripts
+**Filepaths will need to be changed in the .sh scripts!**
 
 Do not slash / at the end for folder inputs to bash scripts
 
