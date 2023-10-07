@@ -1,5 +1,5 @@
 # FingerprintMatching
-Project to match different fingerprints from the same person.
+Code to accompany our upcoming paper *Unveiling the Intra-Person Fingerprint Similarity via Deep Contrastive Learning* by: [Gabe Guo](https://gabeguo.github.io/), [Aniv Ray](https://github.com/AnivRay), [Miles Izydorczak](https://github.com/milesizydorczak12), [Judah Goldfeder](https://github.com/Jgoldfeder), [Hod Lipson](https://www.hodlipson.com/), [Wenyao Xu](https://cse.buffalo.edu/~wenyaoxu/). Use of this code by outside parties is only allowed for research purposes.
 
 # Environment
 ~~Python 3.6.9 with requirements.txt~~
