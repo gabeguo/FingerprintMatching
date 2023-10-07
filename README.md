@@ -1,4 +1,1 @@
-# FingerprintMatching
-Project to match different fingerprints from the same person.
-
-Python 3.6.9
+This branch is deprecated. See: [https://github.com/gabeguo/FingerprintMatching/tree/refactor_training](https://github.com/gabeguo/FingerprintMatching/tree/refactor_training)
