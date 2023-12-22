@@ -1,5 +1,5 @@
 # FingerprintMatching
-Code to accompany our *Science Advances* paper *Unveiling the Intra-Person Fingerprint Similarity via Deep Contrastive Learning* by: [Gabe Guo](https://gabeguo.github.io/), [Aniv Ray](https://github.com/AnivRay), [Miles Izydorczak](https://github.com/milesizydorczak12), [Judah Goldfeder](https://github.com/Jgoldfeder), [Hod Lipson](https://www.hodlipson.com/), [Wenyao Xu](https://cse.buffalo.edu/~wenyaoxu/). Use of this code by outside parties is only allowed for research purposes.
+Code to accompany our *Science Advances* paper *Unveiling the Intra-Person Fingerprint Similarity via Deep Contrastive Learning* by: [Gabe Guo](https://gabeguo.github.io/), [Aniv Ray](https://github.com/AnivRay), [Miles Izydorczak](https://github.com/milesizydorczak12), [Judah Goldfeder](https://judahgoldfeder.com/), [Hod Lipson](https://www.hodlipson.com/), [Wenyao Xu](https://cse.buffalo.edu/~wenyaoxu/). Use of this code by outside parties is only allowed for research purposes.
 
 [![DOI](https://zenodo.org/badge/552203854.svg)](https://zenodo.org/badge/latestdoi/552203854)
 
